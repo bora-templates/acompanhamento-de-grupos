@@ -61,8 +61,8 @@
     ] },
   ];
 
-  // módulo que esta instalação NÃO tem (OS.instalado / OS.sistemaDoCaminho, do os-core):
-  // o cartão fica, marcado como ausente, e abrir mostra o aviso padrão (OS.moduloAusenteJanela)
+  // módulo que esta instalação NÃO tem (OS.instalado / OS.sistemaDoCaminho, do os-core): o cartão some do Início,
+  // do Dock e da busca. Quem comprou uma solução vê só o que tem (decisão do Luis em 14/10/2026)
   const ausente = (s) => {
     if (!(window.OS && OS.instalado && OS.sistemaDoCaminho)) return null;
     const m = OS.sistemaDoCaminho(s.href);
@@ -71,7 +71,7 @@
   // peça da base que esta instalação não tem (o catálogo de produtos vem só com os
   // módulos que o usam): o cartão some — não é módulo à venda, não leva o aviso
   const AREAS = TODAS.map(a => Object.assign({}, a, { apps: a.apps.map(s => Object.assign({}, s, { ausente: ausente(s) }))
-    .filter(s => !String(s.ausente || '').startsWith('peca:')) })).filter(a => a.apps.length);
+    .filter(s => !s.ausente) })).filter(a => a.apps.length);
   AREAS.forEach(a => a.apps.forEach(s => { s.area = a.area; s.aid = a.id; s.cor = a.cor; }));
 
   // a MESMA conta do launcher antigo (hubVisible)

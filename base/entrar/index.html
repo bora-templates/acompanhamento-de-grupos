@@ -118,6 +118,11 @@
     if (v && v.charAt(0) === '/' && v.charAt(1) !== '/') return v;
     try{
       var acc = await OS.getMyAccess();               // { acessos, level }
+      // instalação com uma solução só: todo mundo, inclusive o admin, vai direto para ela (14/10/2026)
+      var soluc = (window.OS && OS.instalado && OS.sistemaDoCaminho) ? Object.keys(HUB_PATH).filter(function(k){
+        var m = OS.sistemaDoCaminho(HUB_PATH[k]); return m && m !== 'base' && OS.instalado(m) && !String(m).startsWith('peca:'); }) : [];
+      var unicas = soluc.filter(function(k, i){ return soluc.findIndex(function(j){ return OS.sistemaDoCaminho(HUB_PATH[j]) === OS.sistemaDoCaminho(HUB_PATH[k]); }) === i; });
+      if (unicas.length === 1 && (!acc || acc.level === 'admin' || (acc.acessos && acc.acessos[unicas[0]] !== undefined && acc.acessos[unicas[0]] !== false))) return HUB_PATH[unicas[0]];
       if (!acc || acc.level === 'admin') return '/';  // admin vê tudo → launcher
       // hubs explicitamente liberados (true/'view'/'admin'); ignora ausentes e false
       var explic = Object.keys(HUB_PATH).filter(function(k){ return acc.acessos && acc.acessos[k] !== undefined && acc.acessos[k] !== false
