@@ -163,7 +163,19 @@ async function login(api, ref, { site, empresa, raiz = RAIZ } = {}) {
       campos[`mailer_templates_${tipo}_content`] = fs.readFileSync(f, 'utf8').split('%EMPRESA_NOME%').join(empresa);
     }
   }
-  await api.mudaAuth(ref, campos);
+  try {
+    await api.mudaAuth(ref, campos);
+  } catch (e) {
+    // Plano gratuito com o e-mail padrão do Supabase (conferido num projeto de verdade em 14/10/2026): trocar os textos dos
+    // e-mails é recusado com "Email template modification is not available for free tier projects". O resto do login segue.
+    if (!(e && e.status === 400 && /email template modification is not available/i.test(String(e.message)))) throw e;
+    for (const k of Object.keys(campos)) if (k.startsWith('mailer_')) delete campos[k];
+    await api.mudaAuth(ref, campos);
+    return {
+      site_url: campos.site_url || null, emails: false,
+      aviso: 'Os e-mails do login ficam no padrão do Supabase, em inglês, porque o plano gratuito só deixa trocar os textos com um servidor de e-mail próprio (SMTP).',
+    };
+  }
   return { site_url: campos.site_url || null, emails: !!empresa };
 }
 
