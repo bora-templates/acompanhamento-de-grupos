@@ -1,0 +1,48 @@
+<!-- ═══════════════════════ O GRUPO (cabeçalho, abas e o conteúdo de cada aba) ═══════════════════════ -->
+<section x-show="rota === 'grupo'" x-cloak class="entra">
+  <a class="voltar" href="#grupos"><svg class="i" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg> Voltar para os grupos</a>
+
+  <div class="estado" x-show="carga.grupo === 'carregando'" role="status"><span class="spin"></span><span>Carregando o grupo</span></div>
+  <div class="err" x-show="carga.grupo === 'erro'" x-cloak role="alert">
+    <span x-text="'Não foi possível abrir o grupo. ' + cargaErro.grupo"></span>
+    <button type="button" class="btn leve mini" @click="abreGrupo(rotaId, aba)">Tentar de novo</button>
+  </div>
+
+  <template x-if="grupo">
+    <div>
+      <div class="hero"><div class="hero-l">
+        <div>
+          <div class="over" x-text="grupo?.exemplo ? 'Grupo de exemplo' : 'Grupo do WhatsApp'"></div>
+          <h1 x-text="grupo?.nome"></h1>
+          <p x-text="linhaGrupo"></p>
+        </div>
+        <div class="linha">
+          <span class="pill acc" x-show="grupo?.exemplo">Exemplo</span>
+          <span class="pill warn" x-show="!grupo?.ativo">Pausado</span>
+          <span class="pill acc" x-show="grupo?.importando"><span class="spin p"></span><span>Trazendo as mensagens recentes</span></span>
+          <span class="pill" x-show="grupo?.resumo_auto" x-text="'Resumo todo dia às ' + grupo?.resumo_hora + 'h'"></span>
+        </div>
+      </div></div>
+
+      <div class="info" x-show="grupo?.exemplo" style="margin-bottom:14px">
+        <div class="linha entre">
+          <span>Este é um grupo de exemplo. As pessoas e a conversa são fictícias, de uma clínica de estética, e ele não recebe mensagens de verdade.</span>
+          <button type="button" class="btn leve mini" x-show="podeAdministrar" x-cloak @click="pedeApagarExemplo()">Apagar o grupo de exemplo</button>
+        </div>
+      </div>
+
+      <nav class="abas" role="tablist" aria-label="Partes do grupo">
+        <template x-for="a in abasGrupo" :key="a.chave">
+          <a class="aba" role="tab" :href="'#grupo/' + grupo?.id + '/' + a.chave" :class="{ ativa: aba === a.chave }" :aria-selected="aba === a.chave ? 'true' : 'false'" x-text="a.rotulo"></a>
+        </template>
+      </nav>
+
+      <div data-parte="/outgrupos/index-partes/telas/aba-conversa.html"></div>
+      <div data-parte="/outgrupos/index-partes/telas/aba-resumos.html"></div>
+      <div data-parte="/outgrupos/index-partes/telas/aba-perguntar.html"></div>
+      <div data-parte="/outgrupos/index-partes/telas/aba-materiais.html"></div>
+      <div data-parte="/outgrupos/index-partes/telas/aba-participantes.html"></div>
+      <div data-parte="/outgrupos/index-partes/telas/aba-ajustes-grupo.html"></div>
+    </div>
+  </template>
+</section>

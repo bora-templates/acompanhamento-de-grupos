@@ -1,0 +1,66 @@
+<!-- ── aba Perguntar à IA: pergunta, resposta e as minhas perguntas anteriores ── -->
+<div x-show="aba === 'perguntar'" x-cloak>
+  <div class="aviso" x-show="!ajustes.ia_configurada" style="margin-bottom:12px">
+    A IA ainda não foi ligada nos Ajustes, então a pergunta pode falhar.
+    <a class="lnk" href="#ajustes/ia" x-show="podeConfigurar" x-cloak>Ligar a IA</a>
+  </div>
+
+  <div class="card">
+    <h2>Perguntar à IA</h2>
+    <p class="peq mut" style="margin-bottom:12px">Faça uma pergunta sobre o que foi dito neste grupo. A IA responde com base nas mensagens do período escolhido, nas orientações do grupo e nos materiais de apoio, e avisa quando a resposta não está nas mensagens.</p>
+    <div class="pedido-g">
+      <label class="rot">Período
+        <select x-model="perg.periodo" @change="ajustaDatas(perg)">
+          <option value="24h">Últimas 24 horas</option><option value="hoje">Hoje</option><option value="ontem">Ontem</option>
+          <option value="7d">Últimos 7 dias</option><option value="datas">Escolher datas</option>
+        </select></label>
+      <label class="rot" x-show="perg.periodo === 'datas'" x-cloak>De <input type="date" x-model="perg.de" :max="hojeChave"></label>
+      <label class="rot" x-show="perg.periodo === 'datas'" x-cloak>Até <input type="date" x-model="perg.ate" :max="hojeChave"></label>
+    </div>
+    <label class="rot" style="margin-top:12px">Sua pergunta
+      <textarea id="og-pergunta-texto" x-model="perg.texto" maxlength="1000" placeholder="Escreva a sua pergunta sobre este grupo" @keydown.meta.enter.prevent="perguntar()" @keydown.ctrl.enter.prevent="perguntar()"></textarea></label>
+    <div class="contador" :class="{ passou: perg.texto.length > 1000 }" x-text="numero(perg.texto.length) + ' de 1.000 caracteres'"></div>
+    <div class="sugestoes" aria-label="Exemplos de pergunta">
+      <template x-for="s in sugestoesPergunta" :key="s"><button type="button" @click="usaSugestao(s)" x-text="s"></button></template>
+    </div>
+    <div class="linha entre" style="margin-top:12px">
+      <span class="dica" x-show="!perg.enviando">Use Ctrl ou Command com Enter para enviar mais rápido.</span>
+      <span class="dica" x-show="perg.enviando" role="status">A IA está lendo as mensagens e escrevendo a resposta.</span>
+      <button type="button" class="btn" :disabled="perg.enviando" @click="perguntar()">
+        <span class="spin p" x-show="perg.enviando" style="border-color:#fff;border-top-color:transparent"></span><span x-text="perg.enviando ? 'Perguntando' : 'Perguntar'"></span></button>
+    </div>
+    <div class="err" x-show="perg.erro" x-cloak role="alert" style="margin:10px 0 0" x-text="perg.erro"></div>
+  </div>
+
+  <div class="card" x-show="perg.resposta" x-cloak>
+    <h3>Pergunta</h3>
+    <p class="perg-q" x-text="perg.resposta && perg.resposta.pergunta"></p>
+    <h3>Resposta</h3>
+    <div class="resposta"><template x-for="(linha, i) in (perg.resposta ? formataTexto(perg.resposta.resposta) : [])" :key="i"><div style="min-height:1.5em"><template x-for="(s, j) in linha" :key="j"><span :class="s.c" x-text="s.v"></span></template></div></template></div>
+  </div>
+
+  <div class="card">
+    <h2>Perguntas anteriores</h2>
+    <div class="estado" x-show="perg.estado === 'carregando'" role="status"><span class="spin"></span><span>Carregando as perguntas</span></div>
+    <div class="err" x-show="perg.estado === 'erro'" x-cloak role="alert">
+      <span x-text="'Não foi possível carregar as perguntas. ' + perg.erroLista"></span>
+      <button type="button" class="btn leve mini" @click="carregaPerguntas()">Tentar de novo</button>
+    </div>
+    <div class="vazio" x-show="perg.estado === 'pronto' && !perg.lista.length">Você ainda não fez perguntas neste grupo.</div>
+    <div x-show="perg.estado === 'pronto' && perg.lista.length">
+      <template x-for="p in perg.lista" :key="p.id">
+        <div class="hist-item">
+          <button type="button" @click="alternaPergunta(p.id)" :aria-expanded="perg.abertas[p.id] ? 'true' : 'false'">
+            <span style="min-width:0"><span class="perg-q" style="display:block" x-text="p.pergunta"></span>
+              <span class="peq mut" x-text="quando(p.criado_em) + ' · ' + rotuloPeriodo(p.periodo, p.inicio, p.fim)"></span></span>
+            <svg class="i" viewBox="0 0 24 24" :style="perg.abertas[p.id] ? 'transform:rotate(180deg)' : ''"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="corpo" x-show="perg.abertas[p.id]" x-cloak>
+            <div class="resposta"><template x-for="(linha, i) in formataTexto(p.resposta)" :key="i"><div style="min-height:1.5em"><template x-for="(s, j) in linha" :key="j"><span :class="s.c" x-text="s.v"></span></template></div></template></div>
+            <div class="linha" style="margin-top:10px"><button type="button" class="btn leve mini" @click="repetePergunta(p)">Perguntar de novo</button></div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>

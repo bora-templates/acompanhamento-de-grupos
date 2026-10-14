@@ -1,0 +1,25 @@
+# dependências e builds (cada app reinstala e recompila)
+node_modules/
+.next/
+dist/
+build/
+*.tsbuildinfo
+coverage/
+
+# chaves e configuração de cada instalação — nunca vão pro repositório
+.env
+.env.*
+!.env.example
+.vercel/
+supabase/.temp/
+**/supabase/.temp/
+
+# sistema
+.DS_Store
+*.log
+
+# dados da empresa usados na montagem do site (tools/instalar/montar)
+empresa.json
+
+# o mapa de uma instalação (gerado pelo tools/instalar) — no repositório de trabalho não existe
+instalacao.json

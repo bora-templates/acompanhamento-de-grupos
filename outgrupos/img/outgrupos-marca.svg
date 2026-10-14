@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Grupos">
+  <defs>
+    <linearGradient id="fundo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2A55A8"/>
+      <stop offset="1" stop-color="#00133D"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#fundo)"/>
+  <path d="M17 15h30a5 5 0 0 1 5 5v15a5 5 0 0 1-5 5H34l-9 8v-8h-8a5 5 0 0 1-5-5V20a5 5 0 0 1 5-5z" fill="#F5F7FB"/>
+  <circle cx="24" cy="27.5" r="3" fill="#1C3E87"/>
+  <circle cx="32" cy="27.5" r="3" fill="#1C3E87"/>
+  <circle cx="40" cy="27.5" r="3" fill="#1C3E87"/>
+  <path d="M46 46a10 10 0 0 0 10-10" fill="none" stroke="#A7CEE5" stroke-width="3.5" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,9 @@
+{
+  "_leia": "Copie para empresa.json (fora do git) e troque os valores. Nunca coloque aqui a chave secreta (sb_secret_…).",
+  "%SUPABASE_URL%": "https://SEU_PROJETO.supabase.co",
+  "%SUPABASE_ANON_KEY%": "sb_publishable_COLE_AQUI",
+  "https://SEU_PROJETO.supabase.co": "https://SEU_PROJETO.supabase.co",
+  "%VAPID_PUBLIC_KEY%": "",
+  "app.seudominio.com.br": "app.suaempresa.com.br",
+  "%EMPRESA_NOME%": "Sua Empresa"
+}

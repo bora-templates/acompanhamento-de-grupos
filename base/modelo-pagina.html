@@ -1,0 +1,164 @@
+<!doctype html>
+<!--
+  ╔══════════════════════════════════════════════════════════════════════╗
+  ║  MODELO DE PÁGINA — Hub                                        ║
+  ║                                                                      ║
+  ║  COPIE este arquivo para criar uma tela nova que usa banco de dados. ║
+  ║  Já vem pronto com: login (sessão única), modal de "carregando"      ║
+  ║  bloqueante, leitura/gravação no Supabase e tratamento de erro.      ║
+  ║                                                                      ║
+  ║  Só mexa nos lugares marcados com  ✏️ TROQUE AQUI .                   ║
+  ║  Não precisa entender o resto — ele cuida do login e do banco.       ║
+  ╚══════════════════════════════════════════════════════════════════════╝
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- ✏️ TROQUE AQUI: título da aba -->
+<title>Minha Tela — Hub</title>
+<link rel="icon" href="/shared/favicon.svg">
+<style>
+  /* ── Estilo padrão do Hub (não precisa mexer) ── */
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#F5F6F8;--card:#fff;--bd:#E6E8EC;--ink:#101114;--mut:#6B7280;--acc:#1C3E87;--ok:#1a7f4b;--danger:#b42318}
+  body{font-family:-apple-system,'Segoe UI',Roboto,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  [x-cloak]{display:none!important}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 22px}
+  header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brand{font-size:13px;font-weight:800;letter-spacing:.4px;color:var(--mut)}
+  .brand a{color:var(--acc);text-decoration:none}
+  h1{font-size:24px;font-weight:800;margin:6px 0 2px}
+  .sub{color:var(--mut);font-size:13.5px;margin-bottom:22px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px}
+  .btn{background:var(--acc);color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn:hover{filter:brightness(1.08)} .btn:disabled{opacity:.6;cursor:default}
+  .btn.ghost{background:none;border:1px solid var(--bd);color:var(--ink)}
+  input,select{width:100%;background:#fff;border:1px solid var(--bd);border-radius:8px;padding:9px 11px;font-size:13.5px;color:var(--ink);outline:none}
+  input:focus,select:focus{border-color:var(--acc)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--bd)}
+  td{padding:11px 10px;border-bottom:1px solid var(--bd)}
+  .err{color:var(--danger);font-size:13px}
+  .gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+
+  /* ── Modal de "carregando" que trava a tela (padrão do Hub) ── */
+  .overlay{position:fixed;inset:0;background:rgba(16,17,20,.42);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .overlay .box{background:#fff;border-radius:14px;padding:22px 28px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);font-size:14px;font-weight:600}
+  .spin{width:24px;height:24px;border:3px solid var(--acc);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div x-data="pagina()" x-cloak>
+
+  <!-- Modal de carregando (aparece sozinho enquanto carrega/salva) -->
+  <div class="overlay" x-show="busy" x-cloak>
+    <div class="box"><span class="spin"></span> <span x-text="busyMsg"></span></div>
+  </div>
+
+  <!-- Sem login: manda para a porta de entrada do Hub -->
+  <div class="gate" x-show="ready && !authed">
+    <div class="card" style="max-width:360px">
+      <h1>Acesso restrito</h1>
+      <p class="sub" style="margin:8px 0 16px">Entre pelo Hub para abrir esta tela.</p>
+      <a class="btn" href="/">Ir para o login</a>
+    </div>
+  </div>
+
+  <!-- Conteúdo da tela (só aparece logado) -->
+  <div class="wrap" x-show="authed">
+    <header class="top">
+      <div class="brand"><a href="/">← Hub</a></div>
+    </header>
+
+    <!-- ✏️ TROQUE AQUI: título e subtítulo da tela -->
+    <h1>Minha Tela</h1>
+    <p class="sub">Descreva aqui o que esta tela faz.</p>
+
+    <div class="card">
+      <div x-show="erro" class="err" style="margin-bottom:10px" x-text="erro"></div>
+
+      <!-- Exemplo: lista de registros vindos do banco -->
+      <table>
+        <thead><tr><th>Nome</th><th>Criado em</th></tr></thead>
+        <tbody>
+          <template x-for="row in rows" :key="row.id">
+            <tr>
+              <!-- ✏️ TROQUE AQUI: nomes das colunas que você quer mostrar -->
+              <td x-text="row.nome"></td>
+              <td x-text="row.created_at"></td>
+            </tr>
+          </template>
+          <template x-if="!busy && rows.length === 0">
+            <tr><td colspan="2" style="text-align:center;color:var(--mut);padding:24px">Nenhum registro.</td></tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Supabase + camada compartilhada do Hub (NÃO remova, é o que dá login + banco) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/shared/os-core.js"></script>
+<script>
+  function pagina() {
+    // ✏️ TROQUE AQUI: nome da tabela no banco (schema hub). Ex.: 'clientes', 'colaboradores'…
+    const TABELA = 'colaboradores';
+
+    return {
+      ready: false, authed: false,     // estado do login
+      busy: false, busyMsg: 'Carregando…', // modal de carregando
+      rows: [], erro: '',
+
+      // Roda quando a página abre: confere o login e carrega os dados.
+      async init() {
+        try {
+          const session = (window.OS && window.OS.Auth) ? await OS.Auth.getSession() : null;
+          this.authed = !!session;
+        } catch (e) { this.authed = false; }
+        this.ready = true;
+        if (this.authed) await this.carregar();
+      },
+
+      // Lê os registros do banco. O modal de carregando aparece sozinho.
+      async carregar() {
+        this.busy = true; this.busyMsg = 'Carregando…'; this.erro = '';
+        try {
+          const { data, error } = await OS.getClient()
+            .from(TABELA)
+            .select('*')        // ✏️ TROQUE AQUI: troque '*' pelas colunas que precisa
+            .order('created_at', { ascending: false })
+            .limit(100);
+          if (error) throw error;
+          this.rows = data || [];
+        } catch (e) {
+          this.erro = 'Não consegui carregar: ' + (e.message || e);
+        } finally {
+          this.busy = false;
+        }
+      },
+
+      // EXEMPLO de como salvar/gravar no banco (chame de um botão @click="salvar(obj)").
+      // Deixei pronto pra você copiar quando precisar gravar algo.
+      async salvar(registro) {
+        this.busy = true; this.busyMsg = 'Salvando…'; this.erro = '';
+        try {
+          const { error } = await OS.getClient().from(TABELA).insert(registro);
+          if (error) throw error;
+          await this.carregar();   // recarrega a lista depois de salvar
+        } catch (e) {
+          this.erro = 'Não consegui salvar: ' + (e.message || e);
+          alert(this.erro);
+        } finally {
+          this.busy = false;
+        }
+      },
+    };
+  }
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

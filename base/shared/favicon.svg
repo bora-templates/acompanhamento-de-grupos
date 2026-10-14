@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Marca BoraIA centralizada, proporção oficial (círculo D, respiro D/6, meia-lua r=D/2) -->
+  <rect width="64" height="64" rx="14" fill="#00133D"/>
+  <circle cx="23.1" cy="32" r="11" fill="#F7F7F7"/>
+  <path d="M37.8 21a11 11 0 0 1 0 22z" fill="#F7F7F7"/>
+</svg>

@@ -1,0 +1,60 @@
+/* ============================================================
+   os-responsive.css — Camada de responsividade compartilhada
+   ------------------------------------------------------------
+   Pendurada automaticamente em TODA página do Hub pelo
+   build.sh (uma linha no <head>). Serve pra deixar os sistemas
+   utilizáveis no CELULAR sem mexer em cada tela.
+
+   REGRA DE OURO: tudo aqui é MOBILE-ONLY (só vale em telas
+   pequenas, <=820px). No computador nada muda — o desktop fica
+   exatamente como sempre foi.
+
+   Esta é a base CONSERVADORA (impede o "estouro" lateral e faz
+   mídia/tabelas caberem). O ajuste fino de cada sistema é feito
+   por dentro de cada um, por prioridade de uso.
+   ============================================================ */
+
+@media (max-width: 820px) {
+
+  /* 1) Nada vaza pros lados (era o que "cortava" e empurrava o
+        conteúdo pro lado no celular).
+        IMPORTANTE: só no `body`, NÃO no `html` — no iPhone o overflow no
+        `html` "corta" menus/gavetas que deslizam (position:fixed) e eles
+        deixam de aparecer. No body resolve o vazamento sem esse efeito. */
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* 2) Imagens, vídeos e afins nunca passam da largura da tela. */
+  img, video, canvas, iframe, svg {
+    max-width: 100%;
+  }
+
+  /* 3) Tabelas largas ganham rolagem lateral (o dedo arrasta)
+        em vez de estourar a tela e cortar as colunas. */
+  table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 5) SEM ZOOM SOZINHO NO IPHONE (28/09/2026, Samara: "entrei no app e a tela
+        já estava em zoom"). O Safari do iPhone dá zoom ao tocar num campo com
+        letra menor que 16px — e não volta. O login tinha 14px. Campo de digitar
+        no celular é 16px, sempre. (Não se trava o zoom da página: quem precisa
+        ampliar pra ler continua podendo.) */
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),
+  select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* 4) Blocos de código / textos pré-formatados também rolam
+        em vez de esticar a página. */
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+}

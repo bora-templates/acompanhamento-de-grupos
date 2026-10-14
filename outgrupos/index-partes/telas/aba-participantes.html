@@ -1,0 +1,40 @@
+<!-- ── aba Participantes: quem está no grupo, com o administrador do grupo primeiro ── -->
+<div x-show="aba === 'participantes'" x-cloak>
+  <div class="card">
+    <h2>Participantes
+      <span class="pill" x-show="part.estado === 'pronto'" x-text="numero(part.lista.length) + ' ' + plural(part.lista.length, 'pessoa', 'pessoas')"></span>
+      <span class="esp"></span>
+      <button type="button" class="btn leve mini" x-show="podeAdministrar" x-cloak :disabled="part.atualizando || grupo?.exemplo" @click="atualizaParticipantes()">
+        <span class="spin p" x-show="part.atualizando"></span><span x-text="part.atualizando ? 'Atualizando' : 'Atualizar pela uazapi'"></span></button>
+    </h2>
+    <p class="peq mut" x-show="grupo?.exemplo">O grupo de exemplo tem pessoas fictícias, então a lista não é atualizada pela uazapi.</p>
+    <div class="err" x-show="part.erroAtualiza" x-cloak role="alert" style="margin-top:10px" x-text="part.erroAtualiza"></div>
+
+    <div class="gbusca" style="margin:12px 0" x-show="part.lista.length > 6" x-cloak>
+      <input type="search" x-model="part.busca" placeholder="Buscar uma pessoa pelo nome ou pelo número" aria-label="Buscar uma pessoa pelo nome ou pelo número">
+    </div>
+
+    <div class="estado" x-show="part.estado === 'carregando'" role="status"><span class="spin"></span><span>Carregando os participantes</span></div>
+    <div class="err" x-show="part.estado === 'erro'" x-cloak role="alert" style="margin-top:10px">
+      <span x-text="'Não foi possível carregar os participantes. ' + part.erro"></span>
+      <button type="button" class="btn leve mini" @click="carregaParticipantes()">Tentar de novo</button>
+    </div>
+    <div class="vazio" x-show="part.estado === 'pronto' && !part.lista.length">
+      <b>Ainda não há participantes guardados para este grupo.</b>
+      <span x-show="podeAdministrar && !grupo?.exemplo">Use o botão Atualizar pela uazapi para buscar a lista.</span>
+    </div>
+    <div class="vazio" x-show="part.estado === 'pronto' && part.lista.length && !partFiltrados.length">Ninguém combina com essa busca.</div>
+    <div class="pessoas-g" x-show="part.estado === 'pronto' && partFiltrados.length" style="margin-top:12px">
+      <template x-for="p in partFiltrados" :key="p.jid">
+        <div class="pessoa-c">
+          <span class="avatar" :style="corAvatar(p.nome)" x-text="iniciais(p.nome || 'Participante')"></span>
+          <div style="min-width:0">
+            <b x-text="p.nome || (p.telefone ? 'Sem nome salvo' : 'Participante')"></b>
+            <small x-show="p.telefone" x-text="telefone(p.telefone)"></small>
+            <span class="pill acc" x-show="p.admin" style="margin-top:4px">administrador do grupo</span>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>

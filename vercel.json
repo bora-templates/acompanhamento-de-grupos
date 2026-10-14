@@ -1,0 +1,37 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "installCommand": "echo 'o Hub não tem dependências para instalar'",
+  "buildCommand": "node tools/vercel/montar.js",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "functions": {
+    "api/setup.js": {
+      "maxDuration": 300,
+      "includeFiles": "{base/shared/os-core.js,base/shared/os-avisos.js,base/produtos/index.html,{base,outassistenteia,outchat,outcopiloto,outfunnels,outgrupos,outjourney,outpeople,outperformance,outprocessos,outprojetos,outsign}/{sistema.json,banco/**,supabase/**}}"
+    },
+    "api/[rota].js": {
+      "maxDuration": 60
+    }
+  },
+  "headers": [
+    {
+      "source": "/setup/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
+  ]
+}

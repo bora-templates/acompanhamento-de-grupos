@@ -1,0 +1,122 @@
+{
+  "_leia": "A BASE vai em toda instalação (não é módulo à venda): login, usuários e acessos, avisos, conta, o catálogo de produtos e o envio de e-mail.  A base é dividida em PEÇAS (\"pecas\"): o essencial vai sempre; as outras só quando um módulo da compra usa (o \"base_pecas\" do sistema.json de cada módulo). Lido pela montagem do site, pelo instalador do banco e pelo pacote.",
+  "id": "base",
+  "nome": "Base compartilhada",
+  "o_que": "Login e primeiro acesso, usuários e acessos, avisos, conta, o catálogo de produtos (/produtos/) e o envio de e-mail. Vai em toda instalação. (O assistente de IA ✦ é o módulo OutAssistenteIA.)",
+  "versao": "1.1.0",
+  "enderecos": [
+    [
+      "base",
+      ""
+    ]
+  ],
+  "precisa": [],
+  "base": true,
+  "pecas": {
+    "essencial": {
+      "nome": "Essencial",
+      "sempre": true,
+      "o_que": "Login e primeiro acesso, usuários e acessos (a tela Usuários), o os-core e o visual comum, a conta, as novidades, instalar como app (PWA) e o Início. No banco: tudo que os módulos escrevem sem saber se as outras peças vieram — inclusive a fila dos avisos (hub.notificacoes, hub.avisar) e a do e-mail (hub.email_outbox).",
+      "arquivos": "tudo o que está em base/ e não está em nenhuma das outras peças",
+      "funcoes": [
+        "primeiro-acesso",
+        "admin-usuarios",
+        "admin-reset-password",
+        "admin-generate-link",
+        "app-convite"
+      ],
+      "banco": [
+        "banco/estrutura.sql"
+      ]
+    },
+    "avisos": {
+      "nome": "Avisos",
+      "o_que": "A central de avisos (o sino de toda tela e do Início) e o aviso no celular (Web Push, Edge Function app-push). Sem ela, o sino não aparece; os avisos continuam sendo gravados (a fila é do essencial) e aparecem quando a peça vier.",
+      "arquivos": [
+        "shared/os-avisos.js",
+        "supabase/functions/app-push"
+      ],
+      "funcoes": [
+        "app-push"
+      ],
+      "banco": [],
+      "marcadores": [
+        "hub\\.avisar\\b",
+        "avisar_por_nome",
+        "\\bnotificacoes\\b",
+        "os-avisos",
+        "OSAvisos",
+        "app-push",
+        "app_push"
+      ]
+    },
+    "email": {
+      "nome": "Envio de e-mail",
+      "o_que": "Quem ENVIA a fila de e-mails (hub.email_outbox) dos módulos: a Edge Function email-envio (Resend). Sem ela, os e-mails ficam na fila. (Os e-mails do LOGIN — convite, senha — são do Supabase Auth e vão no essencial.)",
+      "arquivos": [
+        "supabase/functions/email-envio"
+      ],
+      "funcoes": [
+        "email-envio"
+      ],
+      "banco": [],
+      "marcadores": [
+        "email_outbox",
+        "email-envio"
+      ]
+    },
+    "produtos": {
+      "nome": "Catálogo de produtos",
+      "o_que": "O catálogo /produtos/ (escada de valor, jornada de entrega de cada produto, ficha pública do parceiro em /produto/) e o banco dele (hub.oj_produtos e o que é dele, hub.produtos, o balde 'produtos').",
+      "arquivos": [
+        "produtos",
+        "banco/pecas/produtos.sql",
+        "banco/estrutura/11-produtos-catalogo.sql"
+      ],
+      "enderecos": [
+        [
+          "base/produtos/publico.html",
+          "produto/index.html"
+        ]
+      ],
+      "funcoes": [],
+      "banco": [
+        "banco/pecas/produtos.sql"
+      ],
+      "assinatura": "hub.oj_produtos",
+      "precisa": [
+        "email"
+      ],
+      "por_que_precisa": {
+        "email": "o convite do parceiro da ficha pública sai pela fila de e-mail"
+      },
+      "marcadores": [
+        "\\boj_produtos?\\b",
+        "\\boj_produto_\\w+",
+        "\\boj_produtos_\\w+",
+        "\\bhub\\.produtos\\b",
+        "['\"]/produtos/",
+        "href=\"/produtos"
+      ]
+    },
+    "comercial": {
+      "nome": "Agenda comercial",
+      "o_que": "A agenda de calls do comercial (hub.agendamentos), as situações do agendamento (hub.status_agendamento) e os funis de venda (hub.vendas_funis). Só banco: o OutFunnels e o OutPerformance leem os mesmos, e cada um funciona sem o outro.",
+      "arquivos": [
+        "banco/pecas/comercial.sql",
+        "banco/estrutura/12-comercial-catalogos.sql"
+      ],
+      "funcoes": [],
+      "banco": [
+        "banco/pecas/comercial.sql"
+      ],
+      "assinatura": "hub.status_agendamento",
+      "marcadores": [
+        "\\bhub\\.agendamentos\\b",
+        "from\\(['\"]agendamentos['\"]\\)",
+        "\\bstatus_agendamento\\b",
+        "\\bvendas_funis\\b"
+      ]
+    }
+  }
+}

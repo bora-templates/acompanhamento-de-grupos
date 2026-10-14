@@ -1,0 +1,183 @@
+<!-- ═══════════════════════ AJUSTES (só quem configura): WhatsApp, IA, transcrição e exemplo ═══════════════════════ -->
+<section x-show="rota === 'ajustes'" x-cloak class="entra">
+  <div class="hero"><div class="over">Acompanhamento de Grupos no WhatsApp com IA</div><h1>Ajustes</h1>
+    <p>Ligue o WhatsApp, escolha a IA e o serviço de transcrição de áudio. Tokens e chaves ficam guardados no servidor e nunca voltam para esta tela.</p></div>
+
+  <div class="estado" x-show="carga.painel === 'carregando'" role="status"><span class="spin"></span><span>Carregando os ajustes</span></div>
+  <div class="err" x-show="carga.painel === 'erro'" x-cloak role="alert">
+    <span x-text="'Não foi possível abrir os ajustes. ' + cargaErro.painel"></span>
+    <button type="button" class="btn leve mini" @click="carregaPainel()">Tentar de novo</button>
+  </div>
+  <div class="aviso" x-show="painel && !podeConfigurar" x-cloak>Só quem administra o Hub abre os Ajustes. <a class="lnk" href="#grupos">Voltar para os grupos</a></div>
+
+  <template x-if="painel && podeConfigurar">
+    <div>
+      <nav class="abas" role="tablist" aria-label="Seções dos ajustes">
+        <template x-for="s in secoesAjustes" :key="s.chave">
+          <a class="aba" role="tab" :href="'#ajustes/' + s.chave" :class="{ ativa: secao === s.chave }" :aria-selected="secao === s.chave ? 'true' : 'false'">
+            <span x-text="s.rotulo"></span><span class="ponto-ok" x-show="s.ok" title="Pronto"></span><span class="sr-so" x-show="s.ok"> (pronto)</span></a>
+        </template>
+      </nav>
+
+      <!-- ── WhatsApp ── -->
+      <div x-show="secao === 'whatsapp'">
+        <div class="card">
+          <h2>WhatsApp pela uazapi</h2>
+          <p class="peq mut" style="margin-bottom:12px">Informe o endereço do servidor e o token da instância. A solução confere a conexão, mostra o QR quando o número ainda não está conectado e cadastra sozinha o endereço que recebe as mensagens.</p>
+          <div class="estado-wa">
+            <span class="pill" :class="waRotulo.classe"><span class="ponto"></span><span x-text="waRotulo.texto"></span></span>
+            <span class="peq" x-show="wa.estado === 'conectado' && wa.numero" x-text="'O número conectado é ' + telefone(wa.numero) + '.'"></span>
+            <span class="peq" style="color:var(--risk)" x-show="wa.estado === 'erro' && ajustes.whatsapp_erro" x-text="ajustes.whatsapp_erro"></span>
+            <button type="button" class="btn leve mini" x-show="ajustes.whatsapp_configurado" x-cloak :disabled="wa.consultando" @click="atualizaWhatsapp(false)">
+              <span class="spin p" x-show="wa.consultando"></span><span>Conferir de novo</span></button>
+          </div>
+
+          <form class="pilha" novalidate autocomplete="off" @submit.prevent="salvaWhatsapp()" @input="wa.erro = ''; wa.precisaConfirmar && cancelaTroca()">
+            <label class="rot">Endereço do servidor da uazapi
+              <input id="og-wa-servidor" type="url" x-model="wa.servidor" @input="wa.tokenExigido = false" placeholder="https://seu-servidor.exemplo.com" autocomplete="off" spellcheck="false" inputmode="url"></label>
+            <div>
+              <div class="salvo" x-show="ajustes.whatsapp_configurado && !waPedeToken" x-cloak>
+                <svg class="i" viewBox="0 0 24 24" style="stroke-width:2.4"><path d="M5 12l4 4 10-10"/></svg><span>O token está salvo no servidor.</span>
+                <button type="button" class="btn leve mini" @click="wa.trocandoToken = true; focaCampo('og-wa-token')">Trocar o token</button>
+              </div>
+              <div class="aviso" x-show="waMotivoToken" x-cloak role="status" style="margin-bottom:8px" x-text="waMotivoToken"></div>
+              <label class="rot secreto" x-show="waPedeToken">Token da instância
+                <input id="og-wa-token" type="password" x-model="wa.token" autocomplete="new-password" data-lpignore="true" data-1p-ignore spellcheck="false" placeholder="Cole o token da instância"></label>
+              <p class="dica" x-show="waPedeToken">O token fica guardado no servidor e nunca volta para esta tela.</p>
+            </div>
+            <div class="linha">
+              <button type="submit" class="btn" :disabled="wa.salvando">
+                <span class="spin p" x-show="wa.salvando" style="border-color:#fff;border-top-color:transparent"></span><span x-text="wa.salvando ? 'Conectando' : 'Salvar e conectar'"></span></button>
+              <button type="button" class="btn leve" x-show="wa.trocandoToken && !waServidorMudou && !wa.tokenExigido" x-cloak @click="wa.trocandoToken = false; wa.token = ''">Manter o token salvo</button>
+            </div>
+          </form>
+
+          <div class="aviso" x-show="wa.precisaConfirmar" x-cloak style="margin-top:14px" role="alert">
+            <p><b x-text="wa.avisoTroca || 'Esta instância já manda as mensagens para outro endereço. Se você trocar, aquele sistema deixa de receber as mensagens deste número.'"></b></p>
+            <p style="margin-top:4px" x-show="wa.webhookAtual">A instância envia hoje para <b x-text="wa.webhookAtual"></b>.</p>
+            <div class="linha" style="margin-top:10px">
+              <button type="button" class="btn" :disabled="wa.salvando" @click="salvaWhatsapp(true)">Trocar para esta instalação</button>
+              <button type="button" class="btn leve" :disabled="wa.salvando" @click="cancelaTroca()">Cancelar</button>
+            </div>
+          </div>
+          <div class="err" x-show="wa.erro" x-cloak role="alert" style="margin:14px 0 0" x-text="wa.erro"></div>
+
+          <!-- número já conectado: mostra o número e vai direto para Escolher grupos, sem QR -->
+          <div class="ok-msg" x-show="wa.estado === 'conectado'" x-cloak style="margin-top:14px" role="status">
+            <div class="linha entre">
+              <span x-text="'WhatsApp conectado' + (wa.numero ? ' ao número ' + telefone(wa.numero) : '') + '.'"></span>
+              <button type="button" class="btn" @click="abreEscolher()">Escolher grupos</button>
+            </div>
+          </div>
+
+          <!-- número ainda não conectado: o QR, atualizado a cada 20 segundos -->
+          <div class="qr-box" x-show="wa.estado === 'aguardando_qr'" x-cloak>
+            <div class="qr">
+              <template x-if="wa.qr"><img :src="wa.qr" alt="QR para conectar o WhatsApp"></template>
+              <span class="peq" style="color:#4A5368" x-show="!wa.qr">Gerando o QR</span>
+            </div>
+            <div>
+              <ol>
+                <li>Abra o WhatsApp no celular.</li>
+                <li>Toque em Aparelhos conectados.</li>
+                <li>Toque em Conectar um aparelho e leia este código.</li>
+              </ol>
+              <div class="linha" style="margin-top:12px">
+                <button type="button" class="btn leve mini" :disabled="wa.consultando" @click="atualizaWhatsapp(false)">
+                  <span class="spin p" x-show="wa.consultando"></span><span>Atualizar o QR</span></button>
+                <span class="peq mut" x-text="'O código é atualizado sozinho em ' + wa.restante + ' s.'"></span>
+              </div>
+              <p class="dica" x-show="wa.erroEstado" x-text="wa.erroEstado + ' A tela tenta de novo em alguns segundos.'"></p>
+            </div>
+          </div>
+          <div class="ok-msg" x-show="wa.ok && wa.estado !== 'conectado'" x-cloak style="margin-top:14px" x-text="wa.ok"></div>
+        </div>
+      </div>
+
+      <!-- ── IA ── -->
+      <div x-show="secao === 'ia'" x-cloak>
+        <div class="card">
+          <h2>IA dos resumos e das perguntas</h2>
+          <p class="peq mut" style="margin-bottom:12px">Escolha o provedor e o modelo. A chave fica guardada no servidor e nunca volta para esta tela.</p>
+          <form class="pilha" novalidate autocomplete="off" @submit.prevent="salvaIa()" @input="ia.erro = ''">
+            <div class="grade2">
+              <label class="rot">Provedor
+                <select x-model="ia.provedor" @change="ia.chaveExigida = false">
+                  <option value="openai">OpenAI</option><option value="anthropic">Claude</option>
+                  <option value="deepseek">DeepSeek</option><option value="compativel">Compatível com OpenAI</option>
+                </select></label>
+              <label class="rot">Modelo
+                <input type="text" x-model="ia.modelo" list="og-modelos" placeholder="Escolha uma sugestão ou escreva o modelo" autocomplete="off" spellcheck="false">
+                <datalist id="og-modelos"><template x-for="m in iaModelosSugeridos" :key="m"><option :value="m"></option></template></datalist>
+                <span class="dica" x-show="iaTemModeloPadrao" style="text-transform:none;letter-spacing:0;font-weight:400">Se você deixar em branco, a solução usa o modelo padrão deste provedor.</span></label>
+            </div>
+            <label class="rot" x-show="ia.provedor === 'compativel'" x-cloak>Endereço da API
+              <input id="og-ia-url" type="url" x-model="ia.url" @input="ia.chaveExigida = false" placeholder="https://api.exemplo.com/v1" autocomplete="off" spellcheck="false" inputmode="url"></label>
+            <div>
+              <div class="salvo" x-show="!iaPedeChave" x-cloak>
+                <svg class="i" viewBox="0 0 24 24" style="stroke-width:2.4"><path d="M5 12l4 4 10-10"/></svg><span>A chave está salva no servidor.</span>
+                <button type="button" class="btn leve mini" @click="ia.trocandoChave = true; focaCampo('og-ia-chave')">Trocar a chave</button>
+              </div>
+              <div class="aviso" x-show="iaMotivoChave" x-cloak role="status" style="margin-bottom:8px" x-text="iaMotivoChave"></div>
+              <label class="rot secreto" x-show="iaPedeChave">Chave da IA
+                <input id="og-ia-chave" type="password" x-model="ia.chave" autocomplete="new-password" data-lpignore="true" data-1p-ignore spellcheck="false" placeholder="Cole a chave do provedor"></label>
+            </div>
+            <div class="linha">
+              <button type="submit" class="btn" :disabled="ia.salvando || ia.testando">
+                <span class="spin p" x-show="ia.salvando" style="border-color:#fff;border-top-color:transparent"></span><span x-text="ia.salvando ? 'Salvando' : 'Salvar'"></span></button>
+              <button type="button" class="btn leve" :disabled="ia.testando || ia.salvando || !ajustes.ia_configurada || iaMudou" @click="testaIa()">
+                <span class="spin p" x-show="ia.testando"></span><span x-text="ia.testando ? 'Testando' : 'Testar a IA'"></span></button>
+              <button type="button" class="btn leve" x-show="ia.trocandoChave && ajustes.ia_configurada && !iaTrocouProvedor && !iaTrocouUrl && !ia.chaveExigida" x-cloak @click="ia.trocandoChave = false; ia.chave = ''">Manter a chave salva</button>
+            </div>
+            <p class="dica" x-show="iaMudou && ajustes.ia_configurada">Salve as mudanças antes de testar a IA.</p>
+          </form>
+          <div class="err" x-show="ia.erro" x-cloak role="alert" style="margin:14px 0 0" x-text="ia.erro"></div>
+          <div class="ok-msg" x-show="ia.ok" x-cloak style="margin-top:14px" x-text="ia.ok"></div>
+          <div class="info" x-show="ia.teste" x-cloak style="margin-top:14px"><b>A IA respondeu:</b> <span style="white-space:pre-wrap;overflow-wrap:anywhere" x-text="ia.teste"></span></div>
+        </div>
+      </div>
+
+      <!-- ── Transcrição de áudio ── -->
+      <div x-show="secao === 'transcricao'" x-cloak>
+        <div class="card">
+          <h2>Transcrição de áudio</h2>
+          <p class="peq mut" style="margin-bottom:12px">Os áudios dos grupos viram texto em português para entrar nos resumos e nas respostas. Sem este serviço, os áudios ficam guardados sem transcrição.</p>
+          <form class="pilha" novalidate autocomplete="off" @submit.prevent="salvaTranscricao()" @input="tr.erro = ''">
+            <label class="rot" style="max-width:340px">Serviço
+              <select x-model="tr.provedor"><option value="groq">Groq</option><option value="openai">OpenAI</option></select></label>
+            <div>
+              <label class="chk" x-show="trPodeUsarChaveDaIa" x-cloak style="margin-bottom:10px"><input type="checkbox" x-model="tr.usarChaveIa"> Usar a mesma chave da IA</label>
+              <div class="salvo" x-show="!trPedeChave && !(tr.usarChaveIa && trPodeUsarChaveDaIa)" x-cloak>
+                <svg class="i" viewBox="0 0 24 24" style="stroke-width:2.4"><path d="M5 12l4 4 10-10"/></svg><span>A chave está salva no servidor.</span>
+                <button type="button" class="btn leve mini" @click="tr.trocandoChave = true; focaCampo('og-tr-chave')">Trocar a chave</button>
+              </div>
+              <label class="rot secreto" x-show="trPedeChave && !(tr.usarChaveIa && trPodeUsarChaveDaIa)">Chave do serviço de transcrição
+                <input id="og-tr-chave" type="password" x-model="tr.chave" autocomplete="new-password" data-lpignore="true" data-1p-ignore spellcheck="false" placeholder="Cole a chave do serviço"></label>
+            </div>
+            <div class="linha">
+              <button type="submit" class="btn" :disabled="tr.salvando">
+                <span class="spin p" x-show="tr.salvando" style="border-color:#fff;border-top-color:transparent"></span><span x-text="tr.salvando ? 'Salvando' : 'Salvar'"></span></button>
+              <button type="button" class="btn leve" x-show="tr.trocandoChave && ajustes.transcricao_configurada" x-cloak @click="tr.trocandoChave = false; tr.chave = ''">Manter a chave salva</button>
+            </div>
+          </form>
+          <div class="err" x-show="tr.erro" x-cloak role="alert" style="margin:14px 0 0" x-text="tr.erro"></div>
+          <div class="ok-msg" x-show="tr.ok" x-cloak style="margin-top:14px" x-text="tr.ok"></div>
+        </div>
+      </div>
+
+      <!-- ── Grupo de exemplo ── -->
+      <div x-show="secao === 'exemplo'" x-cloak>
+        <div class="card">
+          <h2>Grupo de exemplo</h2>
+          <p class="peq mut">Com o grupo de exemplo você vê o resumo e as perguntas funcionando antes de ligar o WhatsApp. Ele traz pessoas e uma conversa fictícias de uma clínica de estética, sempre marcadas como exemplo, e nenhuma mensagem sai dele.</p>
+          <div class="linha" style="margin-top:14px">
+            <button type="button" class="btn" x-show="!temExemplo" x-cloak :disabled="!podeAdministrar" @click="carregaExemplo()">Carregar o grupo de exemplo</button>
+            <a class="btn" x-show="temExemplo" x-cloak :href="'#grupo/' + (grupoExemplo ? grupoExemplo.id : '')">Abrir o grupo de exemplo</a>
+            <button type="button" class="btn leve" x-show="temExemplo" x-cloak :disabled="!podeAdministrar" @click="carregaExemplo()">Recarregar com horários de agora</button>
+            <button type="button" class="btn perigo" x-show="temExemplo" x-cloak :disabled="!podeAdministrar" @click="pedeApagarExemplo()">Apagar o grupo de exemplo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+</section>

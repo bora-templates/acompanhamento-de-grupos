@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Instalar o app · Hub</title>
+<link rel="icon" type="image/svg+xml" href="/shared/favicon.svg">
+<!--
+  APP NO CELULAR — passo 2 do convite (28/09/2026)
+  Desenho aprovado: https://claude.ai/artifact/3aQ8bt6GkZrXDsCFZ7icEC
+  A pessoa acabou de criar a senha pelo link (/entrar/?c=…). Aqui ela coloca o
+  app na tela de início e liga os avisos. No iPhone os avisos SÓ funcionam
+  abrindo pelo ícone (regra da Apple), por isso o botão de ligar só aparece lá.
+-->
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#F7F7F7;--card:#FFFFFF;--bd:#ECEEF1;--ink:#0A0A0B;--mut:#5A5E66;--ok:#4A8E6F;--danger:#B85450}
+  body{font-family:-apple-system,"SF Pro Text","SF Pro Display",system-ui,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;justify-content:center;padding:calc(40px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom))}
+  .pag{width:100%;max-width:420px;display:flex;flex-direction:column;gap:20px}
+  .over{font-size:12px;font-weight:600;color:var(--mut);letter-spacing:.04em}
+  h1{font-size:26px;font-weight:500;line-height:1.2;margin-top:8px}
+  .sub{font-size:15px;color:var(--mut);line-height:1.5;margin-top:8px}
+  .seg{display:flex;background:var(--bd);border-radius:10px;padding:3px}
+  .seg button{flex:1;border:0;background:transparent;padding:10px 0;border-radius:8px;font:600 14px/1 inherit;color:var(--ink);font-family:inherit;cursor:pointer;min-height:44px}
+  .seg button[aria-pressed="true"]{background:#fff;box-shadow:0 1px 2px rgba(10,10,11,.08)}
+  .passos{background:var(--card);border-radius:14px;padding:4px 16px;list-style:none}
+  .passos li{display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid #F1F2F4;font-size:15px;line-height:1.45}
+  .passos li:last-child{border-bottom:0}
+  .n{width:30px;height:30px;border-radius:15px;background:var(--bd);color:#3A3D44;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .aviso{background:#FFF6DC;border:1px solid #EED7A4;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.5}
+  .btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border:0;border-radius:12px;background:var(--ink);color:#F7F7F7;font-size:16px;font-weight:600;font-family:inherit;text-decoration:none;cursor:pointer}
+  .btn.sec{background:#fff;color:var(--ink);border:1px solid #D4D7DC}
+  .btn:disabled{opacity:.6}
+  .msg{font-size:14px;line-height:1.5;text-align:center}
+  .msg.err{color:var(--danger)} .msg.ok{color:var(--ok)}
+  .fim{flex:1}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<script>window.OS_NO_BACK = true; window.OS_SEM_FAIXA_AVISOS = true; window.OS_SEM_BARRA = true; /* esta página já tem o botão de ligar */</script>
+<main class="pag">
+  <!-- aberto pelo ÍCONE: só falta ligar os avisos -->
+  <section id="noApp" hidden>
+    <div class="over">ÚLTIMO PASSO</div>
+    <h1>Ligue os avisos de mensagem</h1>
+    <p class="sub">Assim você fica sabendo na hora quando um cliente escrever, mesmo com o celular bloqueado.</p>
+  </section>
+
+  <!-- aberto no NAVEGADOR: ensinar a instalar -->
+  <section id="noNavegador">
+    <div class="over">FALTA UM PASSO</div>
+    <h1>Coloque o app na tela de início</h1>
+    <p class="sub">Assim ele abre como um app e você recebe aviso de mensagem nova.</p>
+  </section>
+
+  <div class="seg" id="seg" role="group" aria-label="Qual é o seu celular">
+    <button type="button" data-so="iphone" aria-pressed="true">iPhone</button>
+    <button type="button" data-so="android" aria-pressed="false">Android</button>
+  </div>
+
+  <!-- iPhone: dentro do WhatsApp/Instagram NÃO dá pra instalar (a Apple só deixa
+       pelo Safari). O endereço x-safari-(link da casa) abre a mesma página no Safari
+       (iOS 17+). Lá a pessoa entra com o e-mail e a senha que acabou de criar. -->
+  <div id="safariBox" class="aviso" style="background:#fff;border-color:#D4D7DC" hidden>
+    <b>Abriu pelo WhatsApp?</b> De lá o iPhone não deixa instalar. Toque abaixo pra abrir no Safari
+    (depois entre com seu e-mail e a senha que você criou). Já está no Safari? Pule este passo.
+    <a class="btn" id="abrirSafari" href="#" style="margin-top:12px">Abrir no Safari</a>
+  </div>
+
+  <ol class="passos" id="passos"></ol>
+
+  <div class="aviso" id="avisoIphone">
+    No iPhone, os avisos só funcionam depois deste passo, e precisa ser pelo <b>Safari</b>.
+    Se o botão "Abrir no Safari" não funcionar, toque em <b>⋯</b> (ou na bússola) no canto da tela e escolha
+    <b>Abrir no Safari</b>. Ou digite no Safari: <b id="enderecoInstalar"></b>
+  </div>
+
+  <div class="fim"></div>
+
+  <div id="msg" class="msg" role="status"></div>
+  <button class="btn" id="instalarAndroid" type="button" hidden>Instalar o app</button>
+  <button class="btn" id="ligar" type="button" hidden>Ligar avisos</button>
+  <a class="btn sec" id="pular" href="/">Agora não, ir para o sistema</a>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/shared/os-core.js"></script>
+<script>
+  var PASSOS = {
+    iphone: [
+      'Toque no botão Compartilhar, o quadrado com a seta para cima, embaixo da tela.',
+      'Role e toque em “Adicionar à Tela de Início”.',
+      'Feche o Safari e abra pelo ícone do app.'
+    ],
+    android: [
+      'Toque nos três pontinhos no canto de cima do Chrome.',
+      'Toque em “Instalar app” ou “Adicionar à tela inicial”.',
+      'Abra pelo ícone do app.'
+    ]
+  };
+  var $ = function (id) { return document.getElementById(id); };
+  // regra: o endereço sai do OS.link, nunca escrito à mão
+  $('abrirSafari').href = 'x-safari-' + OS.link('/instalar/');
+  $('enderecoInstalar').textContent = OS.link('/instalar').replace(/^https?:\/\//, '');
+
+  function mostra(so) {
+    document.querySelectorAll('#seg button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.so === so)); });
+    $('passos').innerHTML = PASSOS[so].map(function (t, i) {
+      return '<li><span class="n">' + (i + 1) + '</span><span>' + t + '</span></li>';
+    }).join('');
+    $('avisoIphone').hidden = so !== 'iphone';
+    $('safariBox').hidden = so !== 'iphone' || OS.app.instalado();
+  }
+  document.querySelectorAll('#seg button').forEach(function (b) { b.onclick = function () { mostra(b.dataset.so); }; });
+
+  // Android/Chrome oferece instalar direto: vira um botão
+  var pedidoInstalar = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); pedidoInstalar = e; $('instalarAndroid').hidden = false;
+  });
+  $('instalarAndroid').onclick = async function () {
+    if (!pedidoInstalar) return;
+    pedidoInstalar.prompt();
+    try { await pedidoInstalar.userChoice; } catch (e) {}
+    pedidoInstalar = null; $('instalarAndroid').hidden = true;
+    $('msg').className = 'msg ok'; $('msg').textContent = 'Pronto! Agora abra pelo ícone do app.';
+  };
+
+  $('ligar').onclick = async function () {
+    var b = $('ligar'), m = $('msg');
+    b.disabled = true; b.textContent = 'Ligando…'; m.className = 'msg'; m.textContent = '';
+    try {
+      await OS.app.ligarNotificacoes();
+      m.className = 'msg ok'; m.textContent = 'Pronto! Os avisos vão chegar neste celular.';
+      setTimeout(function () { location.href = '/'; }, 1200);
+    } catch (e) {
+      b.disabled = false; b.textContent = 'Tentar de novo';
+      m.className = 'msg err'; m.textContent = (e && e.message) || 'Não deu pra ligar os avisos.';
+    }
+  };
+
+  (async function () {
+    var s = null;
+    try { s = await OS.Auth.getSession(); } catch (e) {}
+    if (!s) { location.replace(OS.comVolta('/')); return; }
+
+    var android = /Android/.test(navigator.userAgent);
+    mostra(android ? 'android' : 'iphone');
+
+    if (OS.app.instalado()) {
+      // abriu pelo ícone: esconde o passo a passo, mostra só o botão de ligar
+      $('noApp').hidden = false; $('noNavegador').hidden = true;
+      $('seg').hidden = true; $('passos').hidden = true; $('avisoIphone').hidden = true; $('safariBox').hidden = true;
+      if ('Notification' in window && Notification.permission === 'granted' && OS.app.notificacoesLigadas()) {
+        location.replace('/'); return;
+      }
+      $('ligar').hidden = false;
+      $('pular').textContent = 'Agora não';
+    } else if (!OS.app.iphone() && 'Notification' in window && 'PushManager' in window) {
+      // Android e computador também recebem aviso pelo navegador
+      $('ligar').hidden = false;
+      $('ligar').textContent = 'Ligar avisos neste navegador';
+    }
+  })();
+</script>
+</body>
+</html>

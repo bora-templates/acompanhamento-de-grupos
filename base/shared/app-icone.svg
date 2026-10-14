@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Ícone do app (29/09/2026, opção A aprovada): azul profundo, a marca BoraIA
+       CENTRALIZADA na proporção oficial (a do #osmark do launcher: círculo D,
+       respiro D/6, meia-lua de raio D/2) e as 5 frentes embaixo. Fundo inteiro,
+       sem cantos: o iPhone/Android arredondam sozinhos. -->
+  <rect width="1024" height="1024" fill="#00133D"/>
+  <circle cx="398.5" cy="496" r="170" fill="#F7F7F7"/>
+  <path d="M625.2 326a170 170 0 0 1 0 340z" fill="#F7F7F7"/>
+  <rect x="228" y="760" width="104" height="14" rx="7" fill="#BBB2DC"/>
+  <rect x="342" y="760" width="104" height="14" rx="7" fill="#9CB2D4"/>
+  <rect x="456" y="760" width="112" height="14" rx="7" fill="#B8E9DE"/>
+  <rect x="578" y="760" width="104" height="14" rx="7" fill="#EED7A4"/>
+  <rect x="692" y="760" width="104" height="14" rx="7" fill="#EABAAA"/>
+</svg>

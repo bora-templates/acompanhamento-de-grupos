@@ -1,0 +1,360 @@
+<!doctype html>
+<!--
+  Minha Conta — Hub
+  Página do próprio usuário (qualquer subsistema): trocar a senha.
+  Servida em /conta/ (a montagem do site copia esta pasta para /conta/).
+  Login único via /shared/os-core.js. NÃO tem login próprio.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minha Conta — Hub</title>
+<link rel="icon" type="image/svg+xml" href="/shared/favicon.svg">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#F5F6F8;--card:#fff;--bd:#E6E8EC;--ink:#101114;--mut:#6B7280;--acc:#1C3E87;--ok:#1a7f4b;--danger:#b42318}
+  body{font-family:-apple-system,'Segoe UI',Roboto,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  [x-cloak]{display:none!important}
+  .wrap{max-width:560px;margin:0 auto;padding:32px 22px}
+  header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brand{font-size:13px;font-weight:800;letter-spacing:.4px;color:var(--mut)}
+  .brand a{color:var(--acc);text-decoration:none}
+  h1{font-size:24px;font-weight:800;margin:6px 0 2px}
+  .sub{color:var(--mut);font-size:13.5px;margin-bottom:22px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px}
+  .btn{background:var(--acc);color:#fff;border:none;border-radius:9px;padding:10px 16px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn:hover{filter:brightness(1.08)} .btn:disabled{opacity:.6;cursor:default}
+  .btn.ghost{background:none;border:1px solid var(--bd);color:var(--ink)}
+  label.fl{display:block;font-size:11.5px;color:var(--mut);font-weight:600;margin:14px 0 5px}
+  input{width:100%;background:#fff;border:1px solid var(--bd);border-radius:8px;padding:10px 11px;font-size:14px;color:var(--ink);outline:none}
+  input:focus{border-color:var(--acc)}
+  input:disabled{background:#f3f4f6;color:var(--mut)}
+  .err{color:var(--danger);font-size:13px;margin-top:12px}
+  .ok{color:var(--ok);font-size:13.5px;font-weight:600;margin-top:12px}
+  .hint{color:var(--mut);font-size:12px;margin-top:5px}
+  .gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
+  .overlay{position:fixed;inset:0;background:rgba(16,17,20,.42);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .overlay .box{background:#fff;border-radius:14px;padding:22px 28px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);font-size:14px;font-weight:600}
+  .spin{width:24px;height:24px;border:3px solid var(--acc);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .avwrap{display:flex;align-items:center;gap:16px;margin-top:14px}
+  .avpic{width:84px;height:84px;border-radius:50%;object-fit:cover;border:1px solid var(--bd);background:#eef0f3;flex:0 0 auto}
+  .avinit{width:84px;height:84px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--acc);color:#fff;font-weight:800;font-size:28px;flex:0 0 auto}
+  /* paleta de cor pessoal — mesmo desenho dos swatches do Journey */
+  .swatches{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;max-width:340px}
+  .sw{height:30px;border-radius:8px;border:2px solid transparent;cursor:pointer;padding:0}
+  .sw:hover{transform:scale(1.06)}
+  .sw:disabled{cursor:default;opacity:.6}
+  .sw{display:flex;gap:10px;align-items:flex-start;margin-top:14px;cursor:pointer;font-size:13.5px}
+  .sw input{width:auto;margin-top:2px;flex:0 0 auto;accent-color:var(--acc)}
+  .sw .hint{display:block}
+</style>
+</head>
+<body>
+
+<div x-data="conta()" x-cloak>
+
+  <!-- Modal de carregando -->
+  <div class="overlay" x-show="busy" x-cloak>
+    <div class="box"><span class="spin"></span> <span x-text="busyMsg"></span></div>
+  </div>
+
+  <!-- Sem login -->
+  <div class="gate" x-show="ready && !authed">
+    <div class="card" style="max-width:360px">
+      <h1>Acesso restrito</h1>
+      <p class="sub" style="margin:8px 0 16px">Entre pelo Hub para abrir sua conta.</p>
+      <a class="btn" href="/">Ir para o login</a>
+    </div>
+  </div>
+
+  <!-- Conteúdo -->
+  <div class="wrap" x-show="authed">
+    <header class="top">
+      <div class="brand"><a href="/">← Hub</a> · Minha Conta</div>
+    </header>
+
+    <h1>Minha Conta</h1>
+    <p class="sub">Seus dados de acesso ao Hub.</p>
+
+    <!-- Foto do colaborador -->
+    <div class="card" style="margin-bottom:16px">
+      <strong style="font-size:15px">Minha foto</strong>
+      <p class="sub" style="margin:6px 0 4px">Aparece no seu perfil e onde você for alocado (chamados, tarefas, atividades).</p>
+
+      <div class="avwrap">
+        <template x-if="fotoUrl">
+          <img class="avpic" :src="fotoUrl" alt="Sua foto">
+        </template>
+        <template x-if="!fotoUrl">
+          <div class="avinit" x-text="iniciais" :style="cor ? 'background:'+cor+';color:'+tintaSobre(cor) : ''"></div>
+        </template>
+        <div>
+          <input type="file" x-ref="fotoInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" @change="subirFoto($event)">
+          <button class="btn ghost" @click="$refs.fotoInput.click()" :disabled="busy" x-text="fotoUrl ? 'Trocar foto' : 'Enviar foto'"></button>
+          <button x-show="fotoUrl" class="btn ghost" style="color:var(--danger);margin-left:8px" @click="removerFoto()" :disabled="busy">Remover</button>
+          <div class="hint">JPG, PNG, WEBP ou GIF · até 5 MB.</div>
+        </div>
+      </div>
+      <div x-show="fotoErro" class="err" x-text="fotoErro"></div>
+      <div x-show="fotoOk" class="ok">Foto atualizada ✔</div>
+    </div>
+
+    <!-- Minha cor (paleta secundária do Hub — igual ao Journey) -->
+    <div class="card" style="margin-bottom:16px">
+      <strong style="font-size:15px">Minha cor</strong>
+      <p class="sub" style="margin:6px 0 10px">Enquanto você não sobe uma foto, é a sua cor que pinta o seu rostinho pelo Hub. Escolha uma da paleta ou monte a sua.</p>
+
+      <div class="swatches">
+        <template x-for="p in PALETA" :key="p.h">
+          <button type="button" class="sw" :title="p.n" :style="'background:'+p.h+(cor && cor.toUpperCase()===p.h.toUpperCase() ? ';border-color:var(--ink)' : '')" @click="salvarCor(p.h)" :disabled="busy"></button>
+        </template>
+      </div>
+      <div class="avwrap" style="margin-top:12px">
+        <label class="hint" style="display:flex;align-items:center;gap:8px">Cor livre
+          <input type="color" :value="cor || '#9CB2D4'" @change="salvarCor($event.target.value)" :disabled="busy"
+            style="width:46px;height:30px;border:none;background:none;cursor:pointer"></label>
+        <button class="btn ghost" @click="salvarCor('')" :disabled="busy">Sem cor</button>
+      </div>
+      <div x-show="corErro" class="err" x-text="corErro"></div>
+      <div x-show="corOk" class="ok">Cor atualizada ✔</div>
+    </div>
+
+    <!-- Meus avisos (som e pop-up do sininho) -->
+    <div class="card" style="margin-bottom:16px">
+      <strong style="font-size:15px">Meus avisos</strong>
+      <p class="sub" style="margin:6px 0 4px">Como os avisos do Hub chegam pra você (chamados, tarefas, atendimentos).</p>
+
+      <label class="sw">
+        <input type="checkbox" x-model="avisoSom" @change="salvarAvisos()" :disabled="busy">
+        <span><strong>Tocar um som quando chega aviso</strong>
+          <span class="hint" style="margin-top:2px">Desmarque para receber tudo em silêncio.</span></span>
+      </label>
+
+      <label class="sw">
+        <input type="checkbox" x-model="avisoPopup" @change="salvarAvisos()" :disabled="busy">
+        <span><strong>Mostrar o aviso pulando na tela</strong>
+          <span class="hint" style="margin-top:2px">Desmarcado, os avisos ficam só guardados no sininho.</span></span>
+      </label>
+
+      <!-- WhatsApp: é por aqui que o aviso chega com o Hub fechado
+           (Samara, 12/08/2026). Sem número, a pessoa só vê ao abrir o sistema. -->
+      <label class="fl" style="margin-top:14px">Meu WhatsApp (para receber aviso de alocação)</label>
+      <input type="tel" x-model="whats" placeholder="(11) 91234-5678" @keydown.enter="salvarWhats()">
+      <div class="hint">Com DDD. É só para avisos do Hub — quando alocam você em alguma coisa e você está com o sistema fechado.</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn" @click="salvarWhats()" :disabled="busy">Salvar meu WhatsApp</button>
+      </div>
+      <div x-show="whatsErro" class="err" x-text="whatsErro"></div>
+      <div x-show="whatsOk" class="ok">WhatsApp salvo ✔</div>
+
+      <p class="hint" style="margin-top:12px">
+        <strong>Alocação sempre avisa.</strong> Quando alocam você num atendimento, tarefa ou chamado,
+        o aviso aparece do mesmo jeito — é trabalho caindo pra você, e o botão leva direto pra atividade.
+        O som, esse sim, o silenciar desliga pra tudo.
+      </p>
+
+      <div x-show="avisoErro" class="err" x-text="avisoErro"></div>
+      <div x-show="avisoOk" class="ok">Preferência salva ✔</div>
+    </div>
+
+    <div class="card">
+      <strong style="font-size:15px">Trocar minha senha</strong>
+      <p class="sub" style="margin:6px 0 4px">Vale para o login único — o mesmo que abre todos os subsistemas.</p>
+
+      <label class="fl">E-mail</label>
+      <input type="email" :value="email" disabled>
+
+      <label class="fl">Senha atual</label>
+      <input type="password" x-model="atual" autocomplete="current-password" placeholder="Sua senha de hoje" @keydown.enter="trocar()">
+
+      <label class="fl">Nova senha</label>
+      <input type="password" x-model="nova" autocomplete="new-password" placeholder="Mínimo 8 caracteres" @keydown.enter="trocar()">
+      <div class="hint">Use ao menos 8 caracteres. Evite senhas óbvias.</div>
+
+      <label class="fl">Confirmar nova senha</label>
+      <input type="password" x-model="nova2" autocomplete="new-password" placeholder="Repita a nova senha" @keydown.enter="trocar()">
+
+      <div x-show="erro" class="err" x-text="erro"></div>
+      <div x-show="sucesso" class="ok">Senha alterada com sucesso ✔</div>
+
+      <div style="display:flex;gap:8px;margin-top:18px">
+        <button class="btn" @click="trocar()" :disabled="busy">Salvar nova senha</button>
+        <a class="btn ghost" href="/" style="text-decoration:none;display:inline-flex;align-items:center">Voltar</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/shared/os-core.js"></script>
+<script>
+  function conta() {
+    return {
+      ready: false, authed: false, busy: false, busyMsg: 'Carregando…',
+      email: '', atual: '', nova: '', nova2: '', erro: '', sucesso: false,
+      userId: null, nome: '', fotoUrl: '', fotoErro: '', fotoOk: false,
+      avisoSom: true, avisoPopup: true, avisoErro: '', avisoOk: false,
+      cor: '', corErro: '', corOk: false,
+      whats: '', whatsErro: '', whatsOk: false,
+
+      // Paleta secundária do Hub — a mesma do Journey.
+      PALETA: [
+        { n: 'Roxo · RH/Operações', h: '#BBB2DC' }, { n: 'Verde · Comercial', h: '#B8E9DE' },
+        { n: 'Azul · Sucesso do Cliente', h: '#A7CEE5' }, { n: 'Bege · Financeiro', h: '#D4BEA5' },
+        { n: 'Laranja · Marketing', h: '#EABAAA' }, { n: 'Amarelo institucional', h: '#EED7A4' },
+        { n: 'Azul acinzentado', h: '#9CB2D4' }, { n: 'Verde sucesso', h: '#4A8E6F' },
+        { n: 'Âmbar', h: '#C9A24A' }, { n: 'Vermelho', h: '#B85450' },
+        { n: 'Cinza', h: '#7D848B' }, { n: 'Índigo', h: '#1C3E87' }
+      ],
+
+      // preto ou branco por cima da cor, pra sigla sempre ler
+      tintaSobre: function (h) {
+        var c = String(h || '').replace('#', '');
+        if (c.length !== 6) return '#fff';
+        var l = (0.299 * parseInt(c.substr(0, 2), 16) + 0.587 * parseInt(c.substr(2, 2), 16) + 0.114 * parseInt(c.substr(4, 2), 16)) / 255;
+        return l > 0.6 ? '#0A0A0B' : '#fff';
+      },
+
+      get iniciais() {
+        var base = (this.nome || this.email || '?').trim();
+        return base.split(/\s+/).map(function (p) { return p[0]; }).slice(0, 2).join('').toUpperCase();
+      },
+
+      // Guarda o número que vai receber o aviso de alocação (hub.meu_whatsapp_salvar).
+      async salvarWhats() {
+        this.whatsErro = ''; this.whatsOk = false; this.busy = true;
+        try {
+          var r = await OS.getClient().rpc('meu_whatsapp_salvar', { p_numero: this.whats });
+          if (r.error) throw r.error;
+          this.whats = r.data || '';
+          this.whatsOk = true;
+          setTimeout(function () { this.whatsOk = false; }.bind(this), 3000);
+        } catch (e) { this.whatsErro = e.message || String(e); }
+        finally { this.busy = false; }
+      },
+
+      async init() {
+        try {
+          var user = (window.OS && window.OS.Auth) ? await OS.Auth.getUser() : null;
+          this.authed = !!user;
+          if (user) {
+            this.email = user.email || '';
+            this.userId = user.id;
+            // lê nome + foto atual da própria linha (RLS users_self permite o self SELECT)
+            try {
+              var r = await OS.getClient().from('users').select('full_name, avatar_url, cor, whatsapp').eq('id', user.id).maybeSingle();
+              if (r.data) { this.nome = r.data.full_name || ''; this.fotoUrl = r.data.avatar_url || ''; this.cor = r.data.cor || ''; this.whats = r.data.whatsapp || ''; }
+            } catch (e) {}
+            // preferências de aviso (som / pop-up) — quem cuida disso é o os-core
+            try {
+              var p = await OS.avisoPrefs();
+              this.avisoSom = p.som !== false; this.avisoPopup = p.popup !== false;
+            } catch (e) {}
+          }
+        } catch (e) { this.authed = false; }
+        this.ready = true;
+      },
+
+      // Cor pessoal: grava por RPC (a policy users_self só deixa LER a própria
+      // linha) — mesmo caminho da foto, ver hub.set_my_cor.
+      async salvarCor(hex) {
+        this.corErro = ''; this.corOk = false;
+        this.busy = true; this.busyMsg = 'Salvando cor…';
+        try {
+          var r = await OS.getClient().rpc('set_my_cor', { p_cor: hex || null });
+          if (r.error) throw new Error(r.error.message || 'Não consegui salvar a cor.');
+          this.cor = r.data || '';
+          this.corOk = true;
+          setTimeout(function () { this.corOk = false; }.bind(this), 2500);
+        } catch (e) {
+          this.corErro = e.message || String(e);
+        } finally { this.busy = false; }
+      },
+
+      // Salva na hora que a pessoa clica no quadradinho.
+      async salvarAvisos() {
+        this.avisoErro = ''; this.avisoOk = false;
+        this.busy = true; this.busyMsg = 'Salvando…';
+        try {
+          await OS.setAvisoPrefs({ som: this.avisoSom, popup: this.avisoPopup });
+          this.avisoOk = true;
+          setTimeout(function () { this.avisoOk = false; }.bind(this), 2500);
+        } catch (e) {
+          this.avisoErro = e.message || String(e);
+        } finally {
+          this.busy = false;
+        }
+      },
+
+      // Sobe a foto pro bucket 'avatars' na pasta do próprio usuário (<uid>/…),
+      // e grava a URL pública na hub.users via RPC set_my_avatar (coluna-escopada).
+      async subirFoto(ev) {
+        this.fotoErro = ''; this.fotoOk = false;
+        var file = ev && ev.target && ev.target.files && ev.target.files[0];
+        if (!file) return;
+        if (!/^image\//.test(file.type)) { this.fotoErro = 'Selecione uma imagem.'; return; }
+        if (file.size > 5 * 1024 * 1024) { this.fotoErro = 'Imagem muito grande (máx. 5 MB).'; return; }
+        this.busy = true; this.busyMsg = 'Enviando foto…';
+        try {
+          var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+          var path = this.userId + '/avatar.' + ext;
+          var sb = OS.getClient();
+          var up = await sb.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+          if (up.error) throw new Error(up.error.message || 'Falha no envio.');
+          var pub = sb.storage.from('avatars').getPublicUrl(path).data.publicUrl + '?t=' + Date.now();
+          var rpc = await sb.rpc('set_my_avatar', { p_url: pub });
+          if (rpc.error) throw new Error(rpc.error.message || 'Não consegui salvar a foto.');
+          this.fotoUrl = pub; this.fotoOk = true;
+        } catch (e) {
+          this.fotoErro = e.message || String(e);
+        } finally {
+          this.busy = false; if (ev && ev.target) ev.target.value = '';
+        }
+      },
+
+      async removerFoto() {
+        if (!confirm('Remover sua foto?')) return;
+        this.fotoErro = ''; this.fotoOk = false;
+        this.busy = true; this.busyMsg = 'Removendo…';
+        try {
+          var sb = OS.getClient();
+          var rpc = await sb.rpc('set_my_avatar', { p_url: null });
+          if (rpc.error) throw new Error(rpc.error.message || 'Não consegui remover.');
+          this.fotoUrl = ''; this.fotoOk = true;
+        } catch (e) {
+          this.fotoErro = e.message || String(e);
+        } finally {
+          this.busy = false;
+        }
+      },
+
+      async trocar() {
+        this.erro = ''; this.sucesso = false;
+        if (!this.atual) { this.erro = 'Informe a senha atual.'; return; }
+        if ((this.nova || '').length < 8) { this.erro = 'A nova senha precisa ter ao menos 8 caracteres.'; return; }
+        if (this.nova !== this.nova2) { this.erro = 'A confirmação não bate com a nova senha.'; return; }
+        if (this.nova === this.atual) { this.erro = 'A nova senha precisa ser diferente da atual.'; return; }
+
+        this.busy = true; this.busyMsg = 'Salvando…';
+        try {
+          // 1) reautentica com a senha atual (protege sessão aberta sem dono)
+          var re = await OS.getClient().auth.signInWithPassword({ email: this.email, password: this.atual });
+          if (re.error) throw new Error('Senha atual incorreta.');
+          // 2) aplica a nova senha
+          var up = await OS.getClient().auth.updateUser({ password: this.nova });
+          if (up.error) throw new Error(up.error.message || 'Não consegui alterar a senha.');
+          this.sucesso = true; this.atual = ''; this.nova = ''; this.nova2 = '';
+        } catch (e) {
+          this.erro = e.message || String(e);
+        } finally {
+          this.busy = false;
+        }
+      },
+    };
+  }
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</body>
+</html>

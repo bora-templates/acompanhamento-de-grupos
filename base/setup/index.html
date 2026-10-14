@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Instalação · Hub</title>
+<link rel="icon" type="image/svg+xml" href="/shared/favicon.svg">
+<!--
+  TELA DE INSTALAÇÃO (/setup). Quem acabou de publicar o Hub na Vercel abre o site e
+  cai aqui: cola o endereço do projeto do Supabase, o token do Supabase e o token da
+  Vercel, e a instalação faz o resto sozinha (banco, funções, e-mails em português,
+  o primeiro administrador e as variáveis do site), pelo servidor api/setup.js.
+  Os tokens ficam só nesta aba, enquanto ela estiver aberta: nada é guardado.
+  Visual: o mesmo cartão de entrada do Início (/shared/launcher/inicio.css).
+-->
+<link rel="stylesheet" href="/shared/launcher/inicio.css">
+<style>
+  .gate-card{max-width:520px}
+  .tela[hidden]{display:none}
+  .lista{margin:0 0 22px;padding:0;list-style:none;counter-reset:n}
+  .lista li{counter-increment:n;position:relative;padding:10px 0 10px 38px;border-bottom:1px solid var(--line);font-size:13.5px;line-height:1.45;color:var(--ink2)}
+  .lista li:last-child{border-bottom:0}
+  .lista li::before{content:counter(n);position:absolute;left:0;top:9px;width:26px;height:26px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+  .dica{font-size:11.5px;color:var(--mut);margin-top:5px;line-height:1.45}
+  .ok{font-size:12px;color:#2E7D4F;margin-top:6px;line-height:1.4}
+  .ruim{font-size:12px;color:#C2413A;margin-top:6px;line-height:1.4}
+  .gate-card input.falta{border-color:#C2413A}
+  .gate-card input.bom{border-color:#2E7D4F}
+  .senha{position:relative}
+  .senha input{padding-right:86px}
+  .ver{position:absolute;right:6px;top:50%;transform:translateY(-50%);height:32px;padding:0 10px;border-radius:9px;background:var(--surface);color:var(--ink2);font-size:12.5px;font-weight:500;box-shadow:0 0 0 1px var(--line2)}
+  .mascara{-webkit-text-security:disc;text-security:disc}
+  .grupo{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:22px 0 10px}
+  .faltam{font-size:12.5px;color:var(--mut);margin-top:10px;line-height:1.6;text-align:center}
+  .faltam button{color:var(--accent);text-decoration:underline;font-size:12.5px}
+  .caixa-err{margin-top:14px;padding:11px 13px;border-radius:10px;background:rgba(194,65,58,.1);color:#C2413A;font-size:12.5px;line-height:1.5;word-break:break-word}
+  .passos{margin:6px 0 0;padding:0;list-style:none}
+  .passos li{display:flex;align-items:flex-start;gap:12px;padding:9px 0;font-size:13.5px;color:var(--mut)}
+  .passos li .ic{flex:0 0 20px;height:20px;margin-top:1px;border-radius:50%;box-shadow:0 0 0 1.5px var(--line2)}
+  .passos li.vai{color:var(--ink)}
+  .passos li.vai .ic{box-shadow:none;border:3px solid var(--accent);border-top-color:transparent;animation:gira .7s linear infinite}
+  .passos li.feito{color:var(--ink2)}
+  .passos li.feito .ic{box-shadow:none;background:#2E7D4F;position:relative}
+  .passos li.feito .ic::after{content:'';position:absolute;left:7px;top:3px;width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .passos li.erro{color:#C2413A}
+  .passos li.erro .ic{box-shadow:none;background:#C2413A}
+  .passos li small{display:block;font-size:11.5px;color:var(--mut);margin-top:2px}
+  .aviso{margin:18px 0 0;padding:11px 13px;border-radius:10px;background:var(--accent-soft);color:var(--ink2);font-size:12.5px;line-height:1.5}
+  .fim{text-align:center;font-size:14px;line-height:1.6;color:var(--ink2)}
+  .fim .btn-pri{margin-top:18px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+  .link-sec{display:block;width:100%;margin-top:14px;color:var(--mut);font-size:12.5px;text-decoration:underline;text-align:center}
+  .of{margin-top:22px;text-align:left;border-top:1px solid var(--line);padding-top:18px}
+  .of h2{margin:0 0 6px;font-size:16px;font-weight:600}
+  .of h3{margin:18px 0 6px;font-size:13.5px;font-weight:600}
+  .of p,.of li{font-size:12.8px;line-height:1.55;color:var(--ink2)}
+  .of ol{padding-left:18px;margin:6px 0}
+  .vals{margin:8px 0;border:1px solid var(--line2);border-radius:10px;overflow:hidden}
+  .val{display:flex;align-items:center;gap:8px;padding:7px 9px;border-bottom:1px solid var(--line)}
+  .val:last-child{border-bottom:0}
+  .val b{font-size:11.5px;font-family:ui-monospace,Menlo,monospace;min-width:150px}
+  .val code{flex:1;font-size:11px;word-break:break-all;color:var(--mut)}
+  .val button{font-size:11.5px;padding:4px 8px;border-radius:7px;box-shadow:0 0 0 1px var(--line2);background:var(--surface);color:var(--ink2)}
+  @keyframes gira{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div class="gate">
+  <div class="gate-card">
+    <div class="marca"><svg viewBox="0 0 30 18" aria-hidden="true"><circle cx="9" cy="9" r="9"/><path d="M21 0a9 9 0 0 1 0 18z"/></svg><b id="marca">Hub</b></div>
+
+    <!-- já instalado -->
+    <section class="tela fim" id="tela-instalado" hidden>
+      <h1>Este Hub já está instalado</h1>
+      <p class="sub">Entre com o e-mail e a senha de quem administra.</p>
+      <a class="btn-pri" href="/">Entrar no Hub</a>
+      <button type="button" class="link-sec" data-ir="boas-vindas">Acrescentar um módulo ou refazer a instalação</button>
+    </section>
+
+    <!-- 1. boas-vindas -->
+    <section class="tela" id="tela-boas-vindas" hidden>
+      <h1>Instalação</h1>
+      <p class="sub" id="sub-boas-vindas">Em poucos minutos o seu sistema fica no ar, com o banco no seu Supabase e o site na sua Vercel.</p>
+      <ol class="lista">
+        <li>O endereço do seu projeto no Supabase, o Project URL.</li>
+        <li>Um token do Supabase com acesso total a esse projeto.</li>
+        <li>Um token da Vercel com acesso a todos os projetos da sua equipe.</li>
+        <li>O nome da empresa e o e-mail e a senha de quem vai administrar.</li>
+      </ol>
+      <button class="btn-pri" type="button" data-ir="dados">Continuar, já tenho tudo isso</button>
+    </section>
+
+    <!-- 2. os dados -->
+    <form class="tela" id="tela-dados" hidden novalidate>
+      <h1>Seus dados</h1>
+      <p class="sub">Cada campo mostra um aviso verde quando a instalação aceita o que você colou.</p>
+
+      <div class="grupo">Supabase</div>
+      <div class="field"><label for="supabase_url">Endereço do projeto (Project URL)</label>
+        <input id="supabase_url" type="url" autocomplete="off" spellcheck="false" placeholder="https://xxxxxxxxxxxx.supabase.co">
+        <div class="dica">No Supabase, abra o seu projeto e clique em Project Overview, no menu da esquerda. Copie o Project URL.</div>
+        <div id="msg-supabase_url"></div></div>
+      <div class="field"><label for="supabase_token">Token do Supabase</label>
+        <div class="senha"><input id="supabase_token" type="text" class="mascara" data-mascara autocomplete="off" spellcheck="false" placeholder="começa com sbp_"><button type="button" class="ver" data-ver="supabase_token">Mostrar</button></div>
+        <div class="dica">No seu avatar, no canto de cima, clique em Account e depois em Access Tokens. O token precisa ter acesso total (Full access) ao projeto.</div>
+        <div id="msg-supabase_token"></div></div>
+
+      <div class="grupo">Vercel</div>
+      <div class="field"><label for="vercel_token">Token da Vercel</label>
+        <div class="senha"><input id="vercel_token" type="text" class="mascara" data-mascara autocomplete="off" spellcheck="false"><button type="button" class="ver" data-ver="vercel_token">Mostrar</button></div>
+        <div class="dica">Na Vercel, clique no seu nome, em Settings e depois em Tokens. Em Scope, escolha a sua equipe e All Projects. Em Expiration, escolha No Expiration.</div>
+        <div id="msg-vercel_token"></div></div>
+
+      <div class="grupo">Quem administra</div>
+      <div class="field"><label for="empresa">Nome da empresa</label><input id="empresa" type="text" maxlength="120" autocomplete="organization">
+        <div class="dica">Aparece nas telas e nos e-mails do sistema.</div></div>
+      <div class="field"><label for="admin_nome">Seu nome</label><input id="admin_nome" type="text" maxlength="120" autocomplete="name"></div>
+      <div class="field"><label for="admin_email">Seu e-mail</label><input id="admin_email" type="email" autocomplete="email">
+        <div class="dica">É com ele que você entra no sistema.</div></div>
+      <div class="field"><label for="admin_senha">Senha</label>
+        <div class="senha"><input id="admin_senha" type="password" autocomplete="new-password"><button type="button" class="ver" data-ver="admin_senha">Mostrar</button></div>
+        <div class="dica">Pelo menos 8 caracteres. É a senha que você vai usar todo dia, então anote antes de continuar.</div></div>
+      <div class="field"><label for="admin_senha2">Repita a senha</label>
+        <div class="senha"><input id="admin_senha2" type="password" autocomplete="new-password"><button type="button" class="ver" data-ver="admin_senha2">Mostrar</button></div></div>
+
+      <button class="btn-pri" id="instalar" type="submit" disabled>Instalar</button>
+      <div class="faltam" id="faltam" aria-live="polite"></div>
+    </form>
+
+    <!-- 3. instalando -->
+    <section class="tela" id="tela-instalando" hidden>
+      <h1 id="titulo-instalando">Instalando</h1>
+      <p class="sub" id="sub-instalando">Não feche esta aba e não atualize a página. A instalação leva alguns minutos.</p>
+      <ol class="passos" id="passos"></ol>
+      <div class="caixa-err" id="erro" role="alert" hidden></div>
+      <button class="btn-pri" id="de-novo" type="button" hidden style="margin-top:14px">Tentar de novo</button>
+      <div class="aviso" id="aviso-retoma" hidden>Pode tentar de novo sem medo: a instalação continua de onde parou e não duplica nada.</div>
+    </section>
+
+    <!-- 4. pronto -->
+    <section class="tela fim" id="tela-pronto" hidden>
+      <h1>Instalação concluída</h1>
+      <p class="sub" id="sub-pronto">O seu sistema está no ar. Entre com o e-mail e a senha que você acabou de criar.</p>
+      <a class="btn-pri" id="entrar" href="/">Entrar</a>
+      <div class="aviso" id="aviso-integracoes" style="text-align:left">As integrações (WhatsApp, e-mail, Google Agenda, IA) são ligadas depois, dentro do sistema ou com a ajuda do Claude. Você não precisa delas agora.</div>
+      <div class="of" id="bloco-outgrupos" hidden>
+        <h2>Falta ligar o Grupos</h2>
+        <p>Entre no sistema, abra <b>Grupos</b> e clique em <b>Ajustes</b> para ligar a IA e o WhatsApp. Você vai precisar de uma chave de IA (OpenAI, Claude, DeepSeek ou compatível) e dos dados de uma instância da uazapi com o número que está nos grupos.</p>
+      </div>
+      <div class="of" id="bloco-outfunnels" hidden>
+        <h2>Falta o OutFunnels</h2>
+        <p>O OutFunnels é o único módulo com servidor próprio, ligado o tempo todo, porque ele recebe o WhatsApp a qualquer hora e mantém o chat em tempo real. São três passos, e esta tela mostra cada valor pronto para copiar.</p>
+        <button class="btn-pri" type="button" id="of-ver">Ver os passos do OutFunnels</button>
+        <div id="of-passos" hidden>
+          <h3>1. A API na Render (perto de US$ 17 por mês)</h3>
+          <ol>
+            <li>Crie a conta em <b>render.com</b> pelo GitHub e cadastre o cartão.</li>
+            <li>Clique em <b>New</b> e depois em <b>Blueprint</b>, escolha o seu repositório do Hub e confirme.</li>
+            <li>A Render pergunta os valores abaixo. Copie e cole cada um. No DATABASE_URL e no DIRECT_URL, troque <b>[SENHA-DO-BANCO]</b> pela senha do banco que você criou no Supabase.</li>
+          </ol>
+          <div class="vals" id="of-render"></div>
+          <ol start="4"><li>Clique em <b>Apply</b> e espere o serviço <b>outfunnels-api</b> ficar com a situação Live. Copie o endereço dele, algo como https://outfunnels-api-xxxx.onrender.com, e cole aqui:</li></ol>
+          <div class="field"><input id="of-api" type="url" placeholder="https://outfunnels-api-xxxx.onrender.com" autocomplete="off"></div>
+          <h3>2. O painel na Vercel</h3>
+          <ol>
+            <li>Na Vercel, clique em <b>Add New</b> e <b>Project</b> e importe <b>o mesmo repositório</b> de novo.</li>
+            <li>Em <b>Root Directory</b>, escolha <b>outfunnels/web</b>.</li>
+            <li>Em <b>Environment Variables</b>, crie as três variáveis abaixo e clique em <b>Deploy</b>.</li>
+          </ol>
+          <div class="vals" id="of-web"></div>
+          <ol start="4"><li>Quando terminar, copie o endereço do projeto novo, algo como https://seu-hub-outfunnels.vercel.app, e cole aqui:</li></ol>
+          <div class="field"><input id="of-webinput" type="url" placeholder="https://seu-hub-outfunnels.vercel.app" autocomplete="off"></div>
+          <h3>3. Ligar o OutFunnels ao Hub</h3>
+          <p>O Hub passa a abrir o painel em <b>/outfunnels</b>, com o mesmo login.</p>
+          <button class="btn-pri" type="button" id="of-ligar">Ligar o OutFunnels</button>
+          <div id="of-msg" class="dica"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (s) => document.querySelector(s);
+  const pacote = window.HUB_PACOTE || {};
+  if (pacote.titulo) { $('#marca').textContent = pacote.titulo; document.title = 'Instalação · ' + pacote.titulo; }
+
+  // ─── telas ────────────────────────────────────────────────────────────────
+  function mostra(nome) {
+    document.querySelectorAll('.tela').forEach((t) => { t.hidden = t.id !== 'tela-' + nome; });
+    window.scrollTo(0, 0);
+  }
+  document.addEventListener('click', (e) => {
+    const ir = e.target.closest('[data-ir]');
+    if (ir && ir.dataset.ir && document.getElementById('tela-' + ir.dataset.ir)) { mostra(ir.dataset.ir); if (ir.dataset.ir === 'dados') $('#supabase_url').focus(); }
+    const v = e.target.closest('[data-ver]');
+    if (v) {
+      const i = document.getElementById(v.dataset.ver);
+      const escondido = i.hasAttribute('data-mascara') ? i.classList.contains('mascara') : i.type === 'password';
+      if (i.hasAttribute('data-mascara')) i.classList.toggle('mascara', !escondido); else i.type = escondido ? 'text' : 'password';
+      v.textContent = escondido ? 'Ocultar' : 'Mostrar';
+    }
+    const falta = e.target.closest('[data-campo]');
+    if (falta) document.getElementById(falta.dataset.campo).focus();
+  });
+
+  // ─── o servidor da instalação ─────────────────────────────────────────────
+  const val = (id) => ($('#' + id).value || '').trim();
+  function dados(acao, extra) {
+    return Object.assign({
+      acao,
+      supabase_url: val('supabase_url').replace(/\/+$/, ''),
+      supabase_token: val('supabase_token'),
+      vercel_token: val('vercel_token'),
+      empresa: val('empresa'),
+      admin_nome: val('admin_nome'),
+      admin_email: val('admin_email'),
+      admin_senha: $('#admin_senha').value,
+    }, extra || {});
+  }
+  async function chama(acao, extra) {
+    let r;
+    try {
+      r = await fetch('/api/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dados(acao, extra)) });
+    } catch (e) {
+      throw new Error('Não consegui falar com o servidor da instalação. Confira a internet e tente de novo.');
+    }
+    let j = null;
+    try { j = await r.json(); } catch (e) { j = null; }
+    if (!r.ok || !j || j.ok === false) {
+      const msg = (j && j.erro) || (r.status === 504 ? 'O servidor demorou demais para responder.' : 'O servidor da instalação respondeu com erro (' + r.status + ').');
+      const err = new Error(msg); err.campo = j && j.campo; throw err;
+    }
+    return j;
+  }
+
+  // ─── conferir os campos ───────────────────────────────────────────────────
+  const conferidos = { supabase: false, vercel: false };
+  const REGIOES = { 'sa-east-1': 'São Paulo', 'us-east-1': 'Estados Unidos (Virgínia)', 'us-east-2': 'Estados Unidos (Ohio)', 'us-west-1': 'Estados Unidos (Califórnia)', 'us-west-2': 'Estados Unidos (Oregon)', 'eu-west-1': 'Irlanda', 'eu-west-2': 'Londres', 'eu-west-3': 'Paris', 'eu-central-1': 'Frankfurt', 'ca-central-1': 'Canadá', 'ap-southeast-1': 'Singapura', 'ap-northeast-1': 'Tóquio', 'ap-south-1': 'Mumbai', 'ap-southeast-2': 'Sydney' };
+  const msg = (id, tipo, texto) => {
+    const el = $('#msg-' + id);
+    el.className = tipo; el.textContent = texto || '';
+    $('#' + id).classList.toggle('bom', tipo === 'ok');
+    $('#' + id).classList.toggle('falta', tipo === 'ruim');
+  };
+  const urlBoa = (v) => /^https:\/\/[a-z0-9]{15,40}\.supabase\.co\/?$/i.test(v);
+  let conferindo = 0;
+  async function confereSupabase() {
+    conferidos.supabase = false; conferidos.vercel = false;
+    const u = val('supabase_url'), t = val('supabase_token');
+    if (!u) { msg('supabase_url', '', ''); return atualiza(); }
+    if (!urlBoa(u)) { msg('supabase_url', 'ruim', 'O endereço tem o formato https://xxxxxxxx.supabase.co. Copie o Project URL de novo.'); return atualiza(); }
+    msg('supabase_url', 'ok', 'Endereço no formato certo.');
+    if (!t) { msg('supabase_token', '', ''); return atualiza(); }
+    const n = ++conferindo;
+    msg('supabase_token', 'dica', 'Conferindo o token, um instante.');
+    try {
+      const r = await chama('conferir', { vercel_token: '' });
+      if (n !== conferindo) return;
+      conferidos.supabase = true;
+      const ja = Object.keys(r.jaInstalado || {}).filter((s) => s !== 'base' && s.indexOf('base.') !== 0);
+      const regiao = REGIOES[r.projeto.regiao] || r.projeto.regiao || '';
+      msg('supabase_token', 'ok', 'Token aceito. Projeto ' + r.projeto.nome + (regiao ? ', em ' + regiao : '') + '.' + (ja.length ? ' Este banco já tem: ' + ja.join(', ') + '. A instalação só acrescenta o que falta.' : '')
+        + (r.projeto.regiao && r.projeto.regiao !== 'sa-east-1' ? ' O banco não está em São Paulo: funciona, mas fica mais lento para quem usa no Brasil.' : ''));
+      if (val('vercel_token')) await confereVercel();
+    } catch (e) {
+      if (n !== conferindo) return;
+      msg(e.campo === 'supabase_url' ? 'supabase_url' : 'supabase_token', 'ruim', e.message);
+    }
+    atualiza();
+  }
+  async function confereVercel() {
+    conferidos.vercel = false;
+    if (!val('vercel_token')) { msg('vercel_token', '', ''); return atualiza(); }
+    if (!conferidos.supabase) { msg('vercel_token', 'dica', 'Ele é conferido depois do token do Supabase.'); return atualiza(); }
+    msg('vercel_token', 'dica', 'Conferindo o token, um instante.');
+    try {
+      const r = await chama('conferir');
+      if (r.vercel && r.vercel.ok) { conferidos.vercel = true; msg('vercel_token', 'ok', 'Token aceito. Ele enxerga este projeto na Vercel.'); }
+      else msg('vercel_token', 'ruim', (r.vercel && r.vercel.erro) || 'Não consegui conferir o token da Vercel.');
+    } catch (e) { msg('vercel_token', 'ruim', e.message); }
+    atualiza();
+  }
+  $('#supabase_url').addEventListener('change', confereSupabase);
+  $('#supabase_token').addEventListener('change', confereSupabase);
+  $('#vercel_token').addEventListener('change', confereVercel);
+
+  const CAMPOS = [
+    ['supabase_url', 'o endereço do Supabase', () => conferidos.supabase],
+    ['supabase_token', 'o token do Supabase', () => conferidos.supabase],
+    ['vercel_token', 'o token da Vercel', () => conferidos.vercel],
+    ['empresa', 'o nome da empresa', () => val('empresa').length >= 2],
+    ['admin_nome', 'o seu nome', () => val('admin_nome').length >= 2],
+    ['admin_email', 'um e-mail válido', () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val('admin_email'))],
+    ['admin_senha', 'a senha, com 8 caracteres ou mais', () => $('#admin_senha').value.length >= 8 && $('#admin_senha').value.length <= 72],
+    ['admin_senha2', 'a senha repetida igual', () => $('#admin_senha2').value.length > 0 && $('#admin_senha2').value === $('#admin_senha').value],
+  ];
+  function atualiza() {
+    const faltam = CAMPOS.filter(([, , ok]) => !ok());
+    $('#instalar').disabled = faltam.length > 0;
+    $('#faltam').innerHTML = faltam.length ? 'Falta: ' + faltam.map(([id, nome]) => '<button type="button" data-campo="' + id + '">' + nome + '</button>').join(', ') : '';
+  }
+  document.addEventListener('input', atualiza);
+
+  // ─── instalar ─────────────────────────────────────────────────────────────
+  const PASSOS = [
+    ['conferir', 'Conferir o projeto e os tokens'],
+    ['preparar', 'Preparar o banco'],
+    ['login', 'Fechar o cadastro e pôr os e-mails em português'],
+    ['banco', 'Criar as tabelas, as regras e as funções do banco'],
+    ['esquemas', 'Liberar o banco para o site'],
+    ['segredos', 'Guardar os segredos das funções'],
+    ['funcoes', 'Publicar as funções do servidor'],
+    ['admin', 'Criar o administrador'],
+    ['vercel', 'Gravar a configuração do site na Vercel'],
+    ['publicar', 'Publicar o site de novo, já ligado ao banco'],
+    ['situacao', 'Esperar o site ficar no ar'],
+  ];
+  let feitos = {}, publicacao = null;
+  function desenha(atual, detalhe) {
+    $('#passos').innerHTML = PASSOS.map(([id, nome]) => {
+      const cls = feitos[id] ? 'feito' : id === atual ? 'vai' : '';
+      return '<li class="' + cls + '" id="p-' + id + '"><span class="ic"></span><span>' + nome + (id === atual && detalhe ? '<small>' + detalhe + '</small>' : '') + '</span></li>';
+    }).join('');
+  }
+  const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  async function roda() {
+    $('#erro').hidden = true; $('#de-novo').hidden = true; $('#aviso-retoma').hidden = true;
+    $('#titulo-instalando').textContent = 'Instalando';
+    let atual = null;
+    try {
+      for (const [id] of PASSOS) {
+        if (feitos[id]) continue;
+        atual = id; desenha(id);
+        if (id === 'banco' || id === 'funcoes') {
+          for (let volta = 0; volta < 60; volta++) {
+            const r = await chama(id);
+            desenha(id, r.total ? r.feitos + ' de ' + r.total : '');
+            if (r.terminou) break;
+          }
+        } else if (id === 'publicar') {
+          const r = await chama('publicar');
+          publicacao = r.publicacao;
+        } else if (id === 'situacao') {
+          for (let volta = 0; ; volta++) {
+            const r = await chama('situacao', { publicacao });
+            desenha(id, 'Situação na Vercel: ' + String(r.estado || '').toLowerCase());
+            if (r.estado === 'READY') break;
+            if (r.estado === 'ERROR' || r.estado === 'CANCELED') throw new Error('A publicação na Vercel deu erro. Abra o projeto na Vercel, veja o erro em Deployments e clique em Tentar de novo aqui.');
+            if (volta > 120) throw new Error('A Vercel está demorando mais que o normal. Confira em Deployments, no seu projeto, e clique em Tentar de novo.');
+            await espera(5000);
+          }
+        } else {
+          await chama(id);
+        }
+        feitos[id] = true; desenha(null);
+      }
+      mostra('pronto');
+    } catch (e) {
+      desenha(atual);
+      const li = atual && document.getElementById('p-' + atual);
+      if (li) li.className = 'erro';
+      $('#titulo-instalando').textContent = 'A instalação parou';
+      const err = $('#erro'); err.textContent = e.message; err.hidden = false;
+      $('#de-novo').hidden = false; $('#aviso-retoma').hidden = false;
+    }
+  }
+  $('#tela-dados').addEventListener('submit', (e) => { e.preventDefault(); atualiza(); if ($('#instalar').disabled) return; feitos = {}; mostra('instalando'); desenha(); roda(); });
+  $('#de-novo').addEventListener('click', roda);
+  window.addEventListener('beforeunload', (e) => { if (!$('#tela-instalando').hidden && $('#de-novo').hidden) { e.preventDefault(); e.returnValue = ''; } });
+
+  // ─── OutFunnels: os passos da Render e do painel na Vercel ──────────────────
+  const temOutFunnels = (pacote.modulos || []).indexOf('OutFunnels') >= 0;
+  if (temOutFunnels) $('#bloco-outfunnels').hidden = false;
+  // Grupos: a IA e o WhatsApp são o começo do uso, então este aviso toma o lugar do "você não precisa delas agora"
+  if ((pacote.ids || []).indexOf('outgrupos') >= 0) { $('#bloco-outgrupos').hidden = false; $('#aviso-integracoes').hidden = true; }
+  const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function valores(alvo, obj) {
+    $(alvo).innerHTML = Object.keys(obj).map((k) => '<div class="val"><b>' + esc(k) + '</b><code>' + esc(obj[k] || '(preencha)') + '</code><button type="button" data-copia="' + esc(obj[k] || '') + '">Copiar</button></div>').join('');
+  }
+  let ofWeb = null;
+  function webVals() {
+    const api = val('of-api').replace(/\/+$/, '');
+    valores('#of-web', Object.assign({ NEXT_PUBLIC_API_URL: api ? api + '/api/v1' : '' }, ofWeb || {}));
+  }
+  document.addEventListener('click', async (e) => {
+    const c = e.target.closest('[data-copia]');
+    if (c) { try { await navigator.clipboard.writeText(c.dataset.copia); c.textContent = 'Copiado'; setTimeout(() => { c.textContent = 'Copiar'; }, 1500); } catch (err) { c.textContent = 'Selecione e copie'; } }
+  });
+  $('#of-ver').addEventListener('click', async () => {
+    $('#of-msg').textContent = '';
+    try {
+      const r = await chama('outfunnels');
+      valores('#of-render', r.render); ofWeb = r.web; webVals();
+      $('#of-passos').hidden = false; $('#of-ver').hidden = true;
+    } catch (err) { $('#of-msg').textContent = err.message; $('#of-passos').hidden = false; }
+  });
+  $('#of-api').addEventListener('input', webVals);
+  $('#of-ligar').addEventListener('click', async () => {
+    const m = $('#of-msg');
+    m.className = 'dica'; m.textContent = 'Gravando o endereço do painel e publicando o Hub de novo.';
+    try {
+      const r = await chama('outfunnels-ligar', { web_url: val('of-webinput') });
+      for (let volta = 0; volta < 120; volta++) {
+        const s2 = await chama('situacao', { publicacao: r.publicacao });
+        if (s2.estado === 'READY') { m.className = 'ok'; m.innerHTML = 'Pronto. O OutFunnels abre em <a href="/outfunnels">/outfunnels</a>, com o mesmo login do Hub.'; return; }
+        if (s2.estado === 'ERROR' || s2.estado === 'CANCELED') throw new Error('A publicação do Hub na Vercel deu erro. Veja em Deployments e tente de novo.');
+        m.textContent = 'Publicando o Hub de novo (situação na Vercel: ' + String(s2.estado || '').toLowerCase() + ').';
+        await espera(5000);
+      }
+    } catch (err) { m.className = 'ruim'; m.textContent = err.message; }
+  });
+
+  mostra(window.HUB_INSTALADO ? 'instalado' : 'boas-vindas');
+  atualiza();
+})();
+</script>
+</body>
+</html>

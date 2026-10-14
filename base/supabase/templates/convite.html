@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%EMPRESA_NOME%</title></head>
+<!--
+  Modelo do e-mail "Convite (Invite user)" do login (Supabase Auth), em português.
+  Assunto sugerido: Você foi convidado para o %EMPRESA_NOME%
+  %EMPRESA_NOME% = o nome da empresa (troque antes de colar no painel do Supabase;
+  ver "Os e-mails do login em português" no base/README.md).
+  O que está entre chaves duplas (o link de confirmação, o código, o e-mail) é
+  preenchido pelo próprio Supabase: deixe como está.
+-->
+<body style="margin:0;padding:0;background:#f4f5f7;font-family:Arial,Helvetica,sans-serif;color:#1d2330">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f5f7;padding:32px 12px">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #e3e6ec;border-radius:14px">
+        <tr><td style="padding:28px 32px 8px;font-size:13px;font-weight:bold;letter-spacing:.04em;text-transform:uppercase;color:#5b6475">%EMPRESA_NOME%</td></tr>
+        <tr><td style="padding:4px 32px 0;font-size:22px;font-weight:bold;line-height:1.3">Você foi convidado</td></tr>
+        <tr><td style="padding:14px 32px 0;font-size:15px;line-height:1.6;color:#3a4252">Alguém do time te convidou para entrar no sistema do <b>%EMPRESA_NOME%</b>. Clique no botão para criar a sua senha e entrar.</td></tr>
+        <tr><td style="padding:24px 32px 8px"><a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#1c3e87;color:#ffffff;text-decoration:none;font-size:15px;font-weight:bold;padding:13px 22px;border-radius:10px">Aceitar o convite e criar a senha</a></td></tr>
+        <tr><td style="padding:8px 32px 0;font-size:13px;line-height:1.6;color:#5b6475">Se o botão não abrir, copie este endereço no navegador:<br><span style="word-break:break-all;color:#1c3e87">{{ .ConfirmationURL }}</span><br><br>O convite vale por tempo limitado. Se ele vencer, peça um novo a quem te convidou.</td></tr>
+        <tr><td style="padding:20px 32px 28px;font-size:12px;line-height:1.6;color:#8a93a5">Se você não esperava este e-mail, pode ignorar: nada muda na sua conta.</td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

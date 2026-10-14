@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hub · Início</title>
+<link rel="icon" type="image/svg+xml" href="/shared/favicon.svg">
+<!--
+  INÍCIO DO HUB — a porta de entrada (login único) e a tela inicial, na
+  identidade visual do Hub (OS). Este arquivo é só a CASCA; cada assunto mora
+  no seu arquivo (nenhum passa de 1.900 linhas):
+    /shared/launcher/inicio.css · banner-editor.css   a cara
+    /shared/launcher/icones.js                        o rosto de cada sistema (+ logo oficial)
+    /shared/launcher/sistemas.js                      o catálogo e QUEM vê cada sistema
+    /shared/launcher/dock.js                          o Dock de cada pessoa e as logos
+    /shared/launcher/banner-editor.js                 o editor do banner
+    /shared/launcher/inicio.js                        login, computador, celular, busca ⌘K
+  A central de avisos é a mesma de toda tela (/shared/os-avisos.js, pendurada
+  pela montagem do site).
+-->
+<link rel="stylesheet" href="/shared/launcher/inicio.css">
+<link rel="stylesheet" href="/shared/launcher/banner-editor.css">
+<script>
+  // o sino mora no menu do Início (não flutua) e o ✦ do assistente está na barra e no Dock
+  // (o ✦ é do módulo OutAssistenteIA: sem ele, o botão some — data-sistema / OS.instalado)
+  window.OS_SINO_PROPRIO = true;
+  window.OS_AGENTE_SEM_BOTAO = true;
+</script>
+</head>
+<body>
+
+<!-- carregando -->
+<div class="overlay" id="overlay"><div class="box"><span class="spin"></span> <span id="overlayMsg">Carregando…</span></div></div>
+
+<!-- ENTRADA (login único do Hub) -->
+<div class="gate" id="gate" hidden>
+  <form class="gate-card" id="loginForm">
+    <div class="marca"><svg viewBox="0 0 30 18" aria-hidden="true"><circle cx="9" cy="9" r="9"/><path d="M21 0a9 9 0 0 1 0 18z"/></svg><b>Hub</b></div>
+    <h1>Entrar no Hub</h1>
+    <p class="sub">Acesso único · entre para abrir os sistemas</p>
+    <div class="field"><label for="email">E-mail</label><input id="email" type="email" autocomplete="email" placeholder="seu@email.com" required></div>
+    <div class="field"><label for="pass">Senha</label><input id="pass" type="password" autocomplete="current-password" placeholder="••••••••" required></div>
+    <button class="btn-pri" id="loginBtn" type="submit">Entrar</button>
+    <div class="err" id="loginErr" role="alert"></div>
+    <!-- Recuperar/definir senha: link por e-mail que abre em /entrar/ -->
+    <button type="button" class="esqueci" id="forgotLink">Esqueci minha senha</button>
+    <div class="err" id="recoverMsg" style="color:var(--mut)"></div>
+  </form>
+</div>
+
+<!-- O HUB -->
+<div id="app" hidden>
+  <!-- COMPUTADOR -->
+  <section class="desk">
+    <header class="mbar">
+      <span class="b strong mk" id="mbarMarca"></span>
+      <button class="b strong" type="button" data-area="inicio">Hub</button>
+      <a class="b" href="/novidades/">Novidades</a>
+      <span class="esp"></span>
+      <button class="b" type="button" data-kyoto data-sistema="outassistenteia" title="Assistente"><span class="ky-orb"></span>Assistente</button>
+      <button class="b" type="button" data-spot title="Buscar (⌘K)" aria-label="Buscar"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></button>
+      <button class="b" type="button" data-tema title="Dia / Noite" aria-label="Dia ou noite"><svg class="i" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></button>
+      <span class="b hora" id="hora"></span>
+      <button class="b" type="button" data-eu title="Seu menu" aria-label="Seu menu" id="mbarEu"></button>
+    </header>
+    <div class="app-shell">
+      <aside class="side">
+        <div class="brand"><span id="brandMarca"></span><b>Hub</b></div>
+        <div class="fr" id="faixa"></div>
+        <button class="s-busca" type="button" data-spot><svg class="i" viewBox="0 0 24 24" style="width:14px;height:14px"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><span>Buscar sistema</span><span class="kbd">⌘K</span></button>
+        <nav class="nav" id="nav" aria-label="Áreas"></nav>
+      </aside>
+      <main class="main"><div class="wrap" id="page"></div></main>
+    </div>
+    <div class="dockw"><nav class="dock" id="dock" aria-label="Dock"></nav></div>
+  </section>
+
+  <!-- CELULAR -->
+  <section class="mob">
+    <div class="mtela" id="mHome"></div>
+    <div class="m-area-tela" id="mArea" aria-hidden="true"></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/shared/os-core.js"></script>
+<script src="/shared/launcher/icones.js"></script>
+<script src="/shared/launcher/sistemas.js"></script>
+<script src="/shared/launcher/banner-editor.js"></script>
+<script src="/shared/launcher/dock.js"></script>
+<script src="/shared/launcher/inicio.js"></script>
+</body>
+</html>
