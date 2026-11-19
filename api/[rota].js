@@ -2,8 +2,8 @@
  * api/[rota].js: as rotas de servidor dos módulos, na Vercel.
  *
  * Alguns módulos têm uma rota que roda no servidor (a pasta api/ dentro deles): o
- * compartilhamento do produto (base/produtos), o desligamento do OutPeople, o convite
- * do OutPerformance e o formulário do OutProjetos. As telas chamam todas pelo mesmo
+ * compartilhamento do produto (base/produtos), o desligamento do RH, o convite
+ * do Metas e o formulário do Projetos. As telas chamam todas pelo mesmo
  * endereço, /api/<nome>. Esta porta passa o pedido para o arquivo do módulo, sem mudar
  * nada nele: quem personaliza mexe no arquivo dentro do módulo, como sempre.
  *
@@ -18,9 +18,9 @@
 
 const ROTAS = {
   'produto-share': () => require('../base/produtos/api/produto-share.js'),
-  formy: () => require('../outprojetos/api/formy.js'),
-  invite: () => require('../outperformance/api/invite.js'),
-  offboarding: () => require('../outpeople/api/offboarding.js'),
+  formy: () => require('../projetos/api/formy.js'),
+  invite: () => require('../metas/api/invite.js'),
+  offboarding: () => require('../rh/api/offboarding.js'),
 };
 
 module.exports = async function handler(req, res) {

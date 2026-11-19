@@ -173,7 +173,7 @@ CREATE POLICY users_self ON hub.users FOR SELECT USING (((id = auth.uid()) OR ((
 CREATE POLICY users_time_le ON hub.users FOR SELECT TO authenticated USING (hub.e_do_time());
 
 
--- ─── medidor de atividade (tempo de uso de cada tela) — veio do OutSign: toda tela chama, então é da base ───
+-- ─── medidor de atividade (tempo de uso de cada tela) — veio do Contratos: toda tela chama, então é da base ───
 
 -- ROW SECURITY: os_minuto
 ALTER TABLE hub.os_minuto ENABLE ROW LEVEL SECURITY;
@@ -188,7 +188,7 @@ ALTER TABLE hub.os_sessao ENABLE ROW LEVEL SECURITY;
 CREATE POLICY os_sessao_self ON hub.os_sessao FOR SELECT USING (((user_id = auth.uid()) OR hub.is_journey_admin()));
 
 
--- ─── estado compartilhado do os-core (hub.os_estado) — veio do OutJourney: toda tela usa ───
+-- ─── estado compartilhado do os-core (hub.os_estado) — veio do Sucesso: toda tela usa ───
 
 -- ROW SECURITY: os_estado
 ALTER TABLE hub.os_estado ENABLE ROW LEVEL SECURITY;

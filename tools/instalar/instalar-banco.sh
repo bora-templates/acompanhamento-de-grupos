@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # instalar-banco.sh — instala o banco da base e dos módulos, na ordem certa.
 #
-#   DATABASE_URL="postgresql://…" bash tools/instalar/instalar-banco.sh outjourney outsign
+#   DATABASE_URL="postgresql://…" bash tools/instalar/instalar-banco.sh sucesso contratos
 #
 # INSTALAÇÃO NOVA (banco sem a base):
 #   1. o ESSENCIAL da base (base/banco/estrutura.sql) e as atualizações dele;
@@ -9,9 +9,9 @@
 #      sistema.json de cada um; a lista de peças em base/sistema.json → "pecas"):
 #      produtos (base/banco/pecas/produtos.sql), comercial (…/comercial.sql) —
 #      avisos e e-mail não têm banco próprio (a fila deles é do essencial);
-#   3. cada módulo, na ordem do "precisa" (o OutChat depois do OutJourney), não
-#      importa a ordem digitada. O OutFunnels tem três arquivos: outfunnels.sql
-#      (antes), estrutura.sql e outfunnels_ligacoes.sql (no fim, com as ligações);
+#   3. cada módulo, na ordem do "precisa" (o Atendimento depois do Sucesso), não
+#      importa a ordem digitada. O CRM tem três arquivos: crm.sql
+#      (antes), estrutura.sql e crm_ligacoes.sql (no fim, com as ligações);
 #   4. NO FIM, SEMPRE: as ligações (*-ligacoes.sql) de TODOS os módulos que estão
 #      no banco — os novos e os que já estavam. Cada ligação só cria o que precisa
 #      dos dois lados instalados, e rodar de novo não duplica nem apaga nada;
@@ -25,18 +25,18 @@
 #   - as peças da base que os módulos novos usam e o banco não tem são instaladas;
 #   - módulo que já está no banco é pulado (não se reinstala); o novo é instalado;
 #   - as ligações de todos se refazem e o mapa é atualizado.
-#      bash tools/instalar/instalar-banco.sh outchat              # acrescenta o OutChat
-#      bash tools/instalar/instalar-banco.sh --acrescentar outchat # o mesmo, dito com todas as letras
+#      bash tools/instalar/instalar-banco.sh atendimento              # acrescenta o Atendimento
+#      bash tools/instalar/instalar-banco.sh --acrescentar atendimento # o mesmo, dito com todas as letras
 #   (--sem-base, o nome antigo, continua valendo.)
 #
 # RECUSA, com o motivo, antes de mexer em qualquer coisa: módulo que precisa de
-# outro que não veio nem está no banco (OutChat sem OutJourney), módulo que pede
+# outro que não veio nem está no banco (Atendimento sem Sucesso), módulo que pede
 # uma base mais nova do que a desta pasta ("versao_minima_base") e peça da base
 # que um módulo usa e não está na pasta.
 #
 # SÓ REFAZER AS PONTES (conferir, ou depois de mexer numa ligação):
 #      bash tools/instalar/instalar-banco.sh --ligacoes                 # de todos os módulos do banco
-#      bash tools/instalar/instalar-banco.sh --ligacoes outjourney outchat   # só destes
+#      bash tools/instalar/instalar-banco.sh --ligacoes sucesso atendimento   # só destes
 #
 # O que está no banco: hub.sistemas_instalados (o script grava cada módulo, a base
 # como 'base' e cada peça como 'base.<peça>', com a versão) e, pra banco instalado
@@ -68,7 +68,7 @@ tem_tabela_inst() { [ "$(sql "select count(*) from pg_class where oid = to_regcl
 
 # a primeira tabela que a estrutura do sistema cria (a "assinatura" dele no banco)
 assinatura() {
-  [ "$1" = outfunnels ] && { echo "hub.of_leads"; return; }
+  [ "$1" = crm ] && { echo "hub.crm_leads"; return; }
   [ "$1" = base ] && { echo "hub.users"; return; }
   local arqs=("$1"/banco/estrutura.sql) f
   for f in "$1"/banco/estrutura/*.sql; do case "$f" in *-ligacoes.sql) ;; *) [ -f "$f" ] && arqs+=("$f");; esac; done
@@ -104,8 +104,8 @@ refaz_ligacoes() {
     for f in "$s"/banco/estrutura/*-ligacoes.sql; do [ -f "$f" ] && roda_ligacao "$f"; done
     feitos+=("$s")
   done
-  # o OutFunnels fecha a fila: o que ele cria depende de todos os outros
-  for s in "${lista[@]}"; do [ "$s" = outfunnels ] && roda_ligacao outfunnels/banco/outfunnels_ligacoes.sql; done
+  # o CRM fecha a fila: o que ele cria depende de todos os outros
+  for s in "${lista[@]}"; do [ "$s" = crm ] && roda_ligacao crm/banco/crm_ligacoes.sql; done
   [ -f base/banco/esbocos.sql ] && roda_ligacao base/banco/esbocos.sql
   echo "✓ ligações refeitas: ${feitos[*]}"
 }
@@ -118,12 +118,12 @@ grava_mapa() {   # o instalacao.json da raiz, com o que está no banco agora
   tem_tabela_inst && linhas="$(sql "select sistema || ' ' || coalesce(versao,'') from hub.sistemas_instalados order by 1")"
   printf '%s\n' "$linhas" | MAPA_NOTA="${1:-}" pecas_js mapa
 }
-# banco instalado antes da troca de nome (10/10/2026: performance → outperformance,
-# processos → outprocessos): a lista passa a usar o nome novo, sem reinstalar nada
+# banco instalado antes da troca de nome (10/10/2026: performance → metas,
+# processos → processos): a lista passa a usar o nome novo, sem reinstalar nada
 nomes_novos() {
   tem_tabela_inst || return 0
   sql "set client_min_messages = warning; alter table hub.sistemas_instalados add column if not exists versao text" >/dev/null   # banco de antes das versões
-  sql "update hub.sistemas_instalados v set sistema = n.novo from (values ('performance','outperformance'),('processos','outprocessos')) n(velho, novo)
+  sql "update hub.sistemas_instalados v set sistema = n.novo from (values ('performance','metas'),('processos','processos')) n(velho, novo)
        where v.sistema = n.velho and not exists (select 1 from hub.sistemas_instalados x where x.sistema = n.novo)" >/dev/null
   sql "delete from hub.sistemas_instalados where sistema in ('performance','processos')" >/dev/null
 }
@@ -194,7 +194,7 @@ done
 # ─── os módulos novos ────────────────────────────────────────────────────────
 for s in "${NOVOS[@]}"; do
   [ -f "$s/banco/estrutura.sql" ] || { echo "✗ $s não tem banco/estrutura.sql"; exit 1; }
-  [ "$s" = outfunnels ] && roda outfunnels/banco/outfunnels.sql
+  [ "$s" = crm ] && roda crm/banco/crm.sql
   roda "$s/banco/estrutura.sql"
   marca_instalado "$s" "$(pecas_js versao "$s")"
 done

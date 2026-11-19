@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * instalar-pela-api.js: instala o Hub num projeto do Supabase SÓ pela internet,
+ * instalar-pela-api.js: instala o sistema num projeto do Supabase SÓ pela internet,
  * com o token de acesso da conta: banco, esquemas liberados para o site, e-mails do
  * login em português, segredos, Edge Functions e o primeiro administrador.
  * Não precisa de psql, bash, Docker nem Supabase CLI: roda igual no Mac e no Windows.
@@ -41,7 +41,7 @@ revoke all on ${TABELA} from public;
 do $$ begin
   if exists (select 1 from pg_roles where rolname = 'anon') then execute 'revoke all on ${TABELA} from anon, authenticated'; end if;
 end $$;
-comment on table ${TABELA} is 'O que a instalação do Hub já fez (pedaços do banco, funções publicadas, valores gerados). Só o dono do banco lê. Pode apagar depois de instalar: a instalação refaz o que faltar.';
+comment on table ${TABELA} is 'O que a instalação já fez (pedaços do banco, funções publicadas, valores gerados). Só o dono do banco lê. Pode apagar depois de instalar: a instalação refaz o que faltar.';
 `;
 const lit = (s) => `'${String(s).replace(/'/g, "''")}'`;
 
@@ -217,7 +217,7 @@ async function segredos(api, ref, { site, empresa, chaves = {} } = {}) {
     ['INVITE_REDIRECT_URL', s ? `${s}/entrar/` : ''],
     ['APP_BASE_URL', s],
     ['AGENDAR_BASE_URL', s],
-    ['OUTSIGN_VERIFICAR_URL', s ? `${s}/outsign/verificar` : ''],
+    ['CONTRATOS_VERIFICAR_URL', s ? `${s}/contratos/verificar` : ''],
     ['SB_SECRET_KEY', chaves.secreta || ''],
   ].filter(([, valor]) => valor).map(([name, value]) => ({ name, value }));
   await api.gravaSegredos(ref, lista);
@@ -277,7 +277,7 @@ async function funcoes(api, ref, { mods = [], raiz = RAIZ, ate = Infinity, aoAva
 // ─── 6. o primeiro administrador ─────────────────────────────────────────────
 // Módulo cuja chave de acesso é RESTRITA (a tela Usuários só libera na mão e o cartão do Início não aparece sem a
 // chave): quem instala já nasce com a chave, no nível admin, senão não enxergaria o módulo logo depois de entrar.
-const CHAVES_RESTRITAS = { outgrupos: 'grupos' };
+const CHAVES_RESTRITAS = { grupos: 'grupos' };
 async function administrador(api, ref, { url, chaves, empresa, nome, email, senha, site } = {}) {
   const disp = await api.sql(ref, 'select hub.primeiro_acesso_disponivel() as livre');
   if (!(disp && disp[0] && disp[0].livre)) return { criado: false, motivo: 'ja_tem_admin' };
@@ -324,7 +324,7 @@ async function confereProjeto(api, ref, { ate = Date.now() + 60000 } = {}) {
     const p = await api.projeto(ref);
     if (p && p.status === 'ACTIVE_HEALTHY') return p;
     if (p && /PAUSED|INACTIVE/.test(p.status || '')) throw new ErroSupabase('Este projeto do Supabase está pausado. Abra o projeto no Supabase e clique em Restore.', 409);
-    if (Date.now() > ate) throw new ErroSupabase(`O projeto ainda não está pronto (situação: ${p && p.status}). Espere um minuto e tente de novo.`, 409);
+    if (Date.now() > ate) throw new ErroSupabase(`O projeto ainda não está pronto (situação: ${p && p.status}). Abra o projeto no painel do Supabase, espere ele aparecer como ativo e tente de novo.`, 409);
     await espera(4000);
   }
 }

@@ -1,0 +1,79 @@
+/* ============================================================================
+   A CASCA DO PACOTE DE UMA SOLUÇÃO: o menu lateral e o cabeçalho
+   Só vai no pacote avulso (marcador). Quem monta é o
+   /shared/casca.js; este arquivo é o desenho, só com os tokens do tokens.css.
+   É a mesma casca na tela da solução, em Usuários e em Minha conta.
+   ============================================================================ */
+:root{--casca-largura:248px}
+html.casca body{padding-left:var(--casca-largura)}
+
+/* ── o menu lateral, em carvão ── */
+.casca-lado{position:fixed;left:0;top:0;bottom:0;width:var(--casca-largura);z-index:60;display:flex;flex-direction:column;
+  background:var(--m);color:var(--m-tx);overflow-y:auto;font-family:var(--corpo);font-size:14px;line-height:1.4;-webkit-font-smoothing:antialiased}
+.casca-lado *,.casca-topo *{box-sizing:border-box}
+.casca-marca{display:flex;align-items:center;gap:10px;padding:18px 16px 16px;border-bottom:1px solid var(--m-bd);color:inherit;text-decoration:none;min-height:68px}
+.casca-marca img,.casca-marca-padrao{width:32px;height:32px;border-radius:8px;flex:0 0 auto;display:block}
+.casca-marca-padrao{display:grid;place-items:center;background:var(--m-on);color:var(--m-mark)}
+.casca-marca-padrao svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75}
+.casca-marca span{min-width:0}
+.casca-marca b{display:block;color:var(--m-st);font-family:var(--display);font-weight:600;font-size:17px;letter-spacing:-.01em;line-height:1.1}
+.casca-marca small{display:block;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--m-mu);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.casca-marca:focus-visible{outline:2px solid var(--m-mark);outline-offset:-4px;border-radius:10px}
+.casca-nav{padding:12px 10px;display:flex;flex-direction:column;gap:2px;flex:1}
+.casca-item{position:relative;display:flex;align-items:center;gap:10px;min-height:40px;padding:8px 12px;border-radius:9px;width:100%;
+  color:var(--m-tx);font:inherit;font-size:14px;text-align:left;text-decoration:none;background:none;border:0;cursor:pointer}
+.casca-item[hidden]{display:none}
+.casca-item svg{width:16px;height:16px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;color:var(--m-mu)}
+.casca-item:hover{background:var(--m-on);color:var(--m-st)}
+.casca-item[aria-current="page"]{background:var(--m-on);color:var(--m-st);font-weight:500}
+.casca-item[aria-current="page"]::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:3px;background:var(--m-mark)}
+.casca-item[aria-current="page"] svg{color:var(--m-mark)}
+.casca-item:focus-visible{outline:2px solid var(--m-mark);outline-offset:2px}
+.casca-pe{border-top:1px solid var(--m-bd);padding:10px;display:flex;flex-direction:column;gap:2px}
+.casca-eu{display:flex;align-items:center;gap:10px;padding:6px 8px 10px;min-width:0}
+.casca-eu-tx{min-width:0}
+.casca-eu b{display:block;color:var(--m-st);font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.casca-eu small{display:block;color:var(--m-mu);font-size:11.5px}
+.casca-av{width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;flex:0 0 auto;font-size:11.5px;font-weight:600;
+  background-color:var(--m-mark);color:var(--m-mark-ink);background-size:cover;background-position:center}
+.casca-fundo{display:none}
+
+/* ── o cabeçalho: onde a pessoa está e o Dia/Noite ── */
+.casca-topo{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:10px;min-height:64px;padding:12px 24px;
+  border-bottom:1px solid var(--bd);background:var(--surface);color:var(--ink);font-family:var(--corpo);font-size:14px}
+.casca-onde{font-size:13px;color:var(--ink-3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.casca-onde a{color:var(--ink-2);text-decoration:none}
+.casca-onde a:hover{color:var(--ink);text-decoration:underline;text-underline-offset:2px}
+.casca-onde b{color:var(--ink);font-weight:600}
+.casca-esp{flex:1}
+.casca-circ{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;padding:0;cursor:pointer;
+  border:1px solid var(--bd);background:var(--raised);color:var(--ink-2)}
+.casca-circ:hover{color:var(--ink);border-color:var(--bd-2)}
+.casca-circ svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.casca-circ:focus-visible,.casca-onde a:focus-visible{outline:2px solid var(--foco);outline-offset:2px}
+.casca-hamb{display:none}
+
+/* ── o cabeçalho de cada tela da base (Usuários e Minha conta), igual ao da solução ── */
+.casca-hero{border-radius:var(--raio-cartao);padding:20px 24px;margin-bottom:18px;background:var(--hero);border:1px solid var(--bd)}
+.casca-hero .over{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+.casca-hero h1{font-family:var(--display);font-weight:600;font-size:26px;letter-spacing:-.015em;margin:4px 0;color:var(--ink);overflow-wrap:anywhere}
+.casca-hero p{color:var(--ink-2);font-size:14px;line-height:1.5;margin:0}
+.casca-hero-l{display:flex;gap:16px 24px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap}
+.casca-hero-l > div:first-child{min-width:0;flex:1 1 420px}
+
+/* ── celular e tablet estreito: o menu abre pelo botão do cabeçalho, por cima da tela ── */
+@media (max-width: 860px){
+  html.casca body{padding-left:0}
+  .casca-lado{transform:translateX(-100%);visibility:hidden;transition:transform .3s var(--ease),visibility 0s linear .3s;box-shadow:none;width:min(300px,86vw)}
+  html.casca-aberta .casca-lado{transform:none;visibility:visible;transition:transform .3s var(--ease);box-shadow:var(--sombra)}
+  html.casca-aberta .casca-fundo{display:block;position:fixed;inset:0;background:var(--overlay);z-index:55}
+  html.casca-aberta,html.casca-aberta body{overflow:hidden}
+  .casca-hamb{display:grid}
+  .casca-topo{padding:10px 14px;min-height:64px}
+  .casca-item{min-height:44px}
+  .casca-circ{width:44px;height:44px}
+  .casca-hero{padding:16px}
+  .casca-hero h1{font-size:22px}
+  .casca-hero-l > div:first-child{flex-basis:100%}
+}
+@media (prefers-reduced-motion: reduce){.casca-lado{transition:none!important}}

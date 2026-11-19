@@ -1,19 +1,19 @@
 -- =============================================================================
 -- base/banco/esbocos.sql: roda no FIM das ligações (as duas instalações chamam).
--- Gerado por boraia-fabrica/gerar-esbocos.mjs a partir do hub completo: não editar à mão.
+-- Gerado pela fábrica (gerar-esbocos.mjs) a partir do pacote completo: não editar à mão.
 --
--- Funções do OutFunnels leem visões que só nascem quando outro módulo está no banco
--- (as vendas e os indicadores do OutPerformance, as renovações do OutJourney). Com o
--- OutFunnels sem esses módulos, cada visão que faltar ganha aqui um esboço: as mesmas
+-- Funções do CRM leem visões que só nascem quando outro módulo está no banco
+-- (as vendas e os indicadores do Metas, as renovações do Sucesso). Com o
+-- CRM sem esses módulos, cada visão que faltar ganha aqui um esboço: as mesmas
 -- colunas, nenhuma linha. Assim as telas mostram vazio em vez de erro. O esbocos-tira.sql
 -- apaga os esboços no COMEÇO das ligações, e a visão de verdade nasce quando o módulo chega.
--- Sem o OutFunnels (hub.of_negocios), nada aqui roda.
+-- Sem o CRM (hub.crm_negocios), nada aqui roda.
 -- =============================================================================
 
--- of_v_agenda_com_lead: 37 colunas
+-- crm_v_agenda_com_lead: 37 colunas
 do $esboco$ begin
-  if to_regclass('hub.of_negocios') is not null and to_regclass('hub.of_v_agenda_com_lead') is null then
-    create view hub.of_v_agenda_com_lead as
+  if to_regclass('hub.crm_negocios') is not null and to_regclass('hub.crm_v_agenda_com_lead') is null then
+    create view hub.crm_v_agenda_com_lead as
     select null::text as fonte,
            null::text as id,
            null::date as data_agendamento,
@@ -52,18 +52,18 @@ do $esboco$ begin
            null::text as lead_pagina_url,
            null::timestamp with time zone as realizado_em
      where false;
-    comment on view hub.of_v_agenda_com_lead is 'esboço: visão vazia no lugar da que nasce com outro módulo (OutJourney ou OutPerformance); as ligações trocam pela de verdade quando ele chegar';
-    grant select on hub.of_v_agenda_com_lead to authenticated, service_role;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.of_v_agenda_com_lead to hub_agente_leitor'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.of_v_agenda_com_lead to hub_agente_leitor_sem_rh'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.of_v_agenda_com_lead to hub_agente_leitor_vendas'; end if;
+    comment on view hub.crm_v_agenda_com_lead is 'esboço: visão vazia no lugar da que nasce com outro módulo (Sucesso ou Metas); as ligações trocam pela de verdade quando ele chegar';
+    grant select on hub.crm_v_agenda_com_lead to authenticated, service_role;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.crm_v_agenda_com_lead to hub_agente_leitor'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.crm_v_agenda_com_lead to hub_agente_leitor_sem_rh'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.crm_v_agenda_com_lead to hub_agente_leitor_vendas'; end if;
   end if;
 end $esboco$;
 
--- of_v_agendamentos_hub: 16 colunas
+-- crm_v_agendamentos_hub: 16 colunas
 do $esboco$ begin
-  if to_regclass('hub.of_negocios') is not null and to_regclass('hub.of_v_agendamentos_hub') is null then
-    create view hub.of_v_agendamentos_hub as
+  if to_regclass('hub.crm_negocios') is not null and to_regclass('hub.crm_v_agendamentos_hub') is null then
+    create view hub.crm_v_agendamentos_hub as
     select null::uuid as id,
            null::date as data_agendamento,
            null::date as data_reuniao,
@@ -81,18 +81,18 @@ do $esboco$ begin
            null::text as gcal_event_id,
            null::text as reuniao_link
      where false;
-    comment on view hub.of_v_agendamentos_hub is 'esboço: visão vazia no lugar da que nasce com outro módulo (OutJourney ou OutPerformance); as ligações trocam pela de verdade quando ele chegar';
-    grant select on hub.of_v_agendamentos_hub to authenticated, service_role;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.of_v_agendamentos_hub to hub_agente_leitor'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.of_v_agendamentos_hub to hub_agente_leitor_sem_rh'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.of_v_agendamentos_hub to hub_agente_leitor_vendas'; end if;
+    comment on view hub.crm_v_agendamentos_hub is 'esboço: visão vazia no lugar da que nasce com outro módulo (Sucesso ou Metas); as ligações trocam pela de verdade quando ele chegar';
+    grant select on hub.crm_v_agendamentos_hub to authenticated, service_role;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.crm_v_agendamentos_hub to hub_agente_leitor'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.crm_v_agendamentos_hub to hub_agente_leitor_sem_rh'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.crm_v_agendamentos_hub to hub_agente_leitor_vendas'; end if;
   end if;
 end $esboco$;
 
--- of_v_alertas: 9 colunas
+-- crm_v_alertas: 9 colunas
 do $esboco$ begin
-  if to_regclass('hub.of_negocios') is not null and to_regclass('hub.of_v_alertas') is null then
-    create view hub.of_v_alertas as
+  if to_regclass('hub.crm_negocios') is not null and to_regclass('hub.crm_v_alertas') is null then
+    create view hub.crm_v_alertas as
     select null::text as tipo,
            null::text as gravidade,
            null::text as chave,
@@ -103,18 +103,18 @@ do $esboco$ begin
            null::timestamp with time zone as desde,
            null::text as link
      where false;
-    comment on view hub.of_v_alertas is 'esboço: visão vazia no lugar da que nasce com outro módulo (OutJourney ou OutPerformance); as ligações trocam pela de verdade quando ele chegar';
-    grant select on hub.of_v_alertas to authenticated, service_role;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.of_v_alertas to hub_agente_leitor'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.of_v_alertas to hub_agente_leitor_sem_rh'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.of_v_alertas to hub_agente_leitor_vendas'; end if;
+    comment on view hub.crm_v_alertas is 'esboço: visão vazia no lugar da que nasce com outro módulo (Sucesso ou Metas); as ligações trocam pela de verdade quando ele chegar';
+    grant select on hub.crm_v_alertas to authenticated, service_role;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.crm_v_alertas to hub_agente_leitor'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.crm_v_alertas to hub_agente_leitor_sem_rh'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.crm_v_alertas to hub_agente_leitor_vendas'; end if;
   end if;
 end $esboco$;
 
--- of_v_compradores: 25 colunas
+-- crm_v_compradores: 25 colunas
 do $esboco$ begin
-  if to_regclass('hub.of_negocios') is not null and to_regclass('hub.of_v_compradores') is null then
-    create view hub.of_v_compradores as
+  if to_regclass('hub.crm_negocios') is not null and to_regclass('hub.crm_v_compradores') is null then
+    create view hub.crm_v_compradores as
     select null::uuid as id,
            null::date as data_fechamento,
            null::date as data_entrada,
@@ -141,18 +141,18 @@ do $esboco$ begin
            null::text as agendado_por,
            null::date as data_call
      where false;
-    comment on view hub.of_v_compradores is 'esboço: visão vazia no lugar da que nasce com outro módulo (OutJourney ou OutPerformance); as ligações trocam pela de verdade quando ele chegar';
-    grant select on hub.of_v_compradores to authenticated, service_role;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.of_v_compradores to hub_agente_leitor'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.of_v_compradores to hub_agente_leitor_sem_rh'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.of_v_compradores to hub_agente_leitor_vendas'; end if;
+    comment on view hub.crm_v_compradores is 'esboço: visão vazia no lugar da que nasce com outro módulo (Sucesso ou Metas); as ligações trocam pela de verdade quando ele chegar';
+    grant select on hub.crm_v_compradores to authenticated, service_role;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.crm_v_compradores to hub_agente_leitor'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.crm_v_compradores to hub_agente_leitor_sem_rh'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.crm_v_compradores to hub_agente_leitor_vendas'; end if;
   end if;
 end $esboco$;
 
--- of_v_lancamentos: 7 colunas
+-- crm_v_lancamentos: 7 colunas
 do $esboco$ begin
-  if to_regclass('hub.of_negocios') is not null and to_regclass('hub.of_v_lancamentos') is null then
-    create view hub.of_v_lancamentos as
+  if to_regclass('hub.crm_negocios') is not null and to_regclass('hub.crm_v_lancamentos') is null then
+    create view hub.crm_v_lancamentos as
     select null::date as dia,
            null::text as pessoa,
            null::text as cargo,
@@ -161,36 +161,36 @@ do $esboco$ begin
            null::text as tipo,
            null::numeric as valor
      where false;
-    comment on view hub.of_v_lancamentos is 'esboço: visão vazia no lugar da que nasce com outro módulo (OutJourney ou OutPerformance); as ligações trocam pela de verdade quando ele chegar';
-    grant select on hub.of_v_lancamentos to authenticated, service_role;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.of_v_lancamentos to hub_agente_leitor'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.of_v_lancamentos to hub_agente_leitor_sem_rh'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.of_v_lancamentos to hub_agente_leitor_vendas'; end if;
+    comment on view hub.crm_v_lancamentos is 'esboço: visão vazia no lugar da que nasce com outro módulo (Sucesso ou Metas); as ligações trocam pela de verdade quando ele chegar';
+    grant select on hub.crm_v_lancamentos to authenticated, service_role;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.crm_v_lancamentos to hub_agente_leitor'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.crm_v_lancamentos to hub_agente_leitor_sem_rh'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.crm_v_lancamentos to hub_agente_leitor_vendas'; end if;
   end if;
 end $esboco$;
 
--- of_v_perf_dia: 5 colunas
+-- crm_v_perf_dia: 5 colunas
 do $esboco$ begin
-  if to_regclass('hub.of_negocios') is not null and to_regclass('hub.of_v_perf_dia') is null then
-    create view hub.of_v_perf_dia as
+  if to_regclass('hub.crm_negocios') is not null and to_regclass('hub.crm_v_perf_dia') is null then
+    create view hub.crm_v_perf_dia as
     select null::date as dia,
            null::text as pessoa,
            null::text as cargo,
            null::jsonb as valores,
            null::bigint as indicadores
      where false;
-    comment on view hub.of_v_perf_dia is 'esboço: visão vazia no lugar da que nasce com outro módulo (OutJourney ou OutPerformance); as ligações trocam pela de verdade quando ele chegar';
-    grant select on hub.of_v_perf_dia to authenticated, service_role;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.of_v_perf_dia to hub_agente_leitor'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.of_v_perf_dia to hub_agente_leitor_sem_rh'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.of_v_perf_dia to hub_agente_leitor_vendas'; end if;
+    comment on view hub.crm_v_perf_dia is 'esboço: visão vazia no lugar da que nasce com outro módulo (Sucesso ou Metas); as ligações trocam pela de verdade quando ele chegar';
+    grant select on hub.crm_v_perf_dia to authenticated, service_role;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.crm_v_perf_dia to hub_agente_leitor'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.crm_v_perf_dia to hub_agente_leitor_sem_rh'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.crm_v_perf_dia to hub_agente_leitor_vendas'; end if;
   end if;
 end $esboco$;
 
--- of_v_perf_mes: 8 colunas
+-- crm_v_perf_mes: 8 colunas
 do $esboco$ begin
-  if to_regclass('hub.of_negocios') is not null and to_regclass('hub.of_v_perf_mes') is null then
-    create view hub.of_v_perf_mes as
+  if to_regclass('hub.crm_negocios') is not null and to_regclass('hub.crm_v_perf_mes') is null then
+    create view hub.crm_v_perf_mes as
     select null::text as mes,
            null::text as pessoa,
            null::text as cargo,
@@ -200,18 +200,18 @@ do $esboco$ begin
            null::numeric as valor,
            null::bigint as dias_lancados
      where false;
-    comment on view hub.of_v_perf_mes is 'esboço: visão vazia no lugar da que nasce com outro módulo (OutJourney ou OutPerformance); as ligações trocam pela de verdade quando ele chegar';
-    grant select on hub.of_v_perf_mes to authenticated, service_role;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.of_v_perf_mes to hub_agente_leitor'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.of_v_perf_mes to hub_agente_leitor_sem_rh'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.of_v_perf_mes to hub_agente_leitor_vendas'; end if;
+    comment on view hub.crm_v_perf_mes is 'esboço: visão vazia no lugar da que nasce com outro módulo (Sucesso ou Metas); as ligações trocam pela de verdade quando ele chegar';
+    grant select on hub.crm_v_perf_mes to authenticated, service_role;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.crm_v_perf_mes to hub_agente_leitor'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.crm_v_perf_mes to hub_agente_leitor_sem_rh'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.crm_v_perf_mes to hub_agente_leitor_vendas'; end if;
   end if;
 end $esboco$;
 
--- of_v_retencao: 29 colunas
+-- crm_v_retencao: 29 colunas
 do $esboco$ begin
-  if to_regclass('hub.of_negocios') is not null and to_regclass('hub.of_v_retencao') is null then
-    create view hub.of_v_retencao as
+  if to_regclass('hub.crm_negocios') is not null and to_regclass('hub.crm_v_retencao') is null then
+    create view hub.crm_v_retencao as
     select null::text as atendimento_id,
            null::uuid as cliente_id,
            null::text as cliente,
@@ -242,18 +242,18 @@ do $esboco$ begin
            null::text as tipo_cliente,
            null::uuid as etapa_id
      where false;
-    comment on view hub.of_v_retencao is 'esboço: visão vazia no lugar da que nasce com outro módulo (OutJourney ou OutPerformance); as ligações trocam pela de verdade quando ele chegar';
-    grant select on hub.of_v_retencao to authenticated, service_role;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.of_v_retencao to hub_agente_leitor'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.of_v_retencao to hub_agente_leitor_sem_rh'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.of_v_retencao to hub_agente_leitor_vendas'; end if;
+    comment on view hub.crm_v_retencao is 'esboço: visão vazia no lugar da que nasce com outro módulo (Sucesso ou Metas); as ligações trocam pela de verdade quando ele chegar';
+    grant select on hub.crm_v_retencao to authenticated, service_role;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.crm_v_retencao to hub_agente_leitor'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.crm_v_retencao to hub_agente_leitor_sem_rh'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.crm_v_retencao to hub_agente_leitor_vendas'; end if;
   end if;
 end $esboco$;
 
--- of_v_vendas_com_lead: 23 colunas
+-- crm_v_vendas_com_lead: 23 colunas
 do $esboco$ begin
-  if to_regclass('hub.of_negocios') is not null and to_regclass('hub.of_v_vendas_com_lead') is null then
-    create view hub.of_v_vendas_com_lead as
+  if to_regclass('hub.crm_negocios') is not null and to_regclass('hub.crm_v_vendas_com_lead') is null then
+    create view hub.crm_v_vendas_com_lead as
     select null::uuid as id,
            null::date as data_fechamento,
            null::date as data_entrada,
@@ -278,18 +278,18 @@ do $esboco$ begin
            null::boolean as lead_mql,
            null::timestamp with time zone as lead_entrou_em
      where false;
-    comment on view hub.of_v_vendas_com_lead is 'esboço: visão vazia no lugar da que nasce com outro módulo (OutJourney ou OutPerformance); as ligações trocam pela de verdade quando ele chegar';
-    grant select on hub.of_v_vendas_com_lead to authenticated, service_role;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.of_v_vendas_com_lead to hub_agente_leitor'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.of_v_vendas_com_lead to hub_agente_leitor_sem_rh'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.of_v_vendas_com_lead to hub_agente_leitor_vendas'; end if;
+    comment on view hub.crm_v_vendas_com_lead is 'esboço: visão vazia no lugar da que nasce com outro módulo (Sucesso ou Metas); as ligações trocam pela de verdade quando ele chegar';
+    grant select on hub.crm_v_vendas_com_lead to authenticated, service_role;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.crm_v_vendas_com_lead to hub_agente_leitor'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.crm_v_vendas_com_lead to hub_agente_leitor_sem_rh'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.crm_v_vendas_com_lead to hub_agente_leitor_vendas'; end if;
   end if;
 end $esboco$;
 
--- of_v_vendas_hub: 16 colunas
+-- crm_v_vendas_hub: 16 colunas
 do $esboco$ begin
-  if to_regclass('hub.of_negocios') is not null and to_regclass('hub.of_v_vendas_hub') is null then
-    create view hub.of_v_vendas_hub as
+  if to_regclass('hub.crm_negocios') is not null and to_regclass('hub.crm_v_vendas_hub') is null then
+    create view hub.crm_v_vendas_hub as
     select null::uuid as id,
            null::date as data_fechamento,
            null::date as data_entrada,
@@ -307,10 +307,10 @@ do $esboco$ begin
            null::numeric(12,2) as em_caixa,
            null::text as tipo_venda
      where false;
-    comment on view hub.of_v_vendas_hub is 'esboço: visão vazia no lugar da que nasce com outro módulo (OutJourney ou OutPerformance); as ligações trocam pela de verdade quando ele chegar';
-    grant select on hub.of_v_vendas_hub to authenticated, service_role;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.of_v_vendas_hub to hub_agente_leitor'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.of_v_vendas_hub to hub_agente_leitor_sem_rh'; end if;
-    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.of_v_vendas_hub to hub_agente_leitor_vendas'; end if;
+    comment on view hub.crm_v_vendas_hub is 'esboço: visão vazia no lugar da que nasce com outro módulo (Sucesso ou Metas); as ligações trocam pela de verdade quando ele chegar';
+    grant select on hub.crm_v_vendas_hub to authenticated, service_role;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor') then execute 'grant select on hub.crm_v_vendas_hub to hub_agente_leitor'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_sem_rh') then execute 'grant select on hub.crm_v_vendas_hub to hub_agente_leitor_sem_rh'; end if;
+    if exists (select 1 from pg_roles where rolname = 'hub_agente_leitor_vendas') then execute 'grant select on hub.crm_v_vendas_hub to hub_agente_leitor_vendas'; end if;
   end if;
 end $esboco$;

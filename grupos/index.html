@@ -1,0 +1,61 @@
+<!doctype html>
+<!--
+  GRUPOS (/grupos/): Acompanhamento de Grupos no WhatsApp com IA.
+  A pessoa liga o WhatsApp, escolhe os grupos e a IA conta o que aconteceu em cada um, aponta o que
+  ficou pendente e responde perguntas sobre o grupo.
+
+  Esta página é só o lugar onde cada tela entra. O menu lateral e o cabeçalho são a casca da base
+  (/shared/casca.js e /shared/visual/casca.css), a mesma de Usuários e de Minha conta, montada com o "menu"
+  do sistema.json deste módulo. O desenho de cada tela está em index-partes/telas/ e a montagem do site
+  encaixa tudo aqui, no lugar de cada pedaço marcado.
+  Mapa do código: index-partes/LEIA-ME.md. Visual: o design system das soluções (/shared/visual/) e o grupos.css.
+  Banco: funções hub.gr_* (grupos/banco). Servidor: Edge Function gr-api (a IA, a uazapi e os
+  segredos moram lá: nenhuma chave chega a esta tela).
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acompanhamento de Grupos no WhatsApp com IA</title>
+<link rel="icon" href="/grupos/img/grupos-marca.svg">
+<link rel="stylesheet" href="/shared/visual/tokens.css?v=2">
+<link rel="stylesheet" href="/shared/visual/componentes.css?v=2">
+<link rel="stylesheet" href="/shared/visual/casca.css?v=1">
+<link rel="stylesheet" href="/grupos/grupos.css?v=3">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.0/dist/umd/supabase.min.js"></script>
+<script src="/shared/os-core.js"></script>
+<script src="/shared/casca.js?v=1"></script>
+<script src="/grupos/index-partes/js/01-base.js?v=1"></script>
+<script src="/grupos/index-partes/js/02-grupos.js?v=1"></script>
+<script src="/grupos/index-partes/js/03-grupo.js?v=1"></script>
+<script src="/grupos/index-partes/js/04-resumos.js?v=1"></script>
+<script src="/grupos/index-partes/js/05-extras.js?v=1"></script>
+<script src="/grupos/index-partes/js/06-ajustes.js?v=1"></script>
+<script src="/grupos/index-partes/js/99-monta.js?v=1"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.9/dist/cdn.min.js"></script>
+</head>
+<body>
+<div id="gr-app" class="app" x-data="grApp()" @keydown.escape.window="fechaJanelas()" style="display:none">
+  <!-- o cabeçalho e o menu da casca acompanham a tela: o nome do que está aberto e o item Ajustes de quem configura -->
+  <span hidden x-effect="window.Casca && Casca.titulo(tituloRota); window.Casca && painel && Casca.mostraItem('ajustes', podeConfigurar)"></span>
+
+  <!-- carregando por cima da tela, só para o que trava tudo por alguns segundos -->
+  <div class="overlay" x-show="tarefa" x-cloak role="status" aria-live="polite"><div class="box"><span class="spin"></span><span x-text="tarefa"></span></div></div>
+
+  <!-- aviso curto que sobe na tela -->
+  <div class="toast" :class="aviso.tom" x-show="aviso.texto" x-cloak role="status" aria-live="polite"><span x-text="aviso.texto"></span></div>
+
+  <main class="main" id="conteudo">
+    <div class="pg">
+      <div class="err" x-show="erro" x-cloak role="alert"><span x-text="erro"></span> <button type="button" class="lnk" @click="erro = ''">Fechar</button></div>
+
+      <div data-parte="/grupos/index-partes/telas/grupos.html"></div>
+      <div data-parte="/grupos/index-partes/telas/grupo.html"></div>
+      <div data-parte="/grupos/index-partes/telas/ajustes.html"></div>
+    </div>
+  </main>
+
+  <div data-parte="/grupos/index-partes/telas/janelas.html"></div>
+</div>
+</body>
+</html>

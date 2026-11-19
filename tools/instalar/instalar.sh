@@ -72,6 +72,8 @@ funcoes_de() {   # as Edge Functions que a instalação tem (base: das peças pr
 }
 
 if [ "$MODO" = acrescentar ]; then
+  # o pacote de uma solução (pacote.json "tipo": "avulsa") não traz o acrescentar.js: a solução tem uma instalação só dela
+  [ -f tools/instalar/acrescentar.js ] || { echo "✗ Esta instalação é de uma solução só e não recebe outro módulo. Para refazer a instalação, abra o site em /setup."; exit 1; }
   LISTA="$(mktemp)"; trap 'rm -f "$LISTA" "$LISTA.funcoes"' EXIT
   if [ $SIMULAR = 1 ]; then node tools/instalar/acrescentar.js "$PACOTE" --simular; exit 0; fi
   node tools/instalar/acrescentar.js "$PACOTE" --lista-novos "$LISTA"
@@ -102,7 +104,7 @@ oferece_emails
 echo
 echo "Falta (fora do banco), na ordem — README.md, \"1. Instalar\":"
 echo "  · a chave de instalação (PRIMEIRO_ACESSO_CHAVE) e as Edge Functions: $(funcoes_de "${MODS[@]}")"
-echo "  · Exposed schemas: hub$([ -d outfunnels ] && echo ' e outfunnels') · URL do site e Redirect URLs · cadastro aberto DESLIGADO"
+echo "  · Exposed schemas: hub$([ -d crm ] && echo ' e crm') · URL do site e Redirect URLs · cadastro aberto DESLIGADO"
 echo "  · montar e publicar o site: node tools/instalar/montar/montar.js --saida dist --config empresa.json"
 exit 0
 }

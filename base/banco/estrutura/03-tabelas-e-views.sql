@@ -20,7 +20,7 @@ CREATE TABLE hub.ag_conhecimento (
 );
 
 -- COMMENT: TABLE ag_conhecimento
-COMMENT ON TABLE hub.ag_conhecimento IS 'A base de conhecimento da empresa (da base): processos, jeitos de responder, o que nunca se promete, e as respostas prontas de suporte de cada produto (OutFunnels). O assistente (módulo OutAssistenteIA) lê e grava nela pelo /ensinar.';
+COMMENT ON TABLE hub.ag_conhecimento IS 'A base de conhecimento da empresa (da base): processos, jeitos de responder, o que nunca se promete, e as respostas prontas de suporte de cada produto (CRM). O assistente (módulo Assistente) lê e grava nela pelo /ensinar.';
 
 -- COMMENT: COLUMN ag_conhecimento.fonte
 COMMENT ON COLUMN hub.ag_conhecimento.fonte IS 'De onde saiu este conhecimento — arquivo, link ou quem escreveu. O agente cita.';
@@ -141,7 +141,7 @@ CREATE TABLE hub.banner_noticias (
     link_url text,
     link_label text DEFAULT 'Ver mais'::text,
     imagem_url text,
-    cor text DEFAULT '#BBB2DC'::text NOT NULL,
+    cor text DEFAULT '#E8703A'::text NOT NULL,
     ativo boolean DEFAULT true NOT NULL,
     ordem integer DEFAULT 0 NOT NULL,
     criado_em timestamp with time zone DEFAULT now() NOT NULL,
@@ -150,8 +150,8 @@ CREATE TABLE hub.banner_noticias (
     expira_em timestamp with time zone
 );
 
--- SEQUENCE: clientes_codigo_oj_seq
-CREATE SEQUENCE hub.clientes_codigo_oj_seq
+-- SEQUENCE: clientes_codigo_suc_seq
+CREATE SEQUENCE hub.clientes_codigo_suc_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -267,7 +267,7 @@ CREATE TABLE hub.roles (
 );
 
 -- COMMENT: COLUMN roles.faixa_min
-COMMENT ON COLUMN hub.roles.faixa_min IS 'Piso da faixa salarial de referência do cargo. Alimenta a coluna "Faixa do cargo" e o "Na faixa/Acima da média" da tela Folha & Quadro do OutPeople. Editável em RH → Sistema → Cargos (só admin). Vazio = o cargo não tem faixa definida e a tela mostra "—".';
+COMMENT ON COLUMN hub.roles.faixa_min IS 'Piso da faixa salarial de referência do cargo. Alimenta a coluna "Faixa do cargo" e o "Na faixa/Acima da média" da tela Folha & Quadro do RH. Editável em RH → Sistema → Cargos (só admin). Vazio = o cargo não tem faixa definida e a tela mostra "—".';
 
 -- COMMENT: COLUMN roles.faixa_max
 COMMENT ON COLUMN hub.roles.faixa_max IS 'Teto da faixa salarial de referência do cargo. Ver hub.roles.faixa_min.';
@@ -389,7 +389,7 @@ ALTER TABLE ONLY hub.alocacoes_log ALTER COLUMN id SET DEFAULT nextval('hub.aloc
 ALTER TABLE ONLY hub.ia_chamadas ALTER COLUMN id SET DEFAULT nextval('hub.ia_chamadas_id_seq'::regclass);
 
 
--- ─── medidor de atividade (tempo de uso de cada tela) — veio do OutSign: toda tela chama, então é da base ───
+-- ─── medidor de atividade (tempo de uso de cada tela) — veio do Contratos: toda tela chama, então é da base ───
 
 -- TABLE: os_minuto
 CREATE TABLE hub.os_minuto (
@@ -405,7 +405,7 @@ CREATE TABLE hub.os_minuto (
 COMMENT ON TABLE hub.os_minuto IS 'Um minuto de presença por pessoa. Duas abas no mesmo minuto contam UMA vez — a unidade é a pessoa, não a aba.';
 
 -- COMMENT: COLUMN os_minuto.seg_aberto
-COMMENT ON COLUMN hub.os_minuto.seg_aberto IS 'Segundos do minuto em que a tela do Hub estava NA FRENTE da pessoa, mesmo sem ela mexer. `segundos` é o subconjunto em que ela estava mexendo.';
+COMMENT ON COLUMN hub.os_minuto.seg_aberto IS 'Segundos do minuto em que a tela do sistema estava NA FRENTE da pessoa, mesmo sem ela mexer. `segundos` é o subconjunto em que ela estava mexendo.';
 
 -- TABLE: os_sessao
 CREATE TABLE hub.os_sessao (
@@ -421,10 +421,10 @@ CREATE TABLE hub.os_sessao (
 );
 
 -- COMMENT: TABLE os_sessao
-COMMENT ON TABLE hub.os_sessao IS 'Presença no Hub: tempo ATIVO (aba visível e com foco), telas e cliques, por pessoa e sistema. Mede presença, não trabalho.';
+COMMENT ON TABLE hub.os_sessao IS 'Presença no sistema: tempo ATIVO (aba visível e com foco), telas e cliques, por pessoa e sistema. Mede presença, não trabalho.';
 
 
--- ─── estado compartilhado do os-core (hub.os_estado) — veio do OutJourney: toda tela usa ───
+-- ─── estado compartilhado do os-core (hub.os_estado) — veio do Sucesso: toda tela usa ───
 
 -- TABLE: os_estado
 CREATE TABLE hub.os_estado (
@@ -435,5 +435,5 @@ CREATE TABLE hub.os_estado (
 );
 
 -- COMMENT: TABLE os_estado
-COMMENT ON TABLE hub.os_estado IS 'Armário compartilhado do Hub: o que uma pessoa faz na tela, todas veem. Escrito pelo os-core.js.';
+COMMENT ON TABLE hub.os_estado IS 'Armário compartilhado do sistema: o que uma pessoa faz na tela, todas veem. Escrito pelo os-core.js.';
 

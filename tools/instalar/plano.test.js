@@ -1,5 +1,5 @@
 // Testes do plano da instalação: node --test tools/instalar/*.test.js
-// Rodam com os arquivos DESTA pasta, então valem para qualquer pacote (um módulo ou o Hub completo).
+// Rodam com os arquivos DESTA pasta, então valem para qualquer pacote (um módulo ou o pacote completo).
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
@@ -17,10 +17,10 @@ test('a instalação do zero começa pelo preparo da base e termina nas ligaçõ
   assert.strictEqual(p.etapas[0].id, 'base');
   assert.strictEqual(p.etapas[0].pedacos[0].id, 'base/banco/estrutura/00-preparo.sql');
   assert.ok(p.ligacoes.length > 0, 'tem ligações');
-  // os esboços saem antes de todas as ligações e voltam depois de todas (até da do OutFunnels)
+  // os esboços saem antes de todas as ligações e voltam depois de todas (até da do CRM)
   assert.strictEqual(p.ligacoes[0].id, 'base/banco/esbocos-tira.sql');
   assert.strictEqual(p.ligacoes[p.ligacoes.length - 1].id, 'base/banco/esbocos.sql');
-  if (MODS.includes('outfunnels')) assert.strictEqual(p.ligacoes[p.ligacoes.length - 2].id, 'outfunnels/banco/outfunnels_ligacoes.sql');
+  if (MODS.includes('crm')) assert.strictEqual(p.ligacoes[p.ligacoes.length - 2].id, 'crm/banco/crm_ligacoes.sql');
   for (const m of MODS) assert.ok(p.etapas.some((e) => e.id === m), `${m} entra no plano`);
 });
 
@@ -90,5 +90,5 @@ test('as funções sem login são só as que conferem tudo por dentro', () => {
 test('os esquemas liberados para o site incluem o hub', () => {
   const e = Plano.esquemasExpostos([], RAIZ);
   assert.ok(e.includes('hub'));
-  assert.strictEqual(e.includes('outfunnels'), MODS.includes('outfunnels'));
+  assert.strictEqual(e.includes('crm'), MODS.includes('crm'));
 });

@@ -20,8 +20,8 @@
   // candidato, num aviso. Ninguém volta pra consertar depois.
   const SITE = 'https://app.seudominio.com.br';
 
-  // OS.link('/outjourney/briefing?c=' + id)
-  //   → 'https://app.seudominio.com.br/outjourney/briefing?c=…'
+  // OS.link('/modulo/tela?c=' + id)
+  //   → 'https://app.seudominio.com.br/modulo/tela?c=…'
   // Aceita com ou sem a barra da frente; endereço que já é absoluto passa
   // direto (não reescreve link de fora, tipo Drive ou Zoom).
   function link(caminho) {
@@ -38,7 +38,7 @@
   // A decisão é pelo CAMINHO da tela: o portal mora no mesmo domínio do sistema.
   function telaDoCliente() {
     const p = (location.pathname || '').toLowerCase();
-    return /^\/(outjourney\/)?(cliente|briefing|agendar|time)(\.html)?([?#/]|$)/.test(p);
+    return /^\/(sucesso\/)?(cliente|briefing|agendar|time)(\.html)?([?#/]|$)/.test(p);
   }
 
   // ── Cliente Supabase (singleton) ─────────────────────────────────────────
@@ -61,7 +61,7 @@
   // ABERTA: tudo o que a pessoa clica passa a ir como anônimo, e o banco
   // responde "permission denied for table …". Pra quem está usando isso parece
   // defeito do sistema (25/09/2026: "Erro ao atualizar etapa: permission denied
-  // for table oj_jornada_progresso"). Agora a tela diz o que aconteceu e leva
+  // for table suc_jornada_progresso"). Agora a tela diz o que aconteceu e leva
   // pra entrar de novo, voltando pro mesmo lugar (?volta=).
   // Sair pelo botão (OS.Auth.signOut) NÃO mostra o aviso: aí foi a pessoa.
   let _saidaPedida = false;
@@ -80,13 +80,13 @@
     const d = document.createElement('div');
     d.id = 'os-sessao-caiu';
     d.setAttribute('role', 'alertdialog');
-    d.style.cssText = 'position:fixed;inset:0;z-index:2147483646;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,-apple-system,sans-serif';
-    d.innerHTML = '<div style="background:#fff;color:#111;max-width:420px;width:100%;border-radius:12px;padding:22px 22px 18px;box-shadow:0 12px 40px rgba(0,0,0,.3)">'
+    d.style.cssText = 'position:fixed;inset:0;z-index:2147483646;background:var(--overlay,rgba(29,26,23,.48));display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,-apple-system,sans-serif';
+    d.innerHTML = '<div style="background:var(--surface,#FFFFFF);color:var(--ink,#1D1A17);max-width:420px;width:100%;border-radius:12px;padding:22px 22px 18px;box-shadow:var(--sombra,0 12px 32px -18px rgba(40,28,16,.28))">'
       + '<div style="font-weight:700;font-size:16px;margin-bottom:8px">Sua sessão terminou</div>'
-      + '<div style="font-size:14px;line-height:1.45;color:#333;margin-bottom:16px">O login deste navegador venceu ou foi encerrado. Enquanto não entrar de novo, <b>nada do que você fizer nesta tela será gravado</b>. Se estava escrevendo algo, copie o texto antes.</div>'
+      + '<div style="font-size:14px;line-height:1.45;color:var(--ink-2,#55504A);margin-bottom:16px">O login deste navegador venceu ou foi encerrado. Enquanto não entrar de novo, <b>nada do que você fizer nesta tela será gravado</b>. Se estava escrevendo algo, copie o texto antes.</div>'
       + '<div style="display:flex;gap:8px;justify-content:flex-end">'
-      + '<button type="button" data-fechar style="border:1px solid #ccc;background:#fff;color:#111;border-radius:8px;padding:8px 12px;cursor:pointer">Copiar meu texto antes</button>'
-      + '<a data-entrar style="background:#111;color:#fff;border-radius:8px;padding:8px 14px;text-decoration:none;font-weight:600">Entrar de novo</a>'
+      + '<button type="button" data-fechar style="border:1px solid var(--bd-2,rgba(40,28,16,.18));background:var(--surface,#FFFFFF);color:var(--ink,#1D1A17);border-radius:8px;padding:8px 12px;cursor:pointer">Copiar meu texto antes</button>'
+      + '<a data-entrar style="background:var(--btn,#B4481B);color:var(--btn-ink,#FFFFFF);border-radius:8px;padding:8px 14px;text-decoration:none;font-weight:600">Entrar de novo</a>'
       + '</div></div>';
     d.querySelector('[data-entrar]').href = comVolta('/');
     d.querySelector('[data-fechar]').onclick = () => {
@@ -151,7 +151,7 @@
   //   OS.Bus.on('cliente:atualizado', ({ id }) => recarregarCliente(id))
   //   OS.Bus.emit('cliente:atualizado', { id: '...' })
   const Bus = (() => {
-    const ch = new BroadcastChannel('boraia-hub');
+    const ch = new BroadcastChannel('os-sistema');
     return {
       emit(event, payload) {
         ch.postMessage({ event, payload, from: location.pathname });
@@ -166,23 +166,14 @@
 
   // ── Navegação entre hubs ─────────────────────────────────────────────────
   const Nav = {
+    // cada linha só vai no pacote que tem o módulo ou que se liga a ele (gerar-pacotes.js, marcador @liga)
     hubs: {
-      outjourney:  '/outjourney/',
-      outfunnels:     '/outfunnels',
-      outprojetos: '/outprojetos/',
-      outsign:     '/outsign/',
-      rh:          '/rh/',
-      outperformance: '/outperformance/',
-      performance: '/outperformance/',   // nome antigo (OutPerformance): continua valendo em OS.Nav.go
-      produtos:    '/produtos/',
-      financeiro:  '/outfinanceiro/',
-      outprocessos: '/outprocessos/',
-      processos:   '/outprocessos/',     // nome antigo (OutProcessos)
+      grupos:      '/grupos/',
     },
 
     go(hub, path = '') {
       const base = this.hubs[hub];
-      if (!base) throw new Error(`[OS] Hub desconhecido: "${hub}"`);
+      if (!base) throw new Error(`[OS] Sistema desconhecido: "${hub}"`);
       const url = base.startsWith('http') ? base : base + path;
       if (base.startsWith('http')) window.open(url, '_blank');
       else window.location.href = url;
@@ -238,7 +229,7 @@
   // true se o usuário é ADMIN do subsistema `key`.
   //   - Admin geral (access_level==='admin') é admin de todos os sistemas.
   //   - Senão, é admin só onde acessos[key] === 'admin'.
-  // Uso: OS.isSystemAdmin('journey') (async) ou OS.isSystemAdminOf(acc, 'journey') com o acc já lido.
+  // Uso: OS.isSystemAdmin('<chave>') (async) ou OS.isSystemAdminOf(acc, '<chave>') com o acc já lido.
   function isSystemAdminOf(acc, key) {
     if (!acc) return false;
     if (acc.level === 'admin') return true;
@@ -267,16 +258,16 @@
   async function accessMode(key) { return accessModeOf(await getMyAccess(), key); }
 
   // true se PODE EDITAR no subsistema `key` ('view' e 'none' = não).
-  // Uso: if (await OS.canEdit('journey')) { ...habilita salvar... }
+  // Uso: if (await OS.canEdit('<chave>')) { ...habilita salvar... }
   function canEditOf(acc, key) { var m = accessModeOf(acc, key); return m === 'edit' || m === 'admin'; }
   async function canEdit(key) { return canEditOf(await getMyAccess(), key); }
 
-  // true se o usuário é "convidado" (perfil só-visualização marcado pelo RH).
+  // true se o usuário é "convidado" (perfil só-visualização marcado na tela Usuários).
   function isGuestOf(acc) { return !!(acc && acc.acessos && acc.acessos._perfil === 'convidado'); }
   async function isGuest() { return isGuestOf(await getMyAccess()); }
 
-  // Adoção incremental do "só visualizar" (o RH já grava; cada tela adota quando quiser).
-  // Chame no init: await OS.enforceViewOnly('journey').
+  // Adoção incremental do "só visualizar" (a tela Usuários já grava; cada tela adota quando quiser).
+  // Chame no init: await OS.enforceViewOnly('<chave>').
   //   • Se o usuário PODE editar naquele sistema → não faz nada, retorna false.
   //   • Se é "só visualizar" → desabilita todo elemento marcado com [data-os-edit]
   //     (botões de salvar/novo/remover, inputs) e mostra um selo discreto. Retorna true.
@@ -304,8 +295,9 @@
       b.style.cssText =
         'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:2147483000;'
         + 'font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:12.5px;font-weight:700;'
-        + 'color:#5b3d00;background:#ffe9b8;border:1px solid #f2c65a;border-radius:999px;'
-        + 'padding:6px 14px;box-shadow:0 4px 14px rgba(0,0,0,.14);';
+        + 'color:var(--warn,#875709);background:color-mix(in srgb,var(--warn,#875709) 12%,var(--surface,#FFFFFF));'
+        + 'border:1px solid var(--warn,#875709);border-radius:999px;'
+        + 'padding:6px 14px;box-shadow:var(--sombra,0 12px 32px -18px rgba(40,28,16,.28));';
       (document.body || document.documentElement).appendChild(b);
     }
     return true;
@@ -318,11 +310,17 @@
     if (document.getElementById('os-sem-acesso')) return;
     const d = document.createElement('div');
     d.id = 'os-sem-acesso';
-    d.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#0E0E10;color:#F2F2F0;text-align:center;padding:24px';
-    d.innerHTML = '<div style="max-width:380px"><div style="font-size:30px;margin-bottom:10px">🔒</div>'
-      + '<h1 style="font-size:21px;margin:0 0 8px">Sem acesso a este módulo</h1>'
-      + '<p style="color:#9A9AA2;font-size:14px;margin:0 0 18px">Seu usuário não tem permissão para abrir esta área. Peça a quem administra o Hub para liberar (tela Usuários).</p>'
-      + '<a href="' + loginPath + '" style="background:#E8722B;color:#fff;text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:700;font-size:14px;display:inline-block">← Voltar ao Hub</a></div>';
+    d.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:var(--corpo,system-ui,-apple-system,"Segoe UI",sans-serif);background:var(--bg,#141210);color:var(--ink,#F3EEE8);text-align:center;padding:24px';
+    // pacote de uma solução: não existe Início para voltar. A tela diz de quem é a liberação e oferece Sair, para entrar
+    // com outra conta; a porta de entrada ("/") também não manda de volta para cá, então não há laço
+    if (_AVULSA) {
+      const nome = _escMod((_PRINCIPAL && _PRINCIPAL.rotulo) || _SOLUCAO || 'este sistema');
+      d.innerHTML = '<div style="max-width:420px"><div style="font-size:30px;margin-bottom:10px" aria-hidden="true">🔒</div>'
+        + '<h1 style="font:600 22px/1.25 var(--display,inherit);margin:0 0 8px">Você ainda não tem acesso a esta tela</h1>'
+        + '<p style="color:var(--ink-2,#B8AFA5);font-size:15px;line-height:1.5;margin:0 0 20px">Quem administra o sistema da empresa libera o acesso ao ' + nome + ' na tela Usuários. Peça a essa pessoa para liberar o seu e-mail.</p>'
+        + '<button type="button" data-os-sair style="background:var(--btn,#B4481B);color:var(--btn-ink,#FFFFFF);border:0;cursor:pointer;padding:12px 22px;min-height:44px;border-radius:9px;font:600 14px var(--corpo,system-ui,sans-serif)">Sair</button></div>';
+      d.querySelector('[data-os-sair]').addEventListener('click', async () => { try { await Auth.signOut(); } catch (e) { /* sai mesmo assim */ } location.replace('/'); });
+    }
     document.body.appendChild(d);
   }
 
@@ -350,14 +348,14 @@
     return acc;
   }
 
-  // Trava FECHADA — o contrário do requireAccess (Samara, 25/08/2026).
+  // Trava FECHADA: o contrário do requireAccess (25/08/2026).
   //   requireAccess libera por padrão: só barra quem tem `false` gravado, e
   //   admin geral fura sempre. Isso serve pros hubs abertos ao time; NÃO serve
-  //   pro Financeiro, onde a lista de quem entra é curta e nominal.
+  //   pro sistema em que a lista de quem entra é curta e nominal.
   //   Aqui é o inverso: só entra quem tem o sinal verde gravado em
   //   hub.users.acessos[key] (true / 'view' / 'admin'). Chave ausente = barrado.
   //   Ser admin geral NÃO fura a trava — quem manda é o acessos[key].
-  //   Uso: await OS.requireAccessEstrito('financeiro', { loginPath:'/' })
+  //   Uso: await OS.requireAccessEstrito('<chave>', { loginPath:'/' })
   function temAcessoEstrito(acc, key) {
     if (!acc || !acc.acessos) return false;
     var v = acc.acessos[key];
@@ -424,188 +422,17 @@
     };
   }
 
-  // ── Botão flutuante "Voltar ao Hub" ───────────────────────────────
-  // Aparece sozinho em todo hub que carrega o os-core (é só editar aqui, vale
-  // pra todos). É um pino fixo no canto, position:fixed, então NÃO empurra nem
-  // cobre o conteúdo — não atrapalha a visualização de nenhum sistema.
-  //
-  // Ele se esconde sozinho quando NÃO faz sentido, sem precisar configurar nada:
-  //   • no próprio Hub (launcher na raiz "/");
-  //   • em páginas públicas/externas (portal do cliente, ficha de admissão,
-  //     onboarding, trilha, portal do convidado).
-  // Aparece em TODO hub interno (mesmo os que já têm um link "Hub" no
-  // cabeçalho — o pino é acesso rápido e fica no canto, não conflita).
-  //
-  // Se encostar em algo, o usuário FECHA no "×": o botão vira uma aba fininha
-  // colada na borda da tela (não cobre nada) e reabre com um clique. A escolha
-  // fica guardada no navegador (localStorage), então continua fechado nos
-  // próximos acessos até a pessoa reabrir.
-  //
-  // Escapes (uma linha, se algum sistema quiser controlar):
-  //   window.OS_NO_BACK = true;                 // não mostra nesta tela
-  //   window.OS_BACK_POSITION = 'bottom-right'; // 'bottom-left'(padrão)|'bottom-right'|'top-left'|'top-right'
-  // + as páginas públicas do OutSign (quem assina e quem confere é gente de FORA) e a ficha
-  // pública do produto (/produto/ — não confundir com o catálogo interno /produtos/)
-  const _BACK_DENY = ['cliente', 'admissao', 'admissão', 'onboarding', 'trilha', 'externo', 'convidado',
-    'outsign/assinar', 'outsign/verificar'];
+  // No pacote de uma solução não existe Início: o botão flutuante não vai no pacote (o menu da casca leva a cada tela).
+  // A lista abaixo continua: o sino também não aparece nas páginas públicas.
+  const _BACK_DENY = ['cliente', 'admissao', 'admissão', 'onboarding', 'trilha', 'externo', 'convidado'];
   const _BACK_HIDE_KEY = 'os:back-hidden'; // '1' = usuário fechou (mostra só a aba)
 
-  // Tela aberta DENTRO de outra (iframe, ex.: um painel embutido no OutJourney)
+  // Tela aberta DENTRO de outra (iframe, ex.: um painel embutido no Sucesso)
   // não monta ←, sino nem ✦ — a tela de fora já tem (senão aparecem em dobro).
   function _dentroDeQuadro() {
     try { return window.self !== window.top; } catch (e) { return true; }
   }
 
-  function _shouldShowBack() {
-    if (window.OS_NO_BACK === true) return false;
-    if (_dentroDeQuadro()) return false;
-    const path = (location.pathname || '/').toLowerCase();
-    // launcher = raiz do domínio (ele É o Hub)
-    if (path === '/' || path === '' || path === '/index.html') return false;
-    // páginas públicas/externas
-    if (_BACK_DENY.some((k) => path.includes(k))) return false;
-    if (path === '/produto' || path.indexOf('/produto/') === 0 || path === '/produto.html') return false;
-    return true;
-  }
-
-  function _backHidden() {
-    try { return localStorage.getItem(_BACK_HIDE_KEY) === '1'; } catch (e) { return false; }
-  }
-  function _setBackHidden(v) {
-    try { v ? localStorage.setItem(_BACK_HIDE_KEY, '1') : localStorage.removeItem(_BACK_HIDE_KEY); } catch (e) {}
-  }
-  function _backSide() {
-    // 'left' ou 'right' conforme o canto escolhido (a aba cola nessa borda)
-    return (window.OS_BACK_POSITION || 'bottom-left').indexOf('right') >= 0 ? 'right' : 'left';
-  }
-  function _backEdge() {
-    // eixo vertical do canto (a aba fininha fica na mesma altura do botão)
-    return (window.OS_BACK_POSITION || 'bottom-left').indexOf('top') >= 0 ? 'top:16px' : 'bottom:16px';
-  }
-
-  // Remove qualquer versão já montada (botão ou aba) antes de redesenhar.
-  function _clearBack() {
-    const old = document.getElementById('os-back-office');
-    if (old) old.remove();
-    const tab = document.getElementById('os-back-tab');
-    if (tab) tab.remove();
-  }
-
-  // Aba fininha na borda (estado "fechado"): não cobre conteúdo, só reabre.
-  function _mountBackTab() {
-    _clearBack();
-    const side = _backSide();
-    const t = document.createElement('button');
-    t.id = 'os-back-tab';
-    t.type = 'button';
-    t.title = 'Mostrar o botão do Hub';
-    t.setAttribute('aria-label', 'Mostrar o botão do Hub');
-    t.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" '
-      + 'stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">'
-      + (side === 'right' ? '<path d="m15 18-6-6 6-6"/>' : '<path d="m9 18 6-6-6-6"/>') + '</svg>';
-    t.style.cssText =
-      'position:fixed;' + _backEdge() + ';' + side + ':0;z-index:2147483000;'
-      + 'display:flex;align-items:center;justify-content:center;'
-      + 'width:16px;height:44px;padding:0;box-sizing:border-box;color:#fff;'
-      + 'background:rgba(18,18,20,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);'
-      + 'border:1px solid rgba(255,255,255,.14);border-' + side + ':none;'
-      + (side === 'right' ? 'border-radius:10px 0 0 10px;' : 'border-radius:0 10px 10px 0;')
-      + 'cursor:pointer;opacity:.65;transition:opacity .15s,width .15s;';
-    t.addEventListener('mouseenter', () => { t.style.opacity = '1'; t.style.width = '20px'; });
-    t.addEventListener('mouseleave', () => { t.style.opacity = '.65'; t.style.width = '16px'; });
-    t.addEventListener('click', () => { _setBackHidden(false); _mountBackPill(); });
-    document.body.appendChild(t);
-  }
-
-  // Botão-pílula (estado "aberto"): seta que expande no hover + "×" para fechar.
-  function _mountBackPill() {
-    _clearBack();
-    const posMap = {
-      'bottom-left':  'left:16px;bottom:16px',
-      'bottom-right': 'right:16px;bottom:16px',
-      'top-left':     'left:16px;top:16px',
-      'top-right':    'right:16px;top:16px',
-    };
-    const pos = posMap[window.OS_BACK_POSITION] || posMap['bottom-left'];
-
-    const box = document.createElement('div');
-    box.id = 'os-back-office';
-    box.style.cssText =
-      'position:fixed;' + pos + ';z-index:2147483000;'
-      + 'display:inline-flex;align-items:center;'
-      + 'font-family:system-ui,-apple-system,"Segoe UI",sans-serif;'
-      + 'background:rgba(18,18,20,.82);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);'
-      + 'border:1px solid rgba(255,255,255,.16);border-radius:999px;'
-      + 'box-shadow:0 6px 18px rgba(0,0,0,.28);'
-      + 'overflow:hidden;white-space:nowrap;max-width:44px;'
-      + 'transition:background .15s,border-color .15s,max-width .18s;';
-
-    const a = document.createElement('a');
-    a.href = '/';
-    a.title = 'Voltar ao Hub';
-    a.setAttribute('aria-label', 'Voltar ao Hub');
-    a.innerHTML =
-      '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" '
-      + 'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto">'
-      + '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>'
-      + '<span class="os-back-lbl">Hub</span>';
-    a.style.cssText =
-      'display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 12px 0 14px;'
-      + 'box-sizing:border-box;font-size:13px;font-weight:700;text-decoration:none;color:#fff;cursor:pointer;';
-    const lbl = a.querySelector('.os-back-lbl');
-    lbl.style.cssText = 'opacity:0;max-width:0;overflow:hidden;transition:opacity .15s,max-width .18s;';
-
-    // "×" para fechar — só aparece quando o botão está aberto
-    const x = document.createElement('button');
-    x.type = 'button';
-    x.title = 'Fechar (fica uma aba na borda para reabrir)';
-    x.setAttribute('aria-label', 'Fechar o botão do Hub');
-    x.textContent = '×';
-    x.style.cssText =
-      'flex:0 0 auto;display:none;align-items:center;justify-content:center;'
-      + 'width:22px;height:22px;margin-right:9px;padding:0;line-height:1;'
-      + 'font-size:16px;font-weight:700;color:#fff;cursor:pointer;'
-      + 'background:rgba(255,255,255,.16);border:none;border-radius:50%;';
-    x.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); _setBackHidden(true); _mountBackTab(); });
-
-    box.appendChild(a);
-    box.appendChild(x);
-
-    const open = () => {
-      box.style.maxWidth = '210px';
-      box.style.background = 'rgba(232,114,43,.95)';
-      box.style.borderColor = 'rgba(232,114,43,.95)';
-      lbl.style.opacity = '1'; lbl.style.maxWidth = '120px';
-      x.style.display = 'flex';
-    };
-    const shut = () => {
-      box.style.maxWidth = '44px';
-      box.style.background = 'rgba(18,18,20,.82)';
-      box.style.borderColor = 'rgba(255,255,255,.16)';
-      lbl.style.opacity = '0'; lbl.style.maxWidth = '0';
-      x.style.display = 'none';
-    };
-    box.addEventListener('mouseenter', open);
-    box.addEventListener('mouseleave', shut);
-    a.addEventListener('focus', open);
-    x.addEventListener('blur', shut);
-    document.body.appendChild(box);
-  }
-
-  function _mountBackButton() {
-    if (!_shouldShowBack()) return;
-    if (_backHidden()) _mountBackTab();
-    else _mountBackPill();
-  }
-
-  function _initBackButton() {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', _mountBackButton);
-    } else {
-      _mountBackButton();
-    }
-  }
-  _initBackButton();
 
   // ── Recolher menu lateral (desktop) ──────────────────────────────────────
   // "Recolher menu" automático em todo hub que carrega o os-core: acha o menu
@@ -614,7 +441,7 @@
   // ocupa a tela toda, e fica uma alça "»" na borda esquerda pra reabrir.
   // A escolha fica salva no navegador POR SISTEMA (localStorage).
   // Só no computador (>=881px) — no celular já existe a gaveta (☰).
-  // Hubs com recolher próprio são pulados (o OutPerformance tem #sidebarToggle).
+  // Módulos com recolher próprio são pulados (o Metas tem #sidebarToggle).
   const _MENU_KEY = 'os:menu-off:' + ((location.pathname || '/').split('/')[1] || 'root');
 
   function _setMenuOff(v) {
@@ -635,14 +462,14 @@
         '#os-menu-collapse{display:none}#os-menu-handle{display:none}'
         + '@media (min-width:881px){'
         +   '#os-menu-collapse{display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;padding:9px 12px;'
-        +     'border:1px solid rgba(128,128,128,.3);border-radius:10px;background:transparent;color:inherit;'
+        +     'border:1px solid var(--bd-2,rgba(40,28,16,.18));border-radius:10px;background:transparent;color:inherit;'
         +     'font:inherit;font-size:12.5px;opacity:.72;cursor:pointer;box-sizing:border-box}'
         +   '#os-menu-collapse:hover{opacity:1}'
         +   'html.os-menu-off{--layout-sidebar:0px;--sidebar:0px}'
         +   'html.os-menu-off .app-side,html.os-menu-off .shell__sidebar,html.os-menu-off aside.sidebar,html.os-menu-off .app-logo{display:none!important}'
         +   'html.os-menu-off #os-menu-handle{display:flex;align-items:center;justify-content:center;'
         +     'position:fixed;top:50%;left:0;transform:translateY(-50%);width:18px;height:52px;z-index:2147482000;'
-        +     'background:rgba(18,18,20,.72);color:#fff;border:1px solid rgba(255,255,255,.14);border-left:none;'
+        +     'background:color-mix(in srgb,var(--m,#1D1A17) 72%,transparent);color:var(--m-st,#FFF8F1);border:1px solid color-mix(in srgb,var(--m-st,#FFF8F1) 14%,transparent);border-left:none;'
         +     'border-radius:0 10px 10px 0;cursor:pointer;font-size:14px;'
         +     '-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}'
         + '}';
@@ -761,7 +588,6 @@
     const path = (location.pathname || '/').toLowerCase();
     // páginas públicas/externas (cliente, admissão, onboarding…) não têm sino
     if (_BACK_DENY.some((k) => path.includes(k))) return false;
-    if (path === '/produto' || path.indexOf('/produto/') === 0 || path === '/produto.html') return false;
     return true;
   }
 
@@ -801,35 +627,35 @@
     const card = document.createElement('div');
     card.style.cssText =
       'pointer-events:auto;width:330px;max-width:calc(100vw - 32px);box-sizing:border-box;'
-      + 'background:#17171A;color:#F2F2F0;border:1px solid rgba(255,255,255,.14);'
-      + 'border-left:4px solid #E8722B;border-radius:12px;padding:13px 14px;'
-      + 'box-shadow:0 10px 30px rgba(0,0,0,.45);'
+      + 'background:var(--m,#1D1A17);color:var(--m-st,#FFF8F1);border:1px solid color-mix(in srgb,var(--m-st,#FFF8F1) 14%,transparent);'
+      + 'border-left:4px solid var(--m-mark,#E8703A);border-radius:12px;padding:13px 14px;'
+      + 'box-shadow:var(--sombra,0 12px 32px -18px rgba(40,28,16,.28));'
       + 'opacity:0;transform:translateY(10px);transition:opacity .2s,transform .2s;';
     const aloc = _deskEhAlocacao(n);
     const assin = _deskAssinatura(n);
     card.innerHTML =
       '<div style="display:flex;align-items:flex-start;gap:9px">'
-      +   '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#E8722B" stroke-width="2" '
-      +     'stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:1px">'
+      +   '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" '
+      +     'stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;margin-top:1px;color:var(--m-mark,#E8703A)">'
       +     '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>'
       +   '<div style="flex:1;min-width:0">'
       // 1ª linha: DE ONDE veio (sistema) e o que aconteceu
-      +     '<div style="font-size:12.5px;font-weight:800;letter-spacing:.02em;color:#E8722B">'
+      +     '<div style="font-size:12.5px;font-weight:800;letter-spacing:.02em;color:var(--m-mark,#E8703A)">'
       +       _deskEsc(n.sistema || 'Aviso') + (aloc ? ' · alocaram você' : '') + '</div>'
       // 2ª linha: o título da atividade
       +     '<div style="font-size:13.5px;line-height:1.4;margin-top:3px;font-weight:700">'
       +       _deskEsc(n.titulo || '') + '</div>'
       // 3ª linha: o detalhe (cliente, projeto, área…)
-      +     (n.texto ? '<div style="font-size:12.5px;line-height:1.4;margin-top:2px;color:#C9C9CE">'
+      +     (n.texto ? '<div style="font-size:12.5px;line-height:1.4;margin-top:2px;color:var(--m-tx,#C9C1B8)">'
       +                  _deskEsc(n.texto) + '</div>' : '')
       // rodapé: quem mandou e pra quando
-      +     (assin ? '<div style="font-size:11.5px;margin-top:5px;color:#9A9AA2">' + _deskEsc(assin) + '</div>' : '')
+      +     (assin ? '<div style="font-size:11.5px;margin-top:5px;color:var(--m-mu,#8C8379)">' + _deskEsc(assin) + '</div>' : '')
       +     '<div style="display:flex;gap:8px;margin-top:10px">'
       +       '<a class="os-pop-go" href="' + _deskEsc(n.link || '/') + '" '
-      +         'style="background:#E8722B;color:#fff;text-decoration:none;padding:6px 12px;border-radius:8px;'
+      +         'style="background:var(--m-mark,#E8703A);color:var(--m-mark-ink,#2A1206);text-decoration:none;padding:6px 12px;border-radius:8px;'
       +         'font-size:12.5px;font-weight:700">' + (aloc ? 'Abrir e executar' : 'Abrir') + '</a>'
-      +       '<button class="os-pop-x" type="button" style="background:transparent;border:1px solid rgba(255,255,255,.2);'
-      +         'color:#9A9AA2;padding:6px 11px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer">Depois</button>'
+      +       '<button class="os-pop-x" type="button" style="background:transparent;border:1px solid color-mix(in srgb,var(--m-st,#FFF8F1) 20%,transparent);'
+      +         'color:var(--m-tx,#C9C1B8);padding:6px 11px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer">Depois</button>'
       +     '</div>'
       +   '</div>'
       + '</div>';
@@ -854,7 +680,7 @@
     });
 
     // Ninguém clicou? O cartão FICA na tela — ele só sai quando a pessoa
-    // clica em "Abrir e executar" ou em "Depois" (Samara, 24/08/2026).
+    // clica em "Abrir e executar" ou em "Depois" (24/08/2026).
 
     _deskBeep();
     _deskSystemNotify(n);
@@ -903,7 +729,7 @@
 
   // ── O SINO (canto inferior direito, com o contador de não lidas) ─────────
   // O painel que abre no sino é a CENTRAL DE AVISOS (/shared/os-avisos.js, a
-  // mesma em toda tela): "Pra você" separado das "Novidades do Hub", abrir em
+  // mesma em toda tela): "Pra você" separado das "Novidades", abrir em
   // ABA NOVA e o "Depois". Aqui fica só o botão e a CONTA: novidade não conta
   // no sino, e aviso adiado ("Depois") só volta a contar quando o adiamento vence.
   // Tela que tem o sino no próprio menu liga window.OS_SINO_PROPRIO e recebe o
@@ -940,12 +766,12 @@
     }
     box.innerHTML =
       '<button id="os-desk-bell-btn" type="button" title="Avisos" aria-label="Avisos' + (nao ? ' (' + nao + ' novos)' : '') + '" '
-      +   'style="position:relative;width:44px;height:44px;border-radius:50%;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;'
-      +   'background:linear-gradient(-75deg,#1C3E87,#00133D);border:1px solid rgba(156,178,212,.35);box-shadow:0 8px 22px -6px rgba(0,19,61,.6)">'
+      +   'style="position:relative;width:44px;height:44px;border-radius:50%;cursor:pointer;color:var(--m-st,#FFF8F1);display:flex;align-items:center;justify-content:center;'
+      +   'background:linear-gradient(-75deg,var(--btn,#B4481B),var(--m,#1D1A17));border:1px solid color-mix(in srgb,var(--m-mark,#E8703A) 35%,transparent);box-shadow:var(--sombra,0 12px 32px -18px rgba(40,28,16,.28))">'
       +   '<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
       +     '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>'
       +   (nao ? '<span style="position:absolute;top:-2px;right:-2px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:10px;'
-      +     'background:#E5484D;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff">'
+      +     'background:var(--risk,#B3261E);color:var(--surface,#FFFFFF);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--surface,#FFFFFF)">'
       +     (nao > 99 ? '99+' : nao) + '</span>' : '')
       + '</button>';
     box.querySelector('#os-desk-bell-btn').addEventListener('click', (e) => {
@@ -1069,13 +895,13 @@
   _regValor();   // se o Alpine já subiu antes deste arquivo
 
   /* ══════════════════════════════════════════════════════════════════════════
-     ATIVIDADE — tempo on, telas e cliques  (Samara, 25/08/2026)
-     Alimenta o painel de CS do OutPerformance: quanto tempo cada pessoa passa
-     no sistema, quanto no OutChat, e quantos cliques dá no OutJourney no dia.
+     ATIVIDADE: tempo on, telas e cliques (25/08/2026)
+     Alimenta o painel de CS do Metas: quanto tempo cada pessoa passa
+     no sistema, quanto no Atendimento, e quantos cliques dá no Sucesso no dia.
 
      ⚠️ CORRIGIDO EM 27/08/2026. A 1ª versão só contava com `document.hasFocus()`,
      ou seja, com a janela do navegador sendo a janela FOCADA DO SISTEMA. Quem
-     trabalha com o OutJourney aberto do lado e o foco no WhatsApp Web, no Meet
+     trabalha com o Sucesso aberto do lado e o foco no WhatsApp Web, no Meet
      ou no Excel contava ZERO — e o painel mostrou 38 min pra quem passou 20h
      entre a primeira e a última ação. Agora o critério é: aba VISÍVEL e alguma
      interação nos últimos 5 minutos. Aba esquecida aberta de madrugada continua
@@ -1098,16 +924,12 @@
 
   function _atSistema() {
     const p = (location.pathname || '').toLowerCase();
-    if (p.includes('/outchat'))      return 'outchat';
-    if (p.includes('/outjourney'))   return 'journey';
-    if (p.includes('/outfinanceiro'))return 'financeiro';
-    if (p.includes('/outprojetos'))  return 'outprojetos';
-    if (p.includes('/outfunnel'))    return 'comercial';
-    if (p.includes('/outsign'))      return 'outsign';
-    if (p.includes('/produtos'))     return 'produtos';
-    if (p.includes('/outprocessos')) return 'processos';      // chave do registro de atividade (gravada nos dados): fica a antiga
-    if (p.includes('/outperformance')) return 'performance';  // idem
-    if (p.includes('/rh'))           return 'rh';
+    // pelo primeiro pedaço do endereço: os nomes novos (crm, metas, contratos) também aparecem dentro de outras telas
+    const seg = p.split('/')[1] || '';
+    // a chave do registro de atividade (gravada nos dados), pela pasta
+    const porPasta = {
+    };
+    if (porPasta[seg]) return porPasta[seg];
     if (p === '/' || p === '')       return 'launcher';
     return 'hub';
   }
@@ -1141,8 +963,8 @@
     _AT.enviando = false;
   }
 
-  // OUTFUNNELS-MOLDURA-26-09-2026 · tela EMBUTIDA (?embutido=1 dentro de um quadro —
-  // hoje, o OutFunnels dentro do OutFunnels) não mede tempo sozinha: quem mede é a
+  // Tela EMBUTIDA (?embutido=1 dentro de um quadro, a moldura de 26/09/2026)
+  // não mede tempo sozinha: quem mede é a
   // janela de fora, que é a tela que a pessoa está usando. Aqui só se repassa o
   // sinal de vida (clique/tecla), que a janela de fora não enxerga. Sem isso o
   // mesmo minuto contaria em dois sistemas, e quem trabalha no quadro pareceria
@@ -1158,7 +980,6 @@
       const t = Date.now();
       if (!clique && t - ultimo < 1000) return;   // mexer o mouse: no máximo 1x/seg
       ultimo = t;
-      try { window.parent.postMessage({ origem: 'outfunnel', tipo: 'vivo', clique: !!clique }, location.origin); } catch (e) {}
     };
     window.addEventListener('pointerdown', () => manda(true), { passive: true, capture: true });
     ['keydown', 'wheel', 'touchstart', 'mousemove'].forEach(
@@ -1202,13 +1023,13 @@
       }
       // DUAS contas, porque "tempo no sistema" tem dois sentidos e confundir
       // os dois foi o que fez o número não bater:
-      //   segAberto = a tela do Hub estava NA FRENTE da pessoa
+      //   segAberto = a tela do sistema estava NA FRENTE da pessoa
       //   seg       = ...e ela estava mexendo (interagiu nos últimos 5 min)
       if (document.visibilityState === 'visible') _AT.segAberto += 1;
       if (_atAtiva()) _AT.seg += 1;
     }, 1000);
 
-    // try/catch porque este arquivo carrega em TODA tela do Hub: um
+    // try/catch porque este arquivo carrega em TODA tela do sistema: um
     // seletor que o navegador não aceite não pode derrubar o resto do os-core.
     document.addEventListener('click', (ev) => {
       try {
@@ -1285,7 +1106,7 @@
       p_rotulo: _appRotulo(), p_user_agent: navigator.userAgent,
     });
     if (r.error) throw r.error;
-    _pushAtivo = !!r.data;          // null = aparelho desconectado pelo RH
+    _pushAtivo = !!r.data;          // null = aparelho desconectado por quem administra
     return _pushAtivo;
   }
 
@@ -1304,7 +1125,7 @@
     if (!reg) throw new Error('Não deu pra preparar as notificações neste navegador.');
     await navigator.serviceWorker.ready;
     const ok = await _pushGrava(await _pushInscricao(reg));
-    if (!ok) throw new Error('Este aparelho foi desconectado pelo RH. Peça pra liberar de novo.');
+    if (!ok) throw new Error('Este aparelho foi desconectado por quem administra o sistema. Peça para liberar de novo.');
     _appTiraConvite();
     return true;
   }
@@ -1324,7 +1145,7 @@
 
   // Toda tela: registra o sw e, se a pessoa já autorizou, confirma o aparelho no
   // banco (o navegador troca a inscrição de vez em quando). Uma vez por aba.
-  // Quem instalou / quem usa (painel do OutPeople, hub.app_painel): uma linha por
+  // Quem instalou / quem usa (o painel de aparelhos, hub.app_painel): uma linha por
   // pessoa, dia e jeito de abrir — pelo ícone (app) ou pelo navegador do celular.
   // Uma vez por aba. [app-celular-uso-28-09-2026]
   async function _appRegistraUso() {
@@ -1367,17 +1188,17 @@
     d.setAttribute('role', 'region');
     d.setAttribute('aria-label', 'Ligar avisos no celular');
     d.style.cssText = 'position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:2147483200;'
-      + 'background:#0A0A0B;color:#F7F7F7;border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:center;'
-      + 'font-family:-apple-system,"SF Pro Text",system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.3)';
+      + 'background:var(--m,#1D1A17);color:var(--m-st,#FFF8F1);border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:center;'
+      + 'font-family:-apple-system,"SF Pro Text",system-ui,sans-serif;box-shadow:var(--sombra,0 12px 32px -18px rgba(40,28,16,.28))';
     d.innerHTML = '<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">Ligar avisos de mensagem</div>'
-      + '<div data-msg style="font-size:12.5px;color:#D4D7DC;line-height:1.35;margin-top:2px">Pra saber na hora quando um cliente escrever.</div></div>'
-      + '<button type="button" data-depois style="background:transparent;border:0;color:#A6ABB2;font-size:13px;padding:10px 6px;min-height:44px">Depois</button>'
-      + '<button type="button" data-ligar style="background:#F7F7F7;color:#0A0A0B;border:0;border-radius:10px;font-size:14px;font-weight:600;padding:10px 14px;min-height:44px">Ligar</button>';
+      + '<div data-msg style="font-size:12.5px;color:var(--m-tx,#C9C1B8);line-height:1.35;margin-top:2px">Pra saber na hora quando um cliente escrever.</div></div>'
+      + '<button type="button" data-depois style="background:transparent;border:0;color:var(--m-tx,#C9C1B8);font-size:13px;padding:10px 6px;min-height:44px">Depois</button>'
+      + '<button type="button" data-ligar style="background:var(--m-st,#FFF8F1);color:var(--m,#1D1A17);border:0;border-radius:10px;font-size:14px;font-weight:600;padding:10px 14px;min-height:44px">Ligar</button>';
     d.querySelector('[data-depois]').onclick = () => { try { sessionStorage.setItem('os:push-depois', '1'); } catch (e) {} d.remove(); };
     d.querySelector('[data-ligar]').onclick = async () => {
       const msg = d.querySelector('[data-msg]');
       try { await appLigarNotificacoes(); msg.textContent = 'Pronto! Os avisos vão chegar neste celular.'; setTimeout(() => d.remove(), 1800); }
-      catch (e) { msg.style.color = '#F2B8B5'; msg.textContent = (e && e.message) || 'Não deu pra ligar.'; }
+      catch (e) { msg.style.color = 'var(--m-mark,#E8703A)'; msg.textContent = (e && e.message) || 'Não deu pra ligar.'; }
     };
     (document.body || document.documentElement).appendChild(d);
   }
@@ -1389,7 +1210,7 @@
   // ── CELULAR: os botões flutuantes não podem cobrir a caixa de mensagem ─────
   // No canto de baixo de toda tela de chat mora o campo de mensagem e o enviar.
   // Então, no celular: sino e ✦ sobem, ficam menores e SOMEM enquanto a pessoa digita.
-  // (O OutFunnels carrega este mesmo arquivo — vale lá também.)
+  // (As telas com servidor próprio carregam este mesmo arquivo, e vale lá também.)
   (function _botoesNoCelular() {
     const css = document.createElement('style');
     css.id = 'os-celular-botoes';
@@ -1400,7 +1221,7 @@
       + '#os-desk-pops{bottom:calc(222px + env(safe-area-inset-bottom))!important}}'
       + 'html.os-digitando #os-desk-bell,html.os-digitando #os-desk-pops,html.os-digitando #os-agente{display:none!important}'
       // sem zoom sozinho no iPhone: campo com letra < 16px faz o Safari ampliar e não voltar
-      // (mesma regra do os-responsive.css, aqui pra quem não carrega ele — o OutFunnels)
+      // (mesma regra do os-responsive.css, aqui pra quem não carrega ele, como as telas com servidor próprio)
       + '@media (max-width:760px){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]),select,textarea{font-size:16px!important}}';
     (document.head || document.documentElement).appendChild(css);
 
@@ -1428,30 +1249,33 @@
   //   · item marcado com data-sistema="x" (botão solto, sem onde pôr mensagem) → some.
   // O aviso é UM só (OS.moduloAusente): "Este espaço é do módulo …".
   const _SISTEMAS_TXT = '%OS_SISTEMAS%';
+  // o nome da empresa entra na montagem do site (tools/vercel/montar.js); sem montagem, fica vazio
+  const _EMPRESA_TXT = '%EMPRESA_NOME%';
+  const _EMPRESA = _EMPRESA_TXT.charAt(0) === '%' ? '' : _EMPRESA_TXT;
   const _SISTEMAS = _SISTEMAS_TXT.charAt(0) === '[' ? JSON.parse(_SISTEMAS_TXT) : null;
-  // a ordem importa: o caminho mais específico primeiro (/outjourney/outchat antes de /outjourney/)
-  const _CAMINHOS = [['/outjourney/outchat', 'outchat'], ['/outjourney/historico-whatsapp', 'outchat'], ['/outchat/', 'outchat'], ['/outjourney/', 'outjourney'], ['/rh/', 'outpeople'], ['/outperformance/', 'outperformance'],
-    ['/diretoria', 'outperformance'], ['/outsign/', 'outsign'], ['/outprojetos/', 'outprojetos'],
-    ['/outprocessos/', 'outprocessos'], ['/financeiro/', 'financeiro'],
-    ['/outfinanceiro/', 'financeiro'], ['/pagamentos/', 'financeiro'], ['/compras/', 'financeiro'], ['/outfunnels', 'outfunnels'], ['/outfunnel/', 'outfunnels'],
-    ['/outcopiloto/', 'outcopiloto'], ['/outassistenteia/', 'outassistenteia'], ['/outgrupos/', 'outgrupos'],
-    // peças da base que podem não ter vindo (sem elas, o que leva até lá some — não é módulo à venda)
-    ['/produtos/', 'peca:produtos'], ['/produto/', 'peca:produtos']];
-  // Catálogo de NOMES dos módulos — inclusive os que não fazem parte deste código
-  // (o Financeiro): é com ele que o aviso diz de quem é o espaço.
+  // O TIPO DO PACOTE e a solução principal. A fábrica troca os dois marcadores na geração do pacote (pacote.json →
+  // "tipo"): 'avulsa' é uma solução por instalação, que abre direto na solução; 'completo' é o pacote de todas, com a
+  // tela inicial por áreas. No código-fonte, sem a troca, vale o completo.
+  const _PACOTE_TXT = 'avulsa';
+  const _SOLUCAO_TXT = 'Acompanhamento de Grupos no WhatsApp com IA';
+  const _AVULSA = _PACOTE_TXT === 'avulsa';
+  const _SOLUCAO = _SOLUCAO_TXT.charAt(0) === '%' ? '' : _SOLUCAO_TXT;
+  // A SOLUÇÃO PRINCIPAL do pacote avulso, que a fábrica escreve na geração a partir do sistema.json do módulo:
+  // { id, nome, rotulo, caminho, acesso, estrito, marca, sub, menu }. A porta de entrada ("/") leva a pessoa direto
+  // para o caminho dela, e a casca (/shared/casca.js) monta o menu com os itens dela. No completo, fica null.
+  const _PRINCIPAL_TXT = '{"id":"grupos","nome":"Acompanhamento de Grupos no WhatsApp com IA","rotulo":"Grupos","caminho":"/grupos/","acesso":"grupos","estrito":true,"marca":"/grupos/img/grupos-marca.svg","sub":"WhatsApp com IA","menu":[{"id":"grupos","rotulo":"Grupos","href":"/grupos/#grupos","icone":"grupos","rotas":["","grupos","grupo"]},{"id":"ajustes","rotulo":"Ajustes","href":"/grupos/#ajustes","icone":"ajustes","rotas":["ajustes"],"so":"admin"}]}';
+  let _PRINCIPAL = null;
+  try { _PRINCIPAL = _PRINCIPAL_TXT.charAt(0) === '{' ? JSON.parse(_PRINCIPAL_TXT) : null; } catch (e) { _PRINCIPAL = null; }
+  // a ordem importa: o caminho mais específico primeiro (o do módulo de dentro antes do módulo de fora).
+  // Cada linha só vai no pacote que tem o módulo ou que se liga a ele (gerar-pacotes.js, marcador @liga): no
+  // pacote de uma solução, o código não traz a lista das outras.
+  const _CAMINHOS = [
+    ['/grupos/', 'grupos'],
+  ];
+  // Catálogo de NOMES dos módulos, inclusive o que não faz parte deste código: é com ele que o aviso diz de quem
+  // é o espaço. Cada linha só vai no pacote que tem o módulo ou que se liga a ele (marcador @liga).
   const MODULOS = {
-    outjourney:  { nome: 'OutJourney',      assunto: 'sucesso do cliente',        seu: 'o seu próprio sucesso do cliente' },
-    outchat:     { nome: 'OutChat',         assunto: 'atendimento por WhatsApp',  seu: 'o seu próprio atendimento por WhatsApp' },
-    outfunnels:  { nome: 'OutFunnels',      assunto: 'comercial',                 seu: 'o seu próprio comercial' },
-    outsign:     { nome: 'OutSign',         assunto: 'contratos e assinaturas',   seu: 'os seus próprios contratos' },
-    outprojetos: { nome: 'OutProjetos',     assunto: 'gestão de projetos',        seu: 'a sua própria gestão de projetos' },
-    outperformance: { nome: 'OutPerformance', assunto: 'painel de indicadores', seu: 'o seu próprio painel de indicadores' },
-    outpeople:   { nome: 'OutPeople',       assunto: 'gestão de pessoas',         seu: 'a sua própria gestão de pessoas' },
-    outprocessos: { nome: 'OutProcessos',   assunto: 'documentação de processos', seu: 'a sua própria documentação de processos' },
-    outcopiloto: { nome: 'OutCopiloto',     assunto: 'copiloto de calls',         seu: 'o seu próprio copiloto de calls' },
-    outassistenteia: { nome: 'OutAssistenteIA', assunto: 'assistente de IA',      seu: 'o seu próprio assistente de IA' },
-    outgrupos:   { nome: 'Grupos',          assunto: 'acompanhamento de grupos de WhatsApp', seu: 'o seu próprio acompanhamento de grupos de WhatsApp' },
-    financeiro:  { nome: 'Financeiro',      assunto: 'financeiro',                seu: 'o seu próprio financeiro' },
+    grupos:   { nome: 'Grupos',          assunto: 'acompanhamento de grupos de WhatsApp', seu: 'o seu próprio acompanhamento de grupos de WhatsApp' },
   };
   function modulo(id) { return MODULOS[id] || { nome: String(id || 'outro'), assunto: 'sistema', seu: 'o seu próprio sistema' }; }
   // PEÇAS DA BASE (base/sistema.json → "pecas"): a montagem põe na lista as que esta
@@ -1459,6 +1283,8 @@
   // código-fonte) = todas. O essencial está sempre.
   const _PECAS = _SISTEMAS ? _SISTEMAS.filter((s) => String(s).indexOf('peca:') === 0).map((s) => s.slice(5)) : [];
   function temPeca(p) { return !_PECAS.length || !p || p === 'essencial' || _PECAS.indexOf(p) >= 0; }
+  // as soluções desta instalação (sem a base e sem as peças); null no código-fonte, onde vale tudo
+  function solucoes() { return _SISTEMAS ? _SISTEMAS.filter((s) => s && s !== 'base' && String(s).indexOf('peca:') !== 0) : null; }
   function instalado(sistema) {
     if (sistema && String(sistema).indexOf('peca:') === 0) return temPeca(String(sistema).slice(5));
     return !_SISTEMAS || !sistema || sistema === 'base' || _SISTEMAS.indexOf(sistema) >= 0;
@@ -1474,15 +1300,15 @@
   function _escMod(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
   function moduloAusenteTexto(id) {
     const m = modulo(id);
-    return 'Este espaço é do módulo ' + m.nome + '. Você pode adquirir o módulo ' + m.nome
-      + ' da BoraIA ou adaptar este espaço para ' + m.seu + '.';
+    return 'Este espaço é do módulo ' + m.nome + ', que não veio nesta instalação. Você pode adquirir o módulo ' + m.nome
+      + ' ou adaptar este espaço para ' + m.seu + '.';
   }
   function moduloAusenteHtml(id) {
     const m = modulo(id);
     return '<div class="os-modulo-ausente" role="note" data-modulo="' + _escMod(id) + '" style="box-sizing:border-box;margin:12px 0;padding:22px 24px;'
-      + 'border:1px dashed var(--border-strong, #c8ccd2);border-radius:12px;background:var(--bg-surface, rgba(127,127,127,.06));'
-      + 'color:var(--text-secondary, #5b6270);font:14px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;text-align:center">'
-      + '<div style="font-weight:700;color:var(--text-primary, #1d2230);margin-bottom:4px">Módulo ' + _escMod(m.nome) + '</div>'
+      + 'border:1px dashed var(--border-strong, var(--bd-2,rgba(40,28,16,.18)));border-radius:12px;background:var(--bg-surface, var(--neutro-bg,rgba(40,28,16,.06)));'
+      + 'color:var(--text-secondary, var(--ink-2,#55504A));font:14px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;text-align:center">'
+      + '<div style="font-weight:700;color:var(--text-primary, var(--ink,#1D1A17));margin-bottom:4px">Módulo ' + _escMod(m.nome) + '</div>'
       + _escMod(moduloAusenteTexto(id)) + '</div>';
   }
   function moduloAusente(id) {
@@ -1494,10 +1320,10 @@
   function moduloAusenteJanela(id) {
     const fundo = document.createElement('div');
     fundo.className = 'os-modulo-ausente-janela';
-    fundo.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(10,14,25,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    fundo.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:var(--overlay,rgba(29,26,23,.48));display:flex;align-items:center;justify-content:center;padding:16px';
     const caixa = document.createElement('div');
-    caixa.style.cssText = 'max-width:440px;width:100%;background:var(--bg-raised, #fff);border-radius:14px;padding:6px 6px 14px;box-shadow:0 20px 50px -12px rgba(0,0,0,.45);text-align:center';
-    caixa.innerHTML = moduloAusenteHtml(id).replace('margin:12px 0', 'margin:0') + '<button type="button" style="margin-top:4px;padding:8px 18px;border-radius:8px;border:1px solid var(--border-default, #c8ccd2);background:transparent;color:inherit;font:600 13px system-ui,sans-serif;cursor:pointer">Entendi</button>';
+    caixa.style.cssText = 'max-width:440px;width:100%;background:var(--bg-raised, var(--surface,#FFFFFF));border-radius:14px;padding:6px 6px 14px;box-shadow:var(--sombra,0 12px 32px -18px rgba(40,28,16,.28));text-align:center';
+    caixa.innerHTML = moduloAusenteHtml(id).replace('margin:12px 0', 'margin:0') + '<button type="button" style="margin-top:4px;padding:8px 18px;border-radius:8px;border:1px solid var(--border-default, var(--bd-2,rgba(40,28,16,.18)));background:transparent;color:inherit;font:600 13px system-ui,sans-serif;cursor:pointer">Entendi</button>';
     fundo.appendChild(caixa);
     const fecha = () => fundo.remove();
     fundo.addEventListener('click', (e) => { if (e.target === fundo || e.target.tagName === 'BUTTON') fecha(); });
@@ -1505,8 +1331,8 @@
     document.body.appendChild(fundo);
     return fundo;
   }
-  // Antes de uma AÇÃO que depende de outro módulo (ex.: mandar WhatsApp é do OutChat):
-  //   if (!OS.precisaModulo('outchat')) return;
+  // Antes de uma AÇÃO que depende de um módulo que pode não ter vindo nesta instalação:
+  //   if (!OS.precisaModulo('<modulo>')) return;
   // Com o módulo instalado devolve true; sem ele, mostra o aviso e devolve false.
   function precisaModulo(id) {
     if (instalado(id)) return true;
@@ -1581,7 +1407,10 @@
   // ── Expose ───────────────────────────────────────────────────────────────
   window.OS = {
     getClient, Auth, Bus, Nav, getMyProfile,
-    instalado, sistemaDoCaminho, temPeca,         // o que esta instalação tem: módulos e peças da base (ver tools/instalar/montar)
+    instalado, sistemaDoCaminho, temPeca, solucoes,   // o que esta instalação tem: módulos e peças da base (ver tools/instalar/montar)
+    empresa: _EMPRESA,                            // o nome da empresa (EMPRESA_NOME da Vercel); vazio no código-fonte
+    avulsa: _AVULSA, solucaoNome: _SOLUCAO,       // pacote de uma solução (abre direto nela) e o nome dela; ver _PACOTE_TXT
+    solucao: _PRINCIPAL,                          // a solução principal do pacote avulso (caminho, chave e menu); null no completo
     modulo, moduloAusente, moduloAusenteHtml, moduloAusenteTexto, moduloAusenteJanela, precisaModulo,   // o aviso de módulo que não veio
     SITE, link,                                   // link que sai daqui leva o domínio do sistema
     telaDoCliente, dentroDeQuadro: _dentroDeQuadro,   // tela do cliente / tela dentro de um quadro (sem barra, sino e ✦)
@@ -1591,7 +1420,7 @@
     denyScreen: (loginPath) => _renderDenied(loginPath || '/'),
     comVolta,                                     // '/'  →  '/?volta=<tela de agora>'
     irProLogin: (loginPath) => { window.location.replace(comVolta(loginPath || '/')); },
-    mountBackButton: _mountBackButton, // remontar em SPA que renderiza o body depois
+    mountBackButton: typeof _mountBackButton === 'function' ? _mountBackButton : function () {}, // remontar em SPA que renderiza o body depois (no pacote de uma solução não há botão)
     deskRefresh: () => _deskFetch(true),          // recarregar os avisos na mão
     avisosNaoLidos: () => _deskNao,               // o número do sino (sem novidades nem adiados)
     deskNotify: (n) => _deskPopup(n),             // mostrar um aviso na tela (teste/uso próprio)

@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   ╔══════════════════════════════════════════════════════════════════════╗
-  ║  MODELO DE PÁGINA — Hub                                        ║
+  ║  MODELO DE PÁGINA                                              ║
   ║                                                                      ║
   ║  COPIE este arquivo para criar uma tela nova que usa banco de dados. ║
   ║  Já vem pronto com: login (sessão única), modal de "carregando"      ║
@@ -16,25 +16,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- ✏️ TROQUE AQUI: título da aba -->
-<title>Minha Tela — Hub</title>
+<title>Minha Tela · %EMPRESA_NOME%</title>
 <link rel="icon" href="/shared/favicon.svg">
+<link rel="stylesheet" href="/shared/visual/tokens.css">
+<link rel="stylesheet" href="/shared/visual/componentes.css">
+<!-- o menu lateral e o cabeçalho do sistema (a casca): a tela nova já entra no menu de todas as outras -->
+<link rel="stylesheet" href="/shared/visual/casca.css">
 <style>
-  /* ── Estilo padrão do Hub (não precisa mexer) ── */
+  /* ── Estilo padrão do sistema (não precisa mexer) ── */
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#F5F6F8;--card:#fff;--bd:#E6E8EC;--ink:#101114;--mut:#6B7280;--acc:#1C3E87;--ok:#1a7f4b;--danger:#b42318}
-  body{font-family:-apple-system,'Segoe UI',Roboto,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  :root{--card:var(--surface);--mut:var(--ink-2);--danger:var(--risk);--azul:var(--m);--claro:var(--m-mark)}
+  body{font-family:var(--corpo);background:var(--bg);color:var(--ink);min-height:100vh}
   [x-cloak]{display:none!important}
   .wrap{max-width:1080px;margin:0 auto;padding:32px 22px}
   header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
   .brand{font-size:13px;font-weight:800;letter-spacing:.4px;color:var(--mut)}
   .brand a{color:var(--acc);text-decoration:none}
-  h1{font-size:24px;font-weight:800;margin:6px 0 2px}
+  h1{font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:-.015em;margin:6px 0 2px}
   .sub{color:var(--mut);font-size:13.5px;margin-bottom:22px}
   .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px}
-  .btn{background:var(--acc);color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn{background:var(--btn);color:var(--btn-ink);border:none;border-radius:9px;padding:9px 15px;font-size:13.5px;font-weight:600;cursor:pointer}
   .btn:hover{filter:brightness(1.08)} .btn:disabled{opacity:.6;cursor:default}
   .btn.ghost{background:none;border:1px solid var(--bd);color:var(--ink)}
-  input,select{width:100%;background:#fff;border:1px solid var(--bd);border-radius:8px;padding:9px 11px;font-size:13.5px;color:var(--ink);outline:none}
+  input,select{width:100%;background:var(--surface);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;font-size:13.5px;color:var(--ink);outline:none}
   input:focus,select:focus{border-color:var(--acc)}
   table{width:100%;border-collapse:collapse;font-size:13.5px}
   th{text-align:left;color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--bd)}
@@ -42,9 +46,9 @@
   .err{color:var(--danger);font-size:13px}
   .gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center}
 
-  /* ── Modal de "carregando" que trava a tela (padrão do Hub) ── */
-  .overlay{position:fixed;inset:0;background:rgba(16,17,20,.42);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:9999}
-  .overlay .box{background:#fff;border-radius:14px;padding:22px 28px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);font-size:14px;font-weight:600}
+  /* ── Modal de "carregando" que trava a tela (padrão do sistema) ── */
+  .overlay{position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .overlay .box{background:var(--surface);border-radius:14px;padding:22px 28px;display:flex;align-items:center;gap:14px;box-shadow:var(--sombra);font-size:14px;font-weight:600}
   .spin{width:24px;height:24px;border:3px solid var(--acc);border-top-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
   @keyframes sp{to{transform:rotate(360deg)}}
 </style>
@@ -58,20 +62,17 @@
     <div class="box"><span class="spin"></span> <span x-text="busyMsg"></span></div>
   </div>
 
-  <!-- Sem login: manda para a porta de entrada do Hub -->
+  <!-- Sem login: manda para a porta de entrada -->
   <div class="gate" x-show="ready && !authed">
     <div class="card" style="max-width:360px">
       <h1>Acesso restrito</h1>
-      <p class="sub" style="margin:8px 0 16px">Entre pelo Hub para abrir esta tela.</p>
+      <p class="sub" style="margin:8px 0 16px">Entre com o seu e-mail e a sua senha para abrir esta tela.</p>
       <a class="btn" href="/">Ir para o login</a>
     </div>
   </div>
 
   <!-- Conteúdo da tela (só aparece logado) -->
   <div class="wrap" x-show="authed">
-    <header class="top">
-      <div class="brand"><a href="/">← Hub</a></div>
-    </header>
 
     <!-- ✏️ TROQUE AQUI: título e subtítulo da tela -->
     <h1>Minha Tela</h1>
@@ -100,9 +101,10 @@
   </div>
 </div>
 
-<!-- Supabase + camada compartilhada do Hub (NÃO remova, é o que dá login + banco) -->
+<!-- Supabase + camada compartilhada do sistema (NÃO remova, é o que dá login + banco) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/shared/os-core.js"></script>
+<script src="/shared/casca.js"></script>
 <script>
   function pagina() {
     // ✏️ TROQUE AQUI: nome da tabela no banco (schema hub). Ex.: 'clientes', 'colaboradores'…
@@ -110,7 +112,7 @@
 
     return {
       ready: false, authed: false,     // estado do login
-      busy: false, busyMsg: 'Carregando…', // modal de carregando
+      busy: false, busyMsg: 'Carregando', // modal de carregando
       rows: [], erro: '',
 
       // Roda quando a página abre: confere o login e carrega os dados.
@@ -125,7 +127,7 @@
 
       // Lê os registros do banco. O modal de carregando aparece sozinho.
       async carregar() {
-        this.busy = true; this.busyMsg = 'Carregando…'; this.erro = '';
+        this.busy = true; this.busyMsg = 'Carregando'; this.erro = '';
         try {
           const { data, error } = await OS.getClient()
             .from(TABELA)
@@ -144,7 +146,7 @@
       // EXEMPLO de como salvar/gravar no banco (chame de um botão @click="salvar(obj)").
       // Deixei pronto pra você copiar quando precisar gravar algo.
       async salvar(registro) {
-        this.busy = true; this.busyMsg = 'Salvando…'; this.erro = '';
+        this.busy = true; this.busyMsg = 'Salvando'; this.erro = '';
         try {
           const { error } = await OS.getClient().from(TABELA).insert(registro);
           if (error) throw error;

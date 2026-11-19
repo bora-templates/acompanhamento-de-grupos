@@ -5,7 +5,7 @@
  * mostra (é o mesmo jeito da produção, onde quem cola é o /shared/os-menus.js
  * no navegador; aqui quem cola é a montagem, antes de publicar):
  *
- *   outjourney/
+ *   sucesso/
  *     admin.html                       ← a tela: no lugar do menu, UMA linha
  *         <div data-os-menu="followups" x-show="route === 'followups'"></div>
  *     menus/followups/
@@ -23,8 +23,8 @@
  *      logo antes dele: roda depois de todos os scripts da página e antes do
  *      Alpine. Tela sem Alpine: o JS entra no fim do <body>.
  *
- * Os endereços são absolutos (/outjourney/menus/…), então a tela funciona
- * aberta como /outjourney/admin, /outjourney/admin.html ou /outprocessos/.
+ * Os endereços são absolutos (/sucesso/menus/…), então a tela funciona
+ * aberta como /sucesso/admin, /sucesso/admin.html ou /processos/.
  * Cada arquivo leva ?v=<impressão do conteúdo>: publicou um menu novo, o
  * navegador baixa o novo.
  *

@@ -41,6 +41,10 @@ if (/sb_secret_|service_role/i.test(chave) || (chave.startsWith('eyJ') && /"role
 const base = JSON.parse(fs.readFileSync(path.join(RAIZ, 'base', 'sistema.json'), 'utf8'));
 const dominio = (env('SITE_DOMINIO') || env('VERCEL_PROJECT_PRODUCTION_URL') || 'app.seudominio.com.br').replace(/^https?:\/\//, '').replace(/\/$/, '');
 const commit = env('VERCEL_GIT_COMMIT_SHA').slice(0, 7);
+// o nome da empresa entra em texto de tela, em frase do JavaScript (entre aspas simples) e no manifesto (JSON):
+// aspas e barras viram a forma tipográfica, para nenhum nome quebrar a tela
+const empresa = (env('EMPRESA_NOME') || 'Sistema da empresa').replace(/'/g, '\u2019').replace(/"/g, '\u201D')
+  .replace(/[\\<>`\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim() || 'Sistema da empresa';
 const config = {
   _leia: 'gerado por tools/vercel/montar.js a partir das variáveis da Vercel; não vai para o repositório',
   '%SUPABASE_URL%': instalado ? url : '%SUPABASE_URL%',
@@ -48,7 +52,7 @@ const config = {
   'https://SEU_PROJETO.supabase.co': instalado ? url : 'https://SEU_PROJETO.supabase.co',
   '%VAPID_PUBLIC_KEY%': env('VAPID_PUBLIC_KEY'),
   'app.seudominio.com.br': dominio,
-  '%EMPRESA_NOME%': env('EMPRESA_NOME') || 'Hub',
+  '%EMPRESA_NOME%': empresa,
   '%APP_VERSION%': base.versao,
   '%APP_BUILD%': (commit ? commit + ' · ' : '') + new Date().toISOString().slice(0, 10),
 };
@@ -59,9 +63,9 @@ const r = spawnSync(process.execPath, [path.join(RAIZ, 'tools', 'instalar', 'mon
 fs.rmSync(path.dirname(tmp), { recursive: true, force: true });
 if (r.status !== 0) process.exit(r.status || 1);
 
-// a tela de instalação sabe se o Hub já está instalado (para dizer "já instalado") e o nome do pacote
+// a tela de instalação sabe se o sistema já está instalado (para dizer "já instalado") e o nome do pacote
 let pacote = {};
-try { pacote = JSON.parse(fs.readFileSync(path.join(RAIZ, 'pacote.json'), 'utf8')); } catch (e) { /* sem pacote.json: vale "Hub" */ }
+try { pacote = JSON.parse(fs.readFileSync(path.join(RAIZ, 'pacote.json'), 'utf8')); } catch (e) { /* sem pacote.json: vale o nome do produto */ }
 // os módulos que de fato estão nesta pasta (um módulo acrescentado depois entra aqui, mesmo
 // que o pacote.json seja o do pacote original)
 const naPasta = fs.readdirSync(RAIZ).filter((d) => d !== 'base' && fs.existsSync(path.join(RAIZ, d, 'sistema.json')))
@@ -72,7 +76,7 @@ const ids = naPasta.map((m) => m.id).filter(Boolean);   // a tela /setup acha o 
 const doPacote = (pacote.modulos || []).map((m) => m.id).sort().join(',');
 const mesmos = doPacote === naPasta.map((m) => m.id).sort().join(',');
 const principal = mesmos && (pacote.modulos || []).find((m) => m.id === pacote.principal);
-const titulo = principal ? principal.nome : nomes.length === 1 ? nomes[0] : 'Hub';
+const titulo = principal ? principal.nome : nomes.length === 1 ? nomes[0] : (pacote.produto || 'Soluções com IA');
 const marca = `<script>window.HUB_INSTALADO = ${instalado ? 'true' : 'false'}; window.HUB_PACOTE = ${JSON.stringify({ titulo, modulos: nomes, ids }).replace(/</g, '\\u003c')};</script>`;
 const setup = path.join(SAIDA, 'setup', 'index.html');
 if (fs.existsSync(setup)) fs.writeFileSync(setup, fs.readFileSync(setup, 'utf8').replace('</head>', marca + '\n</head>'));

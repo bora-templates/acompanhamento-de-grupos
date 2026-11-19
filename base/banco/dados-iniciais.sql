@@ -18,12 +18,12 @@ select hub.consulta_rapida_modelo();
 
 -- -----------------------------------------------------------------------------
 -- (OPCIONAL) ÁREAS E CARGOS DE PARTIDA — a estrutura típica que os sistemas já
--- reconhecem pelo SLUG (o OutPerformance monta uma aba por área, o OutFunnels
+-- reconhecem pelo SLUG (o Metas monta uma aba por área, o CRM
 -- acha as cadeiras de venda pelo cargo, o Início acha o Sucesso do Cliente).
 -- Só entra se a empresa ainda NÃO tem nenhuma área cadastrada: rodar de novo
 -- (ou rodar depois de já ter criado as suas) não muda nada. Renomeie à vontade
 -- (o que os sistemas usam é o slug), apague o que não usa e acrescente o resto
--- na tela Configuração do OutPerformance ou em /usuarios/.
+-- na tela Configuração do Metas ou em /usuarios/.
 -- Nenhuma pessoa e nenhum dado de empresa: só nomes de área e de cargo comuns.
 -- -----------------------------------------------------------------------------
 do $partida$

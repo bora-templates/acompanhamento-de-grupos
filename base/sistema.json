@@ -2,7 +2,7 @@
   "_leia": "A BASE vai em toda instalação (não é módulo à venda): login, usuários e acessos, avisos, conta, o catálogo de produtos e o envio de e-mail.  A base é dividida em PEÇAS (\"pecas\"): o essencial vai sempre; as outras só quando um módulo da compra usa (o \"base_pecas\" do sistema.json de cada módulo). Lido pela montagem do site, pelo instalador do banco e pelo pacote.",
   "id": "base",
   "nome": "Base compartilhada",
-  "o_que": "Login e primeiro acesso, usuários e acessos, avisos, conta, o catálogo de produtos (/produtos/) e o envio de e-mail. Vai em toda instalação. (O assistente de IA ✦ é o módulo OutAssistenteIA.)",
+  "o_que": "Login e primeiro acesso, usuários e acessos, avisos, conta, o catálogo de produtos (/produtos/) e o envio de e-mail. Vai em toda instalação. (O assistente de IA ✦ é o módulo Assistente.)",
   "versao": "1.1.0",
   "enderecos": [
     [
@@ -16,7 +16,7 @@
     "essencial": {
       "nome": "Essencial",
       "sempre": true,
-      "o_que": "Login e primeiro acesso, usuários e acessos (a tela Usuários), o os-core e o visual comum, a conta, as novidades, instalar como app (PWA) e o Início. No banco: tudo que os módulos escrevem sem saber se as outras peças vieram — inclusive a fila dos avisos (hub.notificacoes, hub.avisar) e a do e-mail (hub.email_outbox).",
+      "o_que": "Login e primeiro acesso, usuários e acessos (a tela Usuários), o os-core e o visual comum, a conta, as novidades, instalar como app (PWA) e o Início. No banco: tudo que os módulos escrevem sem saber se as outras peças vieram, inclusive a fila dos avisos (hub.notificacoes, hub.avisar) e a do e-mail (hub.email_outbox).",
       "arquivos": "tudo o que está em base/ e não está em nenhuma das outras peças",
       "funcoes": [
         "primeiro-acesso",
@@ -52,7 +52,7 @@
     },
     "email": {
       "nome": "Envio de e-mail",
-      "o_que": "Quem ENVIA a fila de e-mails (hub.email_outbox) dos módulos: a Edge Function email-envio (Resend). Sem ela, os e-mails ficam na fila. (Os e-mails do LOGIN — convite, senha — são do Supabase Auth e vão no essencial.)",
+      "o_que": "Quem ENVIA a fila de e-mails (hub.email_outbox) dos módulos: a Edge Function email-envio (Resend). Sem ela, os e-mails ficam na fila. (Os e-mails do LOGIN, como o convite e a nova senha, são do Supabase Auth e vão no essencial.)",
       "arquivos": [
         "supabase/functions/email-envio"
       ],
@@ -67,7 +67,7 @@
     },
     "produtos": {
       "nome": "Catálogo de produtos",
-      "o_que": "O catálogo /produtos/ (escada de valor, jornada de entrega de cada produto, ficha pública do parceiro em /produto/) e o banco dele (hub.oj_produtos e o que é dele, hub.produtos, o balde 'produtos').",
+      "o_que": "O catálogo /produtos/ (escada de valor, jornada de entrega de cada produto, ficha pública do parceiro em /produto/) e o banco dele (hub.suc_produtos e o que é dele, hub.produtos, o balde 'produtos').",
       "arquivos": [
         "produtos",
         "banco/pecas/produtos.sql",
@@ -83,7 +83,7 @@
       "banco": [
         "banco/pecas/produtos.sql"
       ],
-      "assinatura": "hub.oj_produtos",
+      "assinatura": "hub.suc_produtos",
       "precisa": [
         "email"
       ],
@@ -101,7 +101,7 @@
     },
     "comercial": {
       "nome": "Agenda comercial",
-      "o_que": "A agenda de calls do comercial (hub.agendamentos), as situações do agendamento (hub.status_agendamento) e os funis de venda (hub.vendas_funis). Só banco: o OutFunnels e o OutPerformance leem os mesmos, e cada um funciona sem o outro.",
+      "o_que": "A agenda de calls do comercial (hub.agendamentos), as situações do agendamento (hub.status_agendamento) e os funis de venda (hub.vendas_funis). Só banco: o CRM e o Metas leem os mesmos, e cada um funciona sem o outro.",
       "arquivos": [
         "banco/pecas/comercial.sql",
         "banco/estrutura/12-comercial-catalogos.sql"

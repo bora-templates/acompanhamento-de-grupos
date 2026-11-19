@@ -1,0 +1,59 @@
+<!-- ── aba Orientações e materiais: o que a IA deve observar e os textos de apoio do grupo ── -->
+<div x-show="aba === 'materiais'" x-cloak>
+  <div class="card">
+    <h2>Orientações para a IA</h2>
+    <p class="peq mut">Escreva o que a IA deve observar neste grupo, como chamar o time e o que é urgente. As orientações entram nos resumos e nas respostas.</p>
+    <textarea x-model="ori.texto" :disabled="!podeAdministrar" aria-label="Orientações para a IA" placeholder="Exemplo: Chame a equipe pelo primeiro nome. Considere urgente qualquer pedido de cancelamento ou reclamação de atraso." style="min-height:140px;margin-top:10px"></textarea>
+    <div class="contador" :class="{ passou: oriPassou }" x-show="podeAdministrar" x-cloak x-text="numero(ori.texto.length) + ' de 4.000 caracteres'"></div>
+    <div x-show="podeAdministrar" x-cloak>
+      <p class="peq mut" id="gr-ori-sugestoes-dica">Toque numa sugestão para acrescentar a frase pronta ao fim das orientações. O que já está escrito continua no lugar.</p>
+      <div class="sugestoes ori-sugestoes" role="group" aria-labelledby="gr-ori-sugestoes-dica">
+        <template x-for="s in sugestoesOrientacao" :key="s.rotulo">
+          <button type="button" :disabled="oriTem(s.frase)" :aria-pressed="oriTem(s.frase) ? 'true' : 'false'" :title="s.frase"
+                  :aria-label="(oriTem(s.frase) ? 'Já está nas orientações: ' : 'Acrescentar às orientações: ') + s.frase" @click="acrescentaOrientacao(s.frase)">
+            <svg class="i" viewBox="0 0 24 24" x-show="!oriTem(s.frase)"><path d="M12 5v14M5 12h14"/></svg>
+            <svg class="i" viewBox="0 0 24 24" x-show="oriTem(s.frase)"><path d="M5 12l5 5L20 7"/></svg>
+            <span x-text="s.rotulo"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+    <div class="linha entre" style="margin-top:10px" x-show="podeAdministrar" x-cloak>
+      <span class="peq mut" x-text="oriMudou ? 'Há alterações que ainda não foram salvas.' : ''"></span>
+      <button type="button" class="btn" :disabled="ori.salvando || !oriMudou || oriPassou" @click="salvaOrientacoes()">
+        <span class="spin p" x-show="ori.salvando"></span><span>Salvar as orientações</span></button>
+    </div>
+    <p class="peq mut" style="margin-top:8px" x-show="!podeAdministrar">Só quem edita o grupo muda as orientações.</p>
+    <div class="err" x-show="ori.erro" x-cloak role="alert" style="margin:10px 0 0" x-text="ori.erro"></div>
+  </div>
+
+  <div class="card">
+    <h2>Materiais de apoio
+      <span class="esp"></span>
+      <button type="button" class="btn leve mini" x-show="podeAdministrar" x-cloak @click="abreNovoMaterial()"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Adicionar material</button>
+    </h2>
+    <p class="peq mut">Podem ser regras do grupo, perguntas frequentes ou o programa da turma. A IA usa os trechos que combinam com a pergunta ou com o período do resumo.</p>
+
+    <div class="estado" x-show="mat.estado === 'carregando'" role="status"><span class="spin"></span><span>Carregando os materiais</span></div>
+    <div class="err" x-show="mat.estado === 'erro'" x-cloak role="alert" style="margin-top:10px">
+      <span x-text="'Não foi possível carregar os materiais. ' + mat.erro"></span>
+      <button type="button" class="btn leve mini" @click="carregaMateriais()">Tentar de novo</button>
+    </div>
+    <div class="vazio" x-show="mat.estado === 'pronto' && !mat.lista.length">
+      <b>Este grupo ainda não tem materiais de apoio.</b>
+      <span x-show="podeAdministrar">Use o botão Adicionar material para colar um texto ou abrir um arquivo.</span>
+    </div>
+    <div x-show="mat.estado === 'pronto' && mat.lista.length" style="margin-top:6px">
+      <template x-for="m in mat.lista" :key="m.id">
+        <div class="mat-item">
+          <div style="min-width:0">
+            <div class="t" x-text="m.titulo"></div>
+            <div class="peq mut"><span x-text="numero(m.caracteres) + ' caracteres · guardado ' + relativo(m.criado_em)"></span><span x-show="m.arquivo_nome" x-text="' · arquivo ' + m.arquivo_nome"></span></div>
+          </div>
+          <div class="linha" x-show="podeAdministrar" x-cloak><button type="button" class="btn perigo mini" @click="pedeApagarMaterial(m)">Apagar</button></div>
+          <div class="trecho" x-show="m.trecho" x-text="m.trecho"></div>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>

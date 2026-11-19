@@ -68,7 +68,7 @@ ALTER TABLE ONLY hub.users
 
 -- FK CONSTRAINT: ag_conhecimento ag_conhecimento_produto_id_fkey
 
--- ─── medidor de atividade (tempo de uso de cada tela) — veio do OutSign: toda tela chama, então é da base ───
+-- ─── medidor de atividade (tempo de uso de cada tela) — veio do Contratos: toda tela chama, então é da base ───
 
 -- FK CONSTRAINT: os_minuto os_minuto_user_id_fkey
 ALTER TABLE ONLY hub.os_minuto

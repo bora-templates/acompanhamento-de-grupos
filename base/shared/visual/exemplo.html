@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Componentes do visual</title>
+<link rel="icon" type="image/svg+xml" href="/shared/favicon.svg">
+<link rel="stylesheet" href="/shared/visual/tokens.css">
+<link rel="stylesheet" href="/shared/visual/componentes.css">
+<!--
+  Página de referência do design system (fora do menu): cada componente do componentes.css, no modo claro
+  e no escuro, lado a lado. Serve para quem mexe no visual conferir uma peça antes de usar numa tela.
+-->
+<style>
+  body{margin:0}
+  .ex{max-width:1200px;margin:0 auto;padding:40px 24px 64px}
+  .ex-topo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:end;margin-bottom:28px}
+  .ex-topo h1{margin:0;font:600 30px/1.15 var(--display);letter-spacing:-.02em}
+  .ex-topo p{margin:0;color:var(--ink-2);font-size:15px;line-height:1.55}
+  .ex-par{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}
+  .ex-modo{background:var(--bg);color:var(--ink);border:1px solid var(--bd-2);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
+  .ex-modo > h2{margin:0;font:600 12px/1 var(--corpo);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+  .ex-modo h3{margin:0 0 12px;font:600 16px/1.3 var(--display)}
+  .ex-linha{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .ex-campos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+  .ex-menu{display:grid;grid-template-columns:120px minmax(0,1fr);border-radius:12px;overflow:hidden;border:1px solid var(--bd)}
+  .ex-menu nav{background:var(--m);padding:12px 8px;display:flex;flex-direction:column;gap:4px}
+  .ex-menu nav span{font-size:13px;color:var(--m-tx);padding:7px 9px;border-radius:8px}
+  .ex-menu nav span.on{background:var(--m-on);color:var(--m-st);box-shadow:inset 3px 0 0 var(--m-mark)}
+  .ex-menu nav small{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--m-mu);padding:4px 9px}
+  .ex-menu div{background:var(--hero);padding:14px}
+  .ex-menu em{font-style:normal;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc)}
+  .ex-menu b{display:block;font:600 18px/1.2 var(--display);margin-top:2px}
+  .ex-janela{position:static;padding:0;background:transparent;backdrop-filter:none}
+  .ex-janela .v-janela-caixa{padding:18px}
+  @media (max-width: 860px){
+    .ex-topo,.ex-par,.ex-campos{grid-template-columns:minmax(0,1fr)}
+    .ex{padding:24px 16px 48px}
+  }
+</style>
+</head>
+<body>
+<main class="ex">
+  <header class="ex-topo">
+    <h1>Componentes do visual</h1>
+    <p>Esta página mostra cada peça do componentes.css no modo claro e no escuro. As cores, as fontes e os raios saem do tokens.css, e as telas usam só essas peças.</p>
+  </header>
+
+  <div class="ex-par" id="par"></div>
+</main>
+
+<template id="modelo">
+  <section class="ex-modo">
+    <h2 data-nome></h2>
+
+    <div class="v-cartao">
+      <h3>Menu e cabeçalho</h3>
+      <div class="ex-menu">
+        <nav><small>Acompanhamento</small><span class="on">Grupos</span><span>Ajustes</span></nav>
+        <div><em>Grupo de exemplo</em><b>Clientes da clínica</b></div>
+      </div>
+    </div>
+
+    <div class="v-cartao">
+      <h3>Botões</h3>
+      <div class="ex-linha">
+        <button type="button" class="v-btn">Fazer o resumo</button>
+        <button type="button" class="v-btn v-btn--sec">Atualizar</button>
+        <button type="button" class="v-btn v-btn--perigo">Apagar</button>
+        <button type="button" class="v-btn" disabled>Fazendo o resumo</button>
+        <button type="button" class="v-btn v-btn--mini">Pequeno</button>
+      </div>
+    </div>
+
+    <div class="v-cartao">
+      <h3>Formulário</h3>
+      <div class="ex-campos">
+        <div><label class="v-rotulo" for="">E-mail</label><input class="v-campo" type="email" placeholder="voce@empresa.com.br"><span class="v-ajuda">Use o e-mail do seu cadastro.</span></div>
+        <div><label class="v-rotulo" for="">Token</label><input class="v-campo" aria-invalid="true" value="abc"><span class="v-ajuda v-ajuda--erro">Esse token não abre o projeto. Copie de novo no Supabase.</span></div>
+        <div><label class="v-rotulo" for="">Endereço</label><input class="v-campo" value="https://exemplo.supabase.co" readonly><span class="v-ajuda v-ajuda--ok">Endereço conferido.</span></div>
+        <div><label class="v-rotulo" for="">Observação</label><textarea class="v-campo" placeholder="Escreva aqui o que a IA precisa saber"></textarea></div>
+      </div>
+    </div>
+
+    <div class="v-cartao">
+      <h3>Selos e avisos</h3>
+      <div class="ex-linha">
+        <span class="v-selo v-selo--ok">Ligado</span>
+        <span class="v-selo v-selo--aviso">Sem resumo hoje</span>
+        <span class="v-selo v-selo--risco">WhatsApp desligado</span>
+        <span class="v-selo v-selo--neutro">Pausado</span>
+        <span class="v-selo v-selo--acc">Exemplo</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+        <div class="v-aviso"><span><b>A IA está desligada.</b> Ligue a IA nos Ajustes para fazer resumos.</span><button type="button" class="v-btn v-btn--mini">Ligar a IA</button></div>
+        <div class="v-aviso v-aviso--ok"><span><b>Tudo certo.</b> O WhatsApp está ligado.</span></div>
+        <div class="v-aviso v-aviso--risco"><span><b>Não foi possível salvar.</b> Confira a internet e tente de novo.</span></div>
+        <div class="v-aviso v-aviso--info"><span>Este é um grupo de exemplo, com conversa fictícia.</span></div>
+      </div>
+    </div>
+
+    <div class="v-cartao">
+      <h3>Abas</h3>
+      <nav class="v-abas" aria-label="Exemplo de abas"><a class="v-aba ativa" href="#" aria-selected="true">Conversa</a><a class="v-aba" href="#">Resumos</a><a class="v-aba" href="#">Perguntar à IA</a><a class="v-aba" href="#">Participantes</a></nav>
+    </div>
+
+    <div class="v-vazio">
+      <b>Ainda não há grupos acompanhados.</b>
+      <p>Ligue o WhatsApp e escolha os grupos que a IA vai acompanhar.</p>
+      <button type="button" class="v-btn">Ligar o WhatsApp</button>
+    </div>
+
+    <div class="v-cartao">
+      <h3>Passos da instalação</h3>
+      <ol class="v-passos">
+        <li class="v-passo feito"><span><b>Banco de dados</b>As tabelas foram criadas no seu Supabase.</span></li>
+        <li class="v-passo agora"><span><b>Funções do servidor</b>Publicando as funções.</span></li>
+        <li class="v-passo"><span><b>Site</b>Espera o passo anterior.</span></li>
+        <li class="v-passo erro"><span><b>Token da Vercel</b>Esse token não abre o projeto. Gere um novo e cole de novo.</span></li>
+      </ol>
+    </div>
+
+    <div class="v-tabela-moldura">
+      <table class="v-tabela">
+        <thead><tr><th>Pessoa</th><th>E-mail</th><th>Acesso</th></tr></thead>
+        <tbody><tr><td>Carla Mendes</td><td>carla@empresa.com.br</td><td><span class="v-selo v-selo--ok">Edita</span></td></tr>
+        <tr><td>Aline Costa</td><td>aline@empresa.com.br</td><td><span class="v-selo">Só vê</span></td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="v-janela ex-janela">
+      <div class="v-janela-caixa" role="dialog" aria-label="Exemplo de janela">
+        <h3>Apagar o grupo de exemplo?</h3>
+        <p style="margin:0 0 14px;color:var(--ink-2);font-size:14px">As mensagens e os resumos do exemplo saem do sistema.</p>
+        <div class="ex-linha" style="justify-content:flex-end"><button type="button" class="v-btn v-btn--sec">Cancelar</button><button type="button" class="v-btn v-btn--perigo">Apagar</button></div>
+      </div>
+    </div>
+
+    <div class="v-carregando"><span class="v-gira"></span>Carregando os grupos</div>
+  </section>
+</template>
+<script>
+  // as duas colunas são o mesmo modelo, uma com os tokens do claro e outra com os do escuro
+  var par = document.getElementById('par');
+  [['v-tema-claro', 'Claro'], ['v-tema-escuro', 'Escuro']].forEach(function (m) {
+    var s = document.getElementById('modelo').content.firstElementChild.cloneNode(true);
+    s.classList.add(m[0]);
+    s.querySelector('[data-nome]').textContent = m[1];
+    s.querySelectorAll('label[for=""]').forEach(function (l, i) { var id = m[0] + '-c' + i; l.setAttribute('for', id); l.nextElementSibling.id = id; });
+    par.appendChild(s);
+  });
+</script>
+</body>
+</html>

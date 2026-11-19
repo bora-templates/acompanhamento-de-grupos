@@ -1,6 +1,6 @@
 /*
- * os-celular.js — o que o Hub faz SÓ NO CELULAR: a barra do app embaixo
- * (Chats · Meu Dia · ✦ · Agenda · Início) e a animação de abertura do app.
+ * os-celular.js: o que o sistema faz SÓ NO CELULAR: a barra do app embaixo
+ * (Chats, Meu Dia, ✦ e Agenda, com a tela inicial no completo) e a animação de abertura do app.
  * Carregado sozinho pelo os-core.js (nenhuma tela precisa citar este arquivo).
  * Usa o que o os-core expõe em window.OS.
  */
@@ -8,13 +8,13 @@
   'use strict';
   if (!window.OS) return;
   // ══════════════════════════════════════════════════════════════════════════
-  // A BARRA DO APP NO CELULAR — Chats · Meu Dia · ✦ agente · Agenda · Início
+  // A BARRA DO APP NO CELULAR — Chats · Meu Dia · ✦ agente · Agenda (e a tela inicial, no completo)
   // Só no CELULAR (≤760px) e só pra quem é do time;
   // no computador nada muda. Some quando a pessoa digita e dentro de uma
   // conversa (a tela avisa com a classe `os-em-conversa` no <html>), como no
   // WhatsApp. Tela que não quer a barra: window.OS_SEM_BARRA = true.
   // O ✦ do centro abre o agente interno (os-agente.js ouve o evento 'os-kyoto').
-  // O ✦ é do módulo OutAssistenteIA: sem ele instalado, a barra não tem o botão.
+  // O ✦ é do módulo Assistente: sem ele instalado, a barra não tem o botão.
   // ══════════════════════════════════════════════════════════════════════════
   const _BARRA_ICO = {
     chats: 'M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z',
@@ -24,10 +24,6 @@
   };
   function _barraAtiva() {
     const p = location.pathname, h = location.hash;
-    if (/^\/(outjourney\/outchat|outfunnel\/outfunnels)/.test(p)) return 'chats';
-    if (/^\/outjourney/.test(p) && /agendamento/.test(h)) return 'agenda';
-    if (/^\/outjourney/.test(p) && (/dashboard/.test(h) || !h || h === '#/')) return 'dia';
-    if (p === '/' || p === '/index.html') return 'inicio';
     return '';
   }
   // Tem janela ABERTA na tela? Só conta a que aparece: janela escondida (x-show,
@@ -47,49 +43,50 @@
     try { if (await OS.Auth.getSession()) acc = await OS.getMyAccess(); } catch (e) {}
     if (!acc || !OS.estaNoTime(acc) || window.OS_SEM_BARRA === true || document.getElementById('os-barra')) return;
     const ac = acc.acessos || {};
-    const temJourney = OS.instalado('outjourney') && (acc.level === 'admin' || ac.journey !== false);
+    // cada linha de módulo só vai no pacote que tem o módulo (marcador @so da fábrica)
+    let temJourney = false, chats = null, ky = false;
     const itens = [
-      (temJourney || OS.instalado('outfunnels')) ? { id: 'chats', nome: 'Chats', href: temJourney ? '/outjourney/outchat' : '/outfunnels' } : null,
-      temJourney ? { id: 'dia', nome: 'Meu Dia', href: '/outjourney/admin#/dashboard' } : null,
-      OS.instalado('outassistenteia') ? { id: 'kyoto', nome: 'Assistente' } : null,
-      temJourney ? { id: 'agenda', nome: 'Agenda', href: '/outjourney/admin#/agendamento' } : null,
-      { id: 'inicio', nome: 'Início', href: '/' },
+      chats ? { id: 'chats', nome: 'Chats', href: chats } : null,
+      ky ? { id: 'kyoto', nome: '✦' } : null,
     ].filter(Boolean);
+    // no pacote de uma solução não existe Início: a navegação é o menu da solução (a casca), e sem outro item a barra não aparece
+    if (!itens.length) return;
+    let KY_HTML = '';
 
     const css = document.createElement('style');
     css.id = 'os-barra-css';
     css.textContent =
       '#os-barra{position:fixed;left:0;right:0;bottom:0;z-index:2147482900;display:flex;align-items:flex-end;'
-      + 'background:rgba(255,255,255,.96);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);'
-      + 'border-top:1px solid #E8EAEE;padding:6px 4px calc(6px + env(safe-area-inset-bottom));'
+      + 'background:color-mix(in srgb,var(--surface,#FFFFFF) 96%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);'
+      + 'border-top:1px solid var(--bd,rgba(40,28,16,.10));padding:6px 4px calc(6px + env(safe-area-inset-bottom));'
       + 'font-family:-apple-system,"SF Pro Text",system-ui,sans-serif}'
       + '#os-barra a,#os-barra button{flex:1 1 0;display:flex;flex-direction:column;align-items:center;gap:3px;'
-      + 'min-height:48px;justify-content:flex-end;font-size:11px;color:#7D848B;text-decoration:none;border:0;background:none;'
+      + 'min-height:48px;justify-content:flex-end;font-size:11px;color:var(--ink-2,#55504A);text-decoration:none;border:0;background:none;'
       + 'font-family:inherit;padding:0;-webkit-tap-highlight-color:transparent}'
-      + '#os-barra a.on{color:#0A0A0B;font-weight:600}'
+      + '#os-barra a.on{color:var(--ink,#1D1A17);font-weight:600}'
       + '#os-barra svg{width:23px;height:23px}'
-      + '#os-barra .ky{color:#00133D;font-weight:600}'
-      // o ✦ do centro é o ORBE do assistente (as cores da identidade visual do Hub)
-      + '#os-barra .ky span{position:relative;isolation:isolate;overflow:hidden;width:50px;height:50px;margin-top:-24px;border-radius:25px;color:#fff;background:radial-gradient(circle at 35% 30%,#fff 0 6%,transparent 30%),radial-gradient(circle at 50% 50%,#1C3E87,#00133D 70%);font-size:20px;text-shadow:0 1px 6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;border:3px solid #fff;box-shadow:0 8px 22px -6px rgba(28,62,135,.75),inset 0 0 12px rgba(156,178,212,.5)}'
-      + '#os-barra .ky span::before,#os-barra .ky span::after{content:"";position:absolute;inset:6%;border-radius:50%;z-index:-1;filter:blur(5px);mix-blend-mode:screen;animation:osOrbGira 6s linear infinite}#os-barra .ky span::before{background:conic-gradient(from 0deg,transparent 0 30%,#9CB2D4 45%,transparent 60%,transparent 70%,#BBB2DC 82%,transparent 92%)}#os-barra .ky span::after{background:conic-gradient(from 200deg,transparent 0 40%,#EED7A4 52%,transparent 64%);animation-duration:9s;animation-direction:reverse}@keyframes osOrbGira{to{transform:rotate(360deg)}}'
+      + '#os-barra .ky{color:var(--ink,#1D1A17);font-weight:600}'
+      // o ✦ do centro é o ORBE do assistente (as cores da identidade visual do sistema)
+      + '#os-barra .ky span{position:relative;isolation:isolate;overflow:hidden;width:50px;height:50px;margin-top:-24px;border-radius:25px;color:var(--branco,#FFFFFF);background:radial-gradient(circle at 35% 30%,var(--branco,#FFFFFF) 0 6%,transparent 30%),radial-gradient(circle at 50% 50%,var(--btn,#B4481B),var(--m,#1D1A17) 70%);font-size:20px;text-shadow:0 1px 6px color-mix(in srgb,var(--sombra-cor,#1D1A17) 40%,transparent);display:flex;align-items:center;justify-content:center;border:3px solid var(--surface,#FFFFFF);box-shadow:0 8px 22px -6px color-mix(in srgb,var(--m-mark,#E8703A) 75%,transparent),inset 0 0 12px color-mix(in srgb,var(--m-mark,#E8703A) 50%,transparent)}'
+      + '#os-barra .ky span::before,#os-barra .ky span::after{content:"";position:absolute;inset:6%;border-radius:50%;z-index:-1;filter:blur(5px);mix-blend-mode:screen;animation:osOrbGira 6s linear infinite}#os-barra .ky span::before{background:conic-gradient(from 0deg,transparent 0 30%,var(--m-mark,#E8703A) 45%,transparent 60%,transparent 70%,var(--m-mark,#E8703A) 82%,transparent 92%)}#os-barra .ky span::after{background:conic-gradient(from 200deg,transparent 0 40%,#D9B48F 52%,transparent 64%);animation-duration:9s;animation-direction:reverse}@keyframes osOrbGira{to{transform:rotate(360deg)}}'
       + 'html.os-com-barra body{padding-bottom:calc(72px + env(safe-area-inset-bottom))!important}'
       + 'html.os-em-conversa #os-barra,html.os-digitando #os-barra{display:none}'
       // janela aberta = barra fora: a barra fica por cima de TUDO e cobria o
       // rodapé das janelas (o botão de confirmar). Quem liga a classe é o
       // _barraJanelaAberta, que só conta janela VISÍVEL.
       + 'html.os-com-janela #os-barra{display:none}'
-      // o "← voltar" flutuante do Hub cobria a aba Chats: com a barra, quem volta é a aba Início
+      // o "← voltar" flutuante cobria a aba Chats: com a barra, quem volta é a aba da tela inicial
       + 'html.os-com-barra #os-back-tab,html.os-com-barra #os-back-office{display:none!important}'
       + 'html.os-em-conversa.os-com-barra body{padding-bottom:0!important}'
       // MOVIMENTO: a barra não pisca na troca de tela
       // (view-transition-name), a marquinha roxa desliza até a aba nova, o toque afunda
       // de leve e o ✦ brilha uma vez por abertura. Reduzir movimento desliga tudo.
       + '#os-barra{view-transition-name:os-barra}'
-      + '#os-barra .ind{position:absolute;top:0;width:36px;height:3px;border-radius:0 0 3px 3px;background:#6A55D8;view-transition-name:os-barra-ind}'
+      + '#os-barra .ind{position:absolute;top:0;width:36px;height:3px;border-radius:0 0 3px 3px;background:var(--acc,#A8431A);view-transition-name:os-barra-ind}'
       + '#os-barra a,#os-barra button{transition:transform .12s ease}'
       + '#os-barra a:active,#os-barra button:active{transform:scale(.92)}'
-      + '#os-barra a.on{color:#6A55D8}'
-      + '@keyframes osBrilho{0%{box-shadow:0 0 0 0 rgba(156,178,212,.65)}100%{box-shadow:0 0 0 14px rgba(156,178,212,0)}}'
+      + '#os-barra a.on{color:var(--acc,#A8431A)}'
+      + '@keyframes osBrilho{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--m-mark,#E8703A) 65%,transparent)}100%{box-shadow:0 0 0 14px transparent}}'
       + '#os-barra .ky.brilha span{animation:osBrilho 1.2s ease-out .5s 2}'
       + '@media (prefers-reduced-motion:reduce){#os-barra *{animation:none!important;transition:none!important}}'
       // o sino fica acima da barra
@@ -103,7 +100,7 @@
     nav.setAttribute('aria-label', 'Navegação do app');
     const ativa = _barraAtiva();
     nav.innerHTML = itens.map((it) => it.id === 'kyoto'
-      ? '<button type="button" class="ky" aria-label="Abrir o assistente"><span>✦</span>Assistente</button>'
+      ? KY_HTML
       : '<a href="' + it.href + '" class="' + (it.id === ativa ? 'on' : '') + '"' + (it.id === ativa ? ' aria-current="page"' : '') + '>'
         + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="'
         + _BARRA_ICO[it.id] + '"/></svg>' + it.nome + '</a>').join('');
@@ -127,7 +124,7 @@
     const _jConfere = () => { _jPend = false; document.documentElement.classList.toggle('os-com-janela', _barraJanelaAberta()); };
     try { new MutationObserver(() => { if (!_jPend) { _jPend = true; requestAnimationFrame(_jConfere); } }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'hidden', 'open', 'role', 'aria-modal'] }); } catch (e) {}
     _jConfere();
-    // troca de menu dentro do OutJourney (#/…) muda a aba acesa
+    // troca de menu dentro do Sucesso (#/…) muda a aba acesa
     window.addEventListener('hashchange', () => {
       const a = _barraAtiva();
       nav.querySelectorAll('a').forEach((el) => {
@@ -163,11 +160,11 @@
       + '@keyframes osVtSai{to{opacity:0}}'
       + '@keyframes osVtEntra{from{opacity:0;transform:translateY(12px)}}'
       + '@keyframes osAbCirc{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}'
-      + '@keyframes osAbLua{0%{transform:translateX(-60px);opacity:0}45%{opacity:0}100%{transform:none;opacity:1}}'
+      + '@keyframes osAbLua{0%{transform:scale(.4);opacity:0}45%{opacity:0}100%{transform:none;opacity:1}}'
       + '@keyframes osAbFaixa{from{transform:scaleX(0)}to{transform:scaleX(1)}}'
-      + '#os-abertura{position:fixed;inset:0;z-index:2147483647;background:#00133D;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;transition:opacity .28s ease}'
+      + '#os-abertura{position:fixed;inset:0;z-index:2147483647;background:var(--m,#1D1A17);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;transition:opacity .28s ease}'
       + '#os-abertura.sai{opacity:0}'
-      + '#os-abertura .c{transform-origin:398.5px 496px;animation:osAbCirc .6s cubic-bezier(.2,.8,.2,1) both}'
+      + '#os-abertura .c{transform-origin:496px 560px;animation:osAbCirc .6s cubic-bezier(.2,.8,.2,1) both}'
       + '#os-abertura .l{animation:osAbLua .6s cubic-bezier(.2,.8,.2,1) .15s both}'
       + '#os-abertura .f{transform-origin:228px 767px;animation:osAbFaixa .5s cubic-bezier(.2,.8,.2,1) .55s both}';
     (document.head || document.documentElement).appendChild(css);
@@ -182,11 +179,8 @@
       const d = document.createElement('div');
       d.id = 'os-abertura'; d.setAttribute('aria-hidden', 'true');
       d.innerHTML = '<svg width="170" height="170" viewBox="0 0 1024 1024">'
-        + '<circle class="c" cx="398.5" cy="496" r="170" fill="#F7F7F7"/>'
-        + '<path class="l" d="M625.2 326a170 170 0 0 1 0 340z" fill="#F7F7F7"/>'
-        + '<g class="f"><rect x="228" y="760" width="104" height="14" rx="7" fill="#BBB2DC"/><rect x="342" y="760" width="104" height="14" rx="7" fill="#9CB2D4"/>'
-        + '<rect x="456" y="760" width="112" height="14" rx="7" fill="#B8E9DE"/><rect x="578" y="760" width="104" height="14" rx="7" fill="#EED7A4"/>'
-        + '<rect x="692" y="760" width="104" height="14" rx="7" fill="#EABAAA"/></g></svg>';
+        + '<rect class="c" x="320" y="384" width="352" height="352" rx="100" fill="#E8703A"/>'
+        + '<circle class="l" cx="684" cy="372" r="86" fill="#FFF8F1" stroke-width="48" style="stroke:var(--m,#1D1A17)"/></svg>';
       const tira = () => { d.classList.add('sai'); setTimeout(() => d.remove(), 300); };
       d.addEventListener('click', tira);
       (document.body || document.documentElement).appendChild(d);

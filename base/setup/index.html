@@ -4,182 +4,148 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
-<title>Instalação · Hub</title>
+<title>Instalação</title>
 <link rel="icon" type="image/svg+xml" href="/shared/favicon.svg">
 <!--
-  TELA DE INSTALAÇÃO (/setup). Quem acabou de publicar o Hub na Vercel abre o site e
+  TELA DE INSTALAÇÃO (/setup). Quem acabou de publicar o sistema na Vercel abre o site e
   cai aqui: cola o endereço do projeto do Supabase, o token do Supabase e o token da
   Vercel, e a instalação faz o resto sozinha (banco, funções, e-mails em português,
   o primeiro administrador e as variáveis do site), pelo servidor api/setup.js.
   Os tokens ficam só nesta aba, enquanto ela estiver aberta: nada é guardado.
-  Visual: o mesmo cartão de entrada do Início (/shared/launcher/inicio.css).
+  Visual: o cartão de entrada do design system (/shared/visual/), no tema do aparelho.
 -->
-<link rel="stylesheet" href="/shared/launcher/inicio.css">
+<link rel="stylesheet" href="/shared/visual/tokens.css">
+<link rel="stylesheet" href="/shared/visual/componentes.css">
 <style>
-  .gate-card{max-width:520px}
+  body{margin:0}
+  .v-entrada-cartao{max-width:580px}
+  .topo-inst{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  .topo-inst .v-marca{margin:0}
+  .topo-inst b{font:600 15px/1.3 var(--display);color:var(--ink-2)}
   .tela[hidden]{display:none}
-  .lista{margin:0 0 22px;padding:0;list-style:none;counter-reset:n}
-  .lista li{counter-increment:n;position:relative;padding:10px 0 10px 38px;border-bottom:1px solid var(--line);font-size:13.5px;line-height:1.45;color:var(--ink2)}
-  .lista li:last-child{border-bottom:0}
-  .lista li::before{content:counter(n);position:absolute;left:0;top:9px;width:26px;height:26px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:12.5px;display:flex;align-items:center;justify-content:center}
-  .dica{font-size:11.5px;color:var(--mut);margin-top:5px;line-height:1.45}
-  .ok{font-size:12px;color:#2E7D4F;margin-top:6px;line-height:1.4}
-  .ruim{font-size:12px;color:#C2413A;margin-top:6px;line-height:1.4}
-  .gate-card input.falta{border-color:#C2413A}
-  .gate-card input.bom{border-color:#2E7D4F}
-  .senha{position:relative}
-  .senha input{padding-right:86px}
-  .ver{position:absolute;right:6px;top:50%;transform:translateY(-50%);height:32px;padding:0 10px;border-radius:9px;background:var(--surface);color:var(--ink2);font-size:12.5px;font-weight:500;box-shadow:0 0 0 1px var(--line2)}
+  .field{margin-bottom:18px}
+  .field:last-of-type{margin-bottom:0}
+  .lista{margin:20px 0 24px;padding:0;list-style:none;counter-reset:n;display:flex;flex-direction:column;gap:8px}
+  .lista li{counter-increment:n;display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;align-items:start;padding:12px 14px;border:1px solid var(--bd);border-radius:var(--raio-campo);background:var(--raised);font-size:14.5px;line-height:1.45;color:var(--ink)}
+  .lista li::before{content:counter(n);width:28px;height:28px;border-radius:50%;background:var(--acc-soft);color:var(--acc);font-weight:600;font-size:13px;display:grid;place-items:center}
+  .dica{display:block;font-size:13px;color:var(--ink-2);margin-top:6px;line-height:1.45}
+  .ok{display:block;font-size:13px;color:var(--ok);margin-top:6px;line-height:1.45;font-weight:500}
+  .ruim{display:block;font-size:13px;color:var(--risk);margin-top:6px;line-height:1.45;font-weight:500}
+  .v-campo.bom{border-color:var(--ok)}
   .mascara{-webkit-text-security:disc;text-security:disc}
-  .grupo{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:22px 0 10px}
-  .faltam{font-size:12.5px;color:var(--mut);margin-top:10px;line-height:1.6;text-align:center}
-  .faltam button{color:var(--accent);text-decoration:underline;font-size:12.5px}
-  .caixa-err{margin-top:14px;padding:11px 13px;border-radius:10px;background:rgba(194,65,58,.1);color:#C2413A;font-size:12.5px;line-height:1.5;word-break:break-word}
-  .passos{margin:6px 0 0;padding:0;list-style:none}
-  .passos li{display:flex;align-items:flex-start;gap:12px;padding:9px 0;font-size:13.5px;color:var(--mut)}
-  .passos li .ic{flex:0 0 20px;height:20px;margin-top:1px;border-radius:50%;box-shadow:0 0 0 1.5px var(--line2)}
-  .passos li.vai{color:var(--ink)}
-  .passos li.vai .ic{box-shadow:none;border:3px solid var(--accent);border-top-color:transparent;animation:gira .7s linear infinite}
-  .passos li.feito{color:var(--ink2)}
-  .passos li.feito .ic{box-shadow:none;background:#2E7D4F;position:relative}
-  .passos li.feito .ic::after{content:'';position:absolute;left:7px;top:3px;width:5px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
-  .passos li.erro{color:#C2413A}
-  .passos li.erro .ic{box-shadow:none;background:#C2413A}
-  .passos li small{display:block;font-size:11.5px;color:var(--mut);margin-top:2px}
-  .aviso{margin:18px 0 0;padding:11px 13px;border-radius:10px;background:var(--accent-soft);color:var(--ink2);font-size:12.5px;line-height:1.5}
-  .fim{text-align:center;font-size:14px;line-height:1.6;color:var(--ink2)}
-  .fim .btn-pri{margin-top:18px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
-  .link-sec{display:block;width:100%;margin-top:14px;color:var(--mut);font-size:12.5px;text-decoration:underline;text-align:center}
-  .of{margin-top:22px;text-align:left;border-top:1px solid var(--line);padding-top:18px}
-  .of h2{margin:0 0 6px;font-size:16px;font-weight:600}
-  .of h3{margin:18px 0 6px;font-size:13.5px;font-weight:600}
-  .of p,.of li{font-size:12.8px;line-height:1.55;color:var(--ink2)}
+  .grupo{display:flex;align-items:center;gap:10px;font:600 12px/1 var(--corpo);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);margin:28px 0 14px}
+  .grupo::after{content:"";flex:1;height:1px;background:var(--bd)}
+  .faltam{font-size:13px;color:var(--ink-2);margin:12px 0 0;line-height:1.6;text-align:center}
+  .faltam:empty{display:none}
+  .faltam button{color:var(--acc);text-decoration:underline;text-underline-offset:2px;font:inherit;background:none;border:0;padding:6px 0;cursor:pointer}
+  .passos{margin-top:20px}
+  .passos small{display:block;font-size:12.5px;color:var(--ink-2);margin-top:2px;font-weight:400}
+  .fim{text-align:left}
+  .fim .v-btn{margin-top:20px}
+  .link-sec{display:block;width:100%;min-height:44px;margin-top:10px;color:var(--ink-2);font:500 14px/1.3 var(--corpo);text-decoration:underline;text-underline-offset:2px;text-align:center;background:none;border:0;cursor:pointer}
+  .of{margin-top:24px;text-align:left;border-top:1px solid var(--bd);padding-top:20px}
+  .of h2{margin:0 0 6px;font:600 17px/1.3 var(--display)}
+  .of h3{margin:20px 0 6px;font-size:14px;font-weight:600}
+  .of p,.of li{font-size:14px;line-height:1.55;color:var(--ink-2)}
   .of ol{padding-left:18px;margin:6px 0}
-  .vals{margin:8px 0;border:1px solid var(--line2);border-radius:10px;overflow:hidden}
-  .val{display:flex;align-items:center;gap:8px;padding:7px 9px;border-bottom:1px solid var(--line)}
+  .vals{margin:8px 0;border:1px solid var(--bd-2);border-radius:var(--raio-campo);overflow:hidden}
+  .val{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--bd);flex-wrap:wrap}
   .val:last-child{border-bottom:0}
-  .val b{font-size:11.5px;font-family:ui-monospace,Menlo,monospace;min-width:150px}
-  .val code{flex:1;font-size:11px;word-break:break-all;color:var(--mut)}
-  .val button{font-size:11.5px;padding:4px 8px;border-radius:7px;box-shadow:0 0 0 1px var(--line2);background:var(--surface);color:var(--ink2)}
-  @keyframes gira{to{transform:rotate(360deg)}}
+  .val b{font-size:12px;font-family:ui-monospace,Menlo,monospace;min-width:150px}
+  .val code{flex:1;font-size:12px;word-break:break-all;color:var(--ink-2);min-width:0}
+  .val button{font:600 12.5px/1 var(--corpo);min-height:32px;padding:0 10px;border-radius:7px;border:1px solid var(--bd-2);background:var(--surface);color:var(--ink);cursor:pointer}
+  #erro{margin-top:16px;word-break:break-word}
+  #aviso-retoma,#aviso-integracoes{margin-top:16px}
 </style>
 </head>
 <body>
 
-<div class="gate">
-  <div class="gate-card">
-    <div class="marca"><svg viewBox="0 0 30 18" aria-hidden="true"><circle cx="9" cy="9" r="9"/><path d="M21 0a9 9 0 0 1 0 18z"/></svg><b id="marca">Hub</b></div>
+<main class="v-entrada">
+  <div class="v-entrada-cartao">
+    <div class="topo-inst"><span class="v-marca"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="16" y="20" width="28" height="28" rx="8" fill="#E8703A"/><circle cx="45" cy="19" r="7" fill="#FFF8F1"/></svg></span><b id="marca">Instalação</b></div>
 
     <!-- já instalado -->
     <section class="tela fim" id="tela-instalado" hidden>
-      <h1>Este Hub já está instalado</h1>
-      <p class="sub">Entre com o e-mail e a senha de quem administra.</p>
-      <a class="btn-pri" href="/">Entrar no Hub</a>
-      <button type="button" class="link-sec" data-ir="boas-vindas">Acrescentar um módulo ou refazer a instalação</button>
+      <h1>Este sistema já está instalado</h1>
+      <p class="v-sub">Entre com o e-mail e a senha de quem administra.</p>
+      <a class="v-btn v-btn--bloco" href="/">Entrar</a>
+      <!-- no pacote completo, o script troca o rótulo (a linha com o marcador do completo) -->
+      <button type="button" class="link-sec" data-ir="boas-vindas" id="refazer">Refazer a instalação</button>
     </section>
 
     <!-- 1. boas-vindas -->
     <section class="tela" id="tela-boas-vindas" hidden>
       <h1>Instalação</h1>
-      <p class="sub" id="sub-boas-vindas">Em poucos minutos o seu sistema fica no ar, com o banco no seu Supabase e o site na sua Vercel.</p>
+      <p class="v-sub" id="sub-boas-vindas">O seu sistema fica no ar com o banco no seu Supabase e o site na sua Vercel.</p>
       <ol class="lista">
         <li>O endereço do seu projeto no Supabase, o Project URL.</li>
         <li>Um token do Supabase com acesso total a esse projeto.</li>
         <li>Um token da Vercel com acesso a todos os projetos da sua equipe.</li>
         <li>O nome da empresa e o e-mail e a senha de quem vai administrar.</li>
       </ol>
-      <button class="btn-pri" type="button" data-ir="dados">Continuar, já tenho tudo isso</button>
+      <button class="v-btn v-btn--bloco" type="button" data-ir="dados">Continuar, já tenho tudo isso</button>
     </section>
 
     <!-- 2. os dados -->
     <form class="tela" id="tela-dados" hidden novalidate>
       <h1>Seus dados</h1>
-      <p class="sub">Cada campo mostra um aviso verde quando a instalação aceita o que você colou.</p>
+      <p class="v-sub">Cada campo mostra um aviso verde quando a instalação aceita o que você colou, ou diz o que corrigir.</p>
 
       <div class="grupo">Supabase</div>
-      <div class="field"><label for="supabase_url">Endereço do projeto (Project URL)</label>
-        <input id="supabase_url" type="url" autocomplete="off" spellcheck="false" placeholder="https://xxxxxxxxxxxx.supabase.co">
+      <div class="field"><label class="v-rotulo" for="supabase_url">Endereço do projeto (Project URL)</label>
+        <input class="v-campo" id="supabase_url" type="url" autocomplete="off" spellcheck="false" placeholder="https://xxxxxxxxxxxx.supabase.co">
         <div class="dica">No Supabase, abra o seu projeto e clique em Project Overview, no menu da esquerda. Copie o Project URL.</div>
         <div id="msg-supabase_url"></div></div>
-      <div class="field"><label for="supabase_token">Token do Supabase</label>
-        <div class="senha"><input id="supabase_token" type="text" class="mascara" data-mascara autocomplete="off" spellcheck="false" placeholder="começa com sbp_"><button type="button" class="ver" data-ver="supabase_token">Mostrar</button></div>
+      <div class="field"><label class="v-rotulo" for="supabase_token">Token do Supabase</label>
+        <div class="v-senha"><input class="v-campo mascara" id="supabase_token" type="text" data-mascara autocomplete="off" spellcheck="false" placeholder="começa com sbp_"><button type="button" class="v-ver" data-ver="supabase_token">Mostrar</button></div>
         <div class="dica">No seu avatar, no canto de cima, clique em Account e depois em Access Tokens. O token precisa ter acesso total (Full access) ao projeto.</div>
         <div id="msg-supabase_token"></div></div>
 
       <div class="grupo">Vercel</div>
-      <div class="field"><label for="vercel_token">Token da Vercel</label>
-        <div class="senha"><input id="vercel_token" type="text" class="mascara" data-mascara autocomplete="off" spellcheck="false"><button type="button" class="ver" data-ver="vercel_token">Mostrar</button></div>
+      <div class="field"><label class="v-rotulo" for="vercel_token">Token da Vercel</label>
+        <div class="v-senha"><input class="v-campo mascara" id="vercel_token" type="text" data-mascara autocomplete="off" spellcheck="false" placeholder="Cole o token da Vercel"><button type="button" class="v-ver" data-ver="vercel_token">Mostrar</button></div>
         <div class="dica">Na Vercel, clique no seu nome, em Settings e depois em Tokens. Em Scope, escolha a sua equipe e All Projects. Em Expiration, escolha No Expiration.</div>
         <div id="msg-vercel_token"></div></div>
 
       <div class="grupo">Quem administra</div>
-      <div class="field"><label for="empresa">Nome da empresa</label><input id="empresa" type="text" maxlength="120" autocomplete="organization">
-        <div class="dica">Aparece nas telas e nos e-mails do sistema.</div></div>
-      <div class="field"><label for="admin_nome">Seu nome</label><input id="admin_nome" type="text" maxlength="120" autocomplete="name"></div>
-      <div class="field"><label for="admin_email">Seu e-mail</label><input id="admin_email" type="email" autocomplete="email">
-        <div class="dica">É com ele que você entra no sistema.</div></div>
-      <div class="field"><label for="admin_senha">Senha</label>
-        <div class="senha"><input id="admin_senha" type="password" autocomplete="new-password"><button type="button" class="ver" data-ver="admin_senha">Mostrar</button></div>
-        <div class="dica">Pelo menos 8 caracteres. É a senha que você vai usar todo dia, então anote antes de continuar.</div></div>
-      <div class="field"><label for="admin_senha2">Repita a senha</label>
-        <div class="senha"><input id="admin_senha2" type="password" autocomplete="new-password"><button type="button" class="ver" data-ver="admin_senha2">Mostrar</button></div></div>
+      <div class="field"><label class="v-rotulo" for="empresa">Nome da empresa</label><input class="v-campo" id="empresa" type="text" maxlength="120" autocomplete="organization" placeholder="Clínica Exemplo">
+        <div class="dica">Aparece nas telas e nos e-mails do sistema.</div><span id="aj-empresa"></span></div>
+      <div class="field"><label class="v-rotulo" for="admin_nome">Seu nome</label><input class="v-campo" id="admin_nome" type="text" maxlength="120" autocomplete="name" placeholder="Maria Souza"><span id="aj-admin_nome"></span></div>
+      <div class="field"><label class="v-rotulo" for="admin_email">Seu e-mail</label><input class="v-campo" id="admin_email" type="email" autocomplete="email" placeholder="maria@empresa.com.br">
+        <div class="dica">É com ele que você entra no sistema.</div><span id="aj-admin_email"></span></div>
+      <div class="field"><label class="v-rotulo" for="admin_senha">Senha</label>
+        <div class="v-senha"><input class="v-campo" id="admin_senha" type="password" autocomplete="new-password" placeholder="Pelo menos 8 caracteres"><button type="button" class="v-ver" data-ver="admin_senha">Mostrar</button></div>
+        <div class="dica">Pelo menos 8 caracteres. É a senha que você vai usar todo dia, então anote antes de continuar.</div><span id="aj-admin_senha"></span></div>
+      <div class="field"><label class="v-rotulo" for="admin_senha2">Repita a senha</label>
+        <div class="v-senha"><input class="v-campo" id="admin_senha2" type="password" autocomplete="new-password" placeholder="Digite a mesma senha"><button type="button" class="v-ver" data-ver="admin_senha2">Mostrar</button></div><span id="aj-admin_senha2"></span></div>
 
-      <button class="btn-pri" id="instalar" type="submit" disabled>Instalar</button>
+      <button class="v-btn v-btn--bloco" id="instalar" type="submit" disabled style="margin-top:24px">Instalar</button>
       <div class="faltam" id="faltam" aria-live="polite"></div>
     </form>
 
     <!-- 3. instalando -->
     <section class="tela" id="tela-instalando" hidden>
       <h1 id="titulo-instalando">Instalando</h1>
-      <p class="sub" id="sub-instalando">Não feche esta aba e não atualize a página. A instalação leva alguns minutos.</p>
-      <ol class="passos" id="passos"></ol>
-      <div class="caixa-err" id="erro" role="alert" hidden></div>
-      <button class="btn-pri" id="de-novo" type="button" hidden style="margin-top:14px">Tentar de novo</button>
-      <div class="aviso" id="aviso-retoma" hidden>Pode tentar de novo sem medo: a instalação continua de onde parou e não duplica nada.</div>
+      <p class="v-sub" id="sub-instalando">Não feche esta aba e não atualize a página até o último passo ficar verde.</p>
+      <ol class="v-passos passos" id="passos" aria-live="polite"></ol>
+      <div class="v-aviso v-aviso--risco" id="erro" role="alert" hidden></div>
+      <button class="v-btn v-btn--bloco" id="de-novo" type="button" hidden style="margin-top:16px">Tentar de novo</button>
+      <div class="v-aviso v-aviso--info" id="aviso-retoma" hidden>Pode tentar de novo sem medo: a instalação continua de onde parou e não duplica nada.</div>
     </section>
 
     <!-- 4. pronto -->
     <section class="tela fim" id="tela-pronto" hidden>
       <h1>Instalação concluída</h1>
-      <p class="sub" id="sub-pronto">O seu sistema está no ar. Entre com o e-mail e a senha que você acabou de criar.</p>
-      <a class="btn-pri" id="entrar" href="/">Entrar</a>
-      <div class="aviso" id="aviso-integracoes" style="text-align:left">As integrações (WhatsApp, e-mail, Google Agenda, IA) são ligadas depois, dentro do sistema ou com a ajuda do Claude. Você não precisa delas agora.</div>
-      <div class="of" id="bloco-outgrupos" hidden>
+      <p class="v-sub" id="sub-pronto">O seu sistema está no ar. Entre com o e-mail e a senha que você acabou de criar.</p>
+      <div class="of" id="bloco-grupos" hidden>
         <h2>Falta ligar o Grupos</h2>
-        <p>Entre no sistema, abra <b>Grupos</b> e clique em <b>Ajustes</b> para ligar a IA e o WhatsApp. Você vai precisar de uma chave de IA (OpenAI, Claude, DeepSeek ou compatível) e dos dados de uma instância da uazapi com o número que está nos grupos.</p>
+        <p>Depois de entrar, o sistema abre direto no Grupos. Clique em <b>Ajustes</b>, no menu, para ligar a IA e o WhatsApp. Você vai precisar de uma chave de IA (OpenAI, Claude, DeepSeek ou compatível) e dos dados de uma instância da uazapi com o número que está nos grupos.</p>
       </div>
-      <div class="of" id="bloco-outfunnels" hidden>
-        <h2>Falta o OutFunnels</h2>
-        <p>O OutFunnels é o único módulo com servidor próprio, ligado o tempo todo, porque ele recebe o WhatsApp a qualquer hora e mantém o chat em tempo real. São três passos, e esta tela mostra cada valor pronto para copiar.</p>
-        <button class="btn-pri" type="button" id="of-ver">Ver os passos do OutFunnels</button>
-        <div id="of-passos" hidden>
-          <h3>1. A API na Render (perto de US$ 17 por mês)</h3>
-          <ol>
-            <li>Crie a conta em <b>render.com</b> pelo GitHub e cadastre o cartão.</li>
-            <li>Clique em <b>New</b> e depois em <b>Blueprint</b>, escolha o seu repositório do Hub e confirme.</li>
-            <li>A Render pergunta os valores abaixo. Copie e cole cada um. No DATABASE_URL e no DIRECT_URL, troque <b>[SENHA-DO-BANCO]</b> pela senha do banco que você criou no Supabase.</li>
-          </ol>
-          <div class="vals" id="of-render"></div>
-          <ol start="4"><li>Clique em <b>Apply</b> e espere o serviço <b>outfunnels-api</b> ficar com a situação Live. Copie o endereço dele, algo como https://outfunnels-api-xxxx.onrender.com, e cole aqui:</li></ol>
-          <div class="field"><input id="of-api" type="url" placeholder="https://outfunnels-api-xxxx.onrender.com" autocomplete="off"></div>
-          <h3>2. O painel na Vercel</h3>
-          <ol>
-            <li>Na Vercel, clique em <b>Add New</b> e <b>Project</b> e importe <b>o mesmo repositório</b> de novo.</li>
-            <li>Em <b>Root Directory</b>, escolha <b>outfunnels/web</b>.</li>
-            <li>Em <b>Environment Variables</b>, crie as três variáveis abaixo e clique em <b>Deploy</b>.</li>
-          </ol>
-          <div class="vals" id="of-web"></div>
-          <ol start="4"><li>Quando terminar, copie o endereço do projeto novo, algo como https://seu-hub-outfunnels.vercel.app, e cole aqui:</li></ol>
-          <div class="field"><input id="of-webinput" type="url" placeholder="https://seu-hub-outfunnels.vercel.app" autocomplete="off"></div>
-          <h3>3. Ligar o OutFunnels ao Hub</h3>
-          <p>O Hub passa a abrir o painel em <b>/outfunnels</b>, com o mesmo login.</p>
-          <button class="btn-pri" type="button" id="of-ligar">Ligar o OutFunnels</button>
-          <div id="of-msg" class="dica"></div>
-        </div>
-      </div>
+      <!-- pacote de uma solução: o botão vem depois do que falta ligar; o login leva direto para a solução -->
+      <a class="v-btn v-btn--bloco" id="entrar" href="/">Entrar</a>
     </section>
   </div>
-</div>
+</main>
 
 <script>
 (function () {
@@ -298,7 +264,18 @@
     ['admin_senha', 'a senha, com 8 caracteres ou mais', () => $('#admin_senha').value.length >= 8 && $('#admin_senha').value.length <= 72],
     ['admin_senha2', 'a senha repetida igual', () => $('#admin_senha2').value.length > 0 && $('#admin_senha2').value === $('#admin_senha').value],
   ];
+  // a mensagem logo abaixo de cada campo que a pessoa já mexeu diz o que falta nele
+  // (os três primeiros têm a própria mensagem, de quando a instalação confere o que foi colado)
+  const tocados = {};
+  document.addEventListener('input', (e) => { if (e.target && e.target.id) tocados[e.target.id] = true; });
   function atualiza() {
+    for (const [id, nome, ok] of CAMPOS) {
+      const aj = document.getElementById('aj-' + id);
+      if (!aj) continue;
+      const ruim = !!tocados[id] && !ok();
+      aj.className = ruim ? 'ruim' : ''; aj.textContent = ruim ? 'Preencha ' + nome + '.' : '';
+      $('#' + id).classList.toggle('falta', ruim);
+    }
     const faltam = CAMPOS.filter(([, , ok]) => !ok());
     $('#instalar').disabled = faltam.length > 0;
     $('#faltam').innerHTML = faltam.length ? 'Falta: ' + faltam.map(([id, nome]) => '<button type="button" data-campo="' + id + '">' + nome + '</button>').join(', ') : '';
@@ -322,8 +299,8 @@
   let feitos = {}, publicacao = null;
   function desenha(atual, detalhe) {
     $('#passos').innerHTML = PASSOS.map(([id, nome]) => {
-      const cls = feitos[id] ? 'feito' : id === atual ? 'vai' : '';
-      return '<li class="' + cls + '" id="p-' + id + '"><span class="ic"></span><span>' + nome + (id === atual && detalhe ? '<small>' + detalhe + '</small>' : '') + '</span></li>';
+      const cls = feitos[id] ? 'feito' : id === atual ? 'agora vai' : '';
+      return '<li class="v-passo ' + cls + '" id="p-' + id + '"><span>' + nome + (id === atual && detalhe ? '<small>' + detalhe + '</small>' : '') + '</span></li>';
     }).join('');
   }
   const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
@@ -362,7 +339,7 @@
     } catch (e) {
       desenha(atual);
       const li = atual && document.getElementById('p-' + atual);
-      if (li) li.className = 'erro';
+      if (li) li.className = 'v-passo erro';
       $('#titulo-instalando').textContent = 'A instalação parou';
       const err = $('#erro'); err.textContent = e.message; err.hidden = false;
       $('#de-novo').hidden = false; $('#aviso-retoma').hidden = false;
@@ -372,47 +349,8 @@
   $('#de-novo').addEventListener('click', roda);
   window.addEventListener('beforeunload', (e) => { if (!$('#tela-instalando').hidden && $('#de-novo').hidden) { e.preventDefault(); e.returnValue = ''; } });
 
-  // ─── OutFunnels: os passos da Render e do painel na Vercel ──────────────────
-  const temOutFunnels = (pacote.modulos || []).indexOf('OutFunnels') >= 0;
-  if (temOutFunnels) $('#bloco-outfunnels').hidden = false;
   // Grupos: a IA e o WhatsApp são o começo do uso, então este aviso toma o lugar do "você não precisa delas agora"
-  if ((pacote.ids || []).indexOf('outgrupos') >= 0) { $('#bloco-outgrupos').hidden = false; $('#aviso-integracoes').hidden = true; }
-  const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  function valores(alvo, obj) {
-    $(alvo).innerHTML = Object.keys(obj).map((k) => '<div class="val"><b>' + esc(k) + '</b><code>' + esc(obj[k] || '(preencha)') + '</code><button type="button" data-copia="' + esc(obj[k] || '') + '">Copiar</button></div>').join('');
-  }
-  let ofWeb = null;
-  function webVals() {
-    const api = val('of-api').replace(/\/+$/, '');
-    valores('#of-web', Object.assign({ NEXT_PUBLIC_API_URL: api ? api + '/api/v1' : '' }, ofWeb || {}));
-  }
-  document.addEventListener('click', async (e) => {
-    const c = e.target.closest('[data-copia]');
-    if (c) { try { await navigator.clipboard.writeText(c.dataset.copia); c.textContent = 'Copiado'; setTimeout(() => { c.textContent = 'Copiar'; }, 1500); } catch (err) { c.textContent = 'Selecione e copie'; } }
-  });
-  $('#of-ver').addEventListener('click', async () => {
-    $('#of-msg').textContent = '';
-    try {
-      const r = await chama('outfunnels');
-      valores('#of-render', r.render); ofWeb = r.web; webVals();
-      $('#of-passos').hidden = false; $('#of-ver').hidden = true;
-    } catch (err) { $('#of-msg').textContent = err.message; $('#of-passos').hidden = false; }
-  });
-  $('#of-api').addEventListener('input', webVals);
-  $('#of-ligar').addEventListener('click', async () => {
-    const m = $('#of-msg');
-    m.className = 'dica'; m.textContent = 'Gravando o endereço do painel e publicando o Hub de novo.';
-    try {
-      const r = await chama('outfunnels-ligar', { web_url: val('of-webinput') });
-      for (let volta = 0; volta < 120; volta++) {
-        const s2 = await chama('situacao', { publicacao: r.publicacao });
-        if (s2.estado === 'READY') { m.className = 'ok'; m.innerHTML = 'Pronto. O OutFunnels abre em <a href="/outfunnels">/outfunnels</a>, com o mesmo login do Hub.'; return; }
-        if (s2.estado === 'ERROR' || s2.estado === 'CANCELED') throw new Error('A publicação do Hub na Vercel deu erro. Veja em Deployments e tente de novo.');
-        m.textContent = 'Publicando o Hub de novo (situação na Vercel: ' + String(s2.estado || '').toLowerCase() + ').';
-        await espera(5000);
-      }
-    } catch (err) { m.className = 'ruim'; m.textContent = err.message; }
-  });
+  if ((pacote.ids || []).indexOf('grupos') >= 0) { $('#bloco-grupos').hidden = false; if ($('#aviso-integracoes')) $('#aviso-integracoes').hidden = true; }
 
   mostra(window.HUB_INSTALADO ? 'instalado' : 'boas-vindas');
   atualiza();

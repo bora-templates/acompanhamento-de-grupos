@@ -1,14 +1,14 @@
 -- =============================================================================
--- base — Início do Hub, central de avisos e ajustes
+-- base — Início, central de avisos e ajustes
 -- (outubro de 2026). Estrutura só: nenhum dado da empresa.
 --
 --   1. hub.notificacoes.adiada_ate     o "Depois" da central de avisos (/shared/os-avisos.js)
 --      hub.email_outbox.html          o e-mail com desenho (HTML), além do texto
---   2. (pastas do assistente: foram pro módulo OutAssistenteIA)
+--   2. (pastas do assistente: foram pro módulo Assistente)
 --   3. hub.app_painel()                ganha a coluna `celular` (qual aparelho a pessoa usa)
 --   4. hub.pode_publicar_plano()       vale também pra quem está na ÁREA Sucesso do Cliente
---   5. (ferramenta de renovações do assistente: foi pro módulo OutAssistenteIA)
---   6. Início do Hub                   hub.hub_logos (+ balde hub-logos), hub.consulta_rapida,
+--   5. (ferramenta de renovações do assistente: foi pro módulo Assistente)
+--   6. Início                   hub.hub_logos (+ balde hub-logos), hub.consulta_rapida,
 --                                      e o balde `banner` das notícias do Início
 --   7. hub.avisar()                    fechada ao público (só gatilhos/funções definer e service_role)
 --   8. hub.sistemas_instalados        o que está no banco (o instalador grava; refaz as ligações)
@@ -31,8 +31,8 @@ comment on column hub.notificacoes.adiada_ate is
 -- texto vai junto. Mora aqui porque a tabela é da base: qualquer sistema grava.
 alter table hub.email_outbox add column if not exists html text;
 
--- ── 2. (as pastas das conversas do assistente moram no módulo OutAssistenteIA:
---        outassistenteia/banco/estrutura/01-tabelas.sql e 02-funcoes.sql)
+-- ── 2. (as pastas das conversas do assistente moram no módulo Assistente:
+--        assistente/banco/estrutura/01-tabelas.sql e 02-funcoes.sql)
 
 -- ── 3. app_painel(): qual celular a pessoa usa ──────────────────────────────
 -- Mudar o formato da resposta exige drop + create, e isso RESETA o acesso da
@@ -92,8 +92,8 @@ $$;
 revoke execute on function hub.pode_publicar_plano() from public, anon;
 grant  execute on function hub.pode_publicar_plano() to authenticated;
 
--- ── 5. (a ferramenta de renovações do assistente mora no módulo OutAssistenteIA:
---        outassistenteia/banco/estrutura/90-ligacoes.sql, só nasce com o OutJourney)
+-- ── 5. (a ferramenta de renovações do assistente mora no módulo Assistente:
+--        assistente/banco/estrutura/90-ligacoes.sql, só nasce com o Sucesso)
 
 -- ── 6. INÍCIO DO HUB ────────────────────────────────────────────────────────
 -- quem pode trocar logo e editar a Consulta rápida comum: admin ativo

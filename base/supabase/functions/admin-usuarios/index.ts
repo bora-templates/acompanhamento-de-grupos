@@ -1,11 +1,11 @@
-// Hub BoraIA · Edge Function `admin-usuarios`
+// Edge Function `admin-usuarios`
 // ----------------------------------------------------------------------------
 // Backend da GESTÃO DE USUÁRIOS (criar / editar / excluir pessoa + liberar
-// acesso aos subsistemas). SUBSTITUI o antigo `outfunnels-api` (Railway) — aqui
+// acesso aos subsistemas). SUBSTITUI o antigo `crm-api` (Railway) — aqui
 // NÃO tem nada do chat: só mexe em Supabase Auth + hub.users/roles/areas.
 //
 // ⚠️ Nome `admin-usuarios` (e não `admin-users`) de propósito: já existe uma
-//    Function `admin-users` neste MESMO projeto (OutPerformance / BoraIA
+//    Function `admin-users` neste MESMO projeto (Metas /
 //    Insights, outra tabela). Nomes de Function são únicos por projeto.
 //
 // Fonte da verdade: Supabase Auth (auth.users) + hub.users. O service_role fica
@@ -168,7 +168,7 @@ async function updateUser(db: DB, id: string, dto: any) {
   if (dto.fullName !== undefined) patch.full_name = dto.fullName;
   // cor pessoal (paleta secundária) — só hex de 6 dígitos; qualquer outra coisa limpa
   if (dto.cor !== undefined) patch.cor = /^#[0-9A-Fa-f]{6}$/.test(String(dto.cor ?? "")) ? String(dto.cor).toUpperCase() : null;
-  // E-MAIL = LOGIN (22/09/2026, ficha do OutPeople: "deixe editável todos os
+  // E-MAIL = LOGIN (22/09/2026, ficha do RH: "deixe editável todos os
   // campos"). Troca primeiro no Supabase Auth — é por lá que a pessoa entra — e
   // só então no hub.users. Endereço que já é de outra pessoa é recusado.
   if (dto.email !== undefined) {
@@ -176,7 +176,7 @@ async function updateUser(db: DB, id: string, dto: any) {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(novo)) return json({ error: "E-mail inválido." }, 400);
     if (novo !== String((existing as any).email || "").toLowerCase()) {
       const { data: dup } = await db.from("users").select("id").ilike("email", novo).neq("id", id).limit(1).maybeSingle();
-      if (dup) return json({ error: "Esse e-mail já é de outra pessoa no Hub." }, 409);
+      if (dup) return json({ error: "Esse e-mail já é de outra pessoa no sistema. Confira o e-mail ou edite o cadastro dessa pessoa na tela Usuários." }, 409);
       const { error: aErr } = await db.auth.admin.updateUserById(id, { email: novo, email_confirm: true });
       if (aErr) return json({ error: `Falha ao trocar o login: ${aErr.message}` }, 400);
       patch.email = novo;

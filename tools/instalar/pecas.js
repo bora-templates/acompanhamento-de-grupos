@@ -51,7 +51,7 @@ function manifestos(raiz = RAIZ_PADRAO) {
 }
 function base(raiz = RAIZ_PADRAO) {
   const f = path.join(raiz, 'base', 'sistema.json');
-  if (!fs.existsSync(f)) throw new Error(`não achei ${path.relative(process.cwd(), f)} — esta pasta não tem a base`);
+  if (!fs.existsSync(f)) throw new Error(`não achei ${path.relative(process.cwd(), f)} (esta pasta não tem a base)`);
   return JSON.parse(fs.readFileSync(f, 'utf8'));
 }
 const ORDEM_PECAS = (B) => Object.keys(B.pecas || { essencial: {} });
@@ -96,7 +96,7 @@ function pecaPresente(peca, raiz = RAIZ_PADRAO) {
   return a.every(x => fs.existsSync(path.join(raiz, x)));
 }
 
-// a ordem do "precisa" (o OutChat depois do OutJourney)
+// a ordem do "precisa" (o Atendimento depois do Sucesso)
 function ordena(mods, raiz = RAIZ_PADRAO, M = manifestos(raiz)) {
   const pedidos = mods.filter(s => s && s !== 'base');
   const feitos = new Set(), saida = [];
@@ -114,7 +114,7 @@ function lerMapa(raiz = RAIZ_PADRAO) {
   const f = path.join(raiz, MAPA);
   if (!fs.existsSync(f)) return null;
   try { return JSON.parse(fs.readFileSync(f, 'utf8')); }
-  catch (e) { throw new Error(`${MAPA} está quebrado (${e.message}) — conserte ou apague (ele é refeito pelo instalador)`); }
+  catch (e) { throw new Error(`${MAPA} está quebrado (${e.message}). Conserte ou apague, porque o instalador faz de novo`); }
 }
 // a versão dos arquivos de uma peça NESTA pasta: o mapa diz (pode ter vindo de
 // outro pacote); sem mapa, a da base
@@ -146,8 +146,8 @@ function mapaDe(raiz, linhasBanco, nota) {
   const hist = Array.isArray(antes.historico) ? antes.historico.slice(-30) : [];
   if (nota) hist.push({ em: new Date().toISOString(), o_que: nota });
   return {
-    _leia: 'MAPA DESTA INSTALAÇÃO — gerado pelas ferramentas de tools/instalar (não precisa editar). Diz a versão da base, as peças da base e os módulos que estão nesta pasta, e se o banco de cada um já foi instalado. Comprou outro módulo? Leia o COMECE-AQUI.md do pacote novo: ele compara o pacote com este mapa e acrescenta só o que falta.',
-    produto: 'Hub BoraIA',
+    _leia: 'MAPA DESTA INSTALAÇÃO, gerado pelas ferramentas de tools/instalar (não precisa editar). Diz a versão da base, as peças da base e os módulos que estão nesta pasta, e se o banco de cada um já foi instalado. Comprou outro módulo? Leia o COMECE-AQUI.md do pacote novo: ele compara o pacote com este mapa e acrescenta só o que falta.',
+    produto: 'Soluções com IA',
     base: { versao: B.versao, banco_versao: noBanco.base || null, pecas },
     modulos,
     emails_portugues: antes.emails_portugues || null,
@@ -178,11 +178,11 @@ function confere(mods, raiz = RAIZ_PADRAO, { jaNoBanco = [] } = {}) {
       erros.push(`${M[s].nome} ${M[s].versao || ''} precisa da base ${min} ou mais nova, e a base desta pasta é a ${B.versao}. Pegue a base nova (o pacote mais recente traz) antes.`);
     for (const p of M[s].precisa || []) {
       if (p === 'base' || mods.includes(p) || jaNoBanco.includes(p)) continue;
-      erros.push(`${M[s].nome} precisa do ${M[p] ? M[p].nome : p}${(M[s].por_que_precisa || {})[p] ? ' — ' + M[s].por_que_precisa[p] : ''}. ${M[p] ? 'Instale os dois juntos.' : 'O módulo ' + p + ' não está nesta pasta.'}`);
+      erros.push(`${M[s].nome} precisa do ${M[p] ? M[p].nome : p}${(M[s].por_que_precisa || {})[p] ? ': ' + M[s].por_que_precisa[p] : ''}. ${M[p] ? 'Instale os dois juntos.' : 'O módulo ' + p + ' não está nesta pasta.'}`);
     }
   }
   for (const p of pecasDe(mods.filter(s => M[s]), raiz, M))
-    if (!pecaPresente(p, raiz)) erros.push(`falta a peça "${p}" da base nesta pasta (${(arquivosDaPeca(p, raiz) || ['base/']).join(', ')}) — ela vem no pacote do módulo que a usa`);
+    if (!pecaPresente(p, raiz)) erros.push(`falta a peça "${p}" da base nesta pasta (${(arquivosDaPeca(p, raiz) || ['base/']).join(', ')}) (ela vem no pacote do módulo que a usa)`);
   return erros;
 }
 
@@ -215,6 +215,6 @@ if (require.main === module) {
       const f = gravaMapa(raiz, mapaDe(raiz, linhas, process.env.MAPA_NOTA || null));
       console.log(`✓ mapa da instalação atualizado: ${path.relative(process.cwd(), f) || f}`);
     }
-    else { console.error('uso: node tools/instalar/pecas.js pecas|ordena|versao|compara|atualizacoes|arquivos|confere|mapa …'); process.exit(2); }
+    else { console.error('uso: node tools/instalar/pecas.js pecas|ordena|versao|compara|atualizacoes|arquivos|confere|mapa [argumentos]'); process.exit(2); }
   } catch (e) { console.error('✗ ' + e.message); process.exit(1); }
 }

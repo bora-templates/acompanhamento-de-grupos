@@ -1,8 +1,8 @@
--- ligação com outjourney: só nasce quando outjourney também estiver instalado
+-- ligação com sucesso: só nasce quando sucesso também estiver instalado
 DO $do$ BEGIN
-  IF to_regclass('hub.ag_conhecimento') IS NOT NULL AND to_regclass('hub.oj_produtos') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ag_conhecimento_produto_id_fkey' AND conrelid = to_regclass('hub.ag_conhecimento')) THEN
+  IF to_regclass('hub.ag_conhecimento') IS NOT NULL AND to_regclass('hub.suc_produtos') IS NOT NULL AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ag_conhecimento_produto_id_fkey' AND conrelid = to_regclass('hub.ag_conhecimento')) THEN
     EXECUTE $liga$ALTER TABLE ONLY hub.ag_conhecimento
-    ADD CONSTRAINT ag_conhecimento_produto_id_fkey FOREIGN KEY (produto_id) REFERENCES hub.oj_produtos(id) ON DELETE SET NULL$liga$;
+    ADD CONSTRAINT ag_conhecimento_produto_id_fkey FOREIGN KEY (produto_id) REFERENCES hub.suc_produtos(id) ON DELETE SET NULL$liga$;
   END IF;
 END $do$;
 

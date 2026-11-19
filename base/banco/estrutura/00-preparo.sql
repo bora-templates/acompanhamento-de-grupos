@@ -2,7 +2,7 @@
 -- base — estrutura do banco (schema hub), SEM NENHUM DADO.
 -- Tirada do banco em produção em 30/09/2026 (pg_dump --schema-only).
 -- Precisa da base instalado antes (base/banco/estrutura.sql).
--- Ligações condicionais com: outjourney, outfunnels — cada uma só é criada
+-- Ligações condicionais com: sucesso, crm — cada uma só é criada
 -- quando o outro subsistema também estiver instalado, em qualquer ordem.
 -- =============================================================================
 
@@ -23,7 +23,7 @@ DO $do$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'hub_agente_leitor') THEN CREATE ROLE hub_agente_leitor NOLOGIN; END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'hub_agente_leitor_sem_rh') THEN CREATE ROLE hub_agente_leitor_sem_rh NOLOGIN; END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'hub_agente_leitor_vendas') THEN CREATE ROLE hub_agente_leitor_vendas NOLOGIN; END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'outfunnels_app') THEN CREATE ROLE outfunnels_app NOLOGIN; END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'crm_app') THEN CREATE ROLE crm_app NOLOGIN; END IF;
   -- quem instala precisa ser membro dos papéis de leitura pra dar a posse das funções de consulta a eles
   EXECUTE format('GRANT hub_agente_leitor, hub_agente_leitor_sem_rh, hub_agente_leitor_vendas TO %I', current_user);
 END $do$;

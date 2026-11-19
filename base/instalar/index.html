@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Instalar o app · Hub</title>
+<title>Instalar o app · %EMPRESA_NOME%</title>
 <link rel="icon" type="image/svg+xml" href="/shared/favicon.svg">
 <!--
   APP NO CELULAR — passo 2 do convite (28/09/2026)
@@ -12,44 +12,47 @@
   app na tela de início e liga os avisos. No iPhone os avisos SÓ funcionam
   abrindo pelo ícone (regra da Apple), por isso o botão de ligar só aparece lá.
 -->
+<link rel="stylesheet" href="/shared/visual/tokens.css">
+<link rel="stylesheet" href="/shared/visual/componentes.css">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#F7F7F7;--card:#FFFFFF;--bd:#ECEEF1;--ink:#0A0A0B;--mut:#5A5E66;--ok:#4A8E6F;--danger:#B85450}
-  body{font-family:-apple-system,"SF Pro Text","SF Pro Display",system-ui,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;justify-content:center;padding:calc(40px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom))}
-  .pag{width:100%;max-width:420px;display:flex;flex-direction:column;gap:20px}
-  .over{font-size:12px;font-weight:600;color:var(--mut);letter-spacing:.04em}
-  h1{font-size:26px;font-weight:500;line-height:1.2;margin-top:8px}
-  .sub{font-size:15px;color:var(--mut);line-height:1.5;margin-top:8px}
-  .seg{display:flex;background:var(--bd);border-radius:10px;padding:3px}
-  .seg button{flex:1;border:0;background:transparent;padding:10px 0;border-radius:8px;font:600 14px/1 inherit;color:var(--ink);font-family:inherit;cursor:pointer;min-height:44px}
-  .seg button[aria-pressed="true"]{background:#fff;box-shadow:0 1px 2px rgba(10,10,11,.08)}
-  .passos{background:var(--card);border-radius:14px;padding:4px 16px;list-style:none}
-  .passos li{display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid #F1F2F4;font-size:15px;line-height:1.45}
+  /* o cartão de entrada do design system, no tema do aparelho */
+  body{margin:0;min-height:100vh;display:flex;justify-content:center;padding:calc(40px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom))}
+  .pag{width:100%;max-width:440px;display:flex;flex-direction:column;gap:20px}
+  .over{font-size:12px;font-weight:600;color:var(--acc);letter-spacing:.1em;text-transform:uppercase}
+  h1{font:600 26px/1.2 var(--display);letter-spacing:-.015em;margin:8px 0 0}
+  .sub{font-size:15px;color:var(--ink-2);line-height:1.5;margin:8px 0 0}
+  .seg{display:flex;background:var(--sunken);border-radius:var(--raio-campo);padding:3px}
+  .seg button{flex:1;border:0;background:transparent;padding:10px 0;border-radius:7px;font:600 14px/1 var(--corpo);color:var(--ink-2);cursor:pointer;min-height:44px}
+  .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--sombra)}
+  .passos{background:var(--surface);border:1px solid var(--bd);border-radius:var(--raio-cartao);padding:4px 16px;list-style:none;margin:0}
+  .passos li{display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--bd);font-size:15px;line-height:1.45}
   .passos li:last-child{border-bottom:0}
-  .n{width:30px;height:30px;border-radius:15px;background:var(--bd);color:#3A3D44;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .aviso{background:#FFF6DC;border:1px solid #EED7A4;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.5}
-  .btn{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border:0;border-radius:12px;background:var(--ink);color:#F7F7F7;font-size:16px;font-weight:600;font-family:inherit;text-decoration:none;cursor:pointer}
-  .btn.sec{background:#fff;color:var(--ink);border:1px solid #D4D7DC}
-  .btn:disabled{opacity:.6}
-  .msg{font-size:14px;line-height:1.5;text-align:center}
-  .msg.err{color:var(--danger)} .msg.ok{color:var(--ok)}
+  .n{width:30px;height:30px;border-radius:15px;background:var(--acc-soft);color:var(--acc);font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .v-aviso .v-btn{margin-top:12px}
+  .msg{font-size:14px;line-height:1.5;text-align:center;margin:0}
+  .msg:empty{display:none}
+  .msg.err{color:var(--risk)} .msg.ok{color:var(--ok)}
   .fim{flex:1}
+  .marca-inst{display:flex;align-items:center;gap:12px}
+  .marca-inst .v-marca{margin:0}
+  .marca-inst b{font:600 15px/1.3 var(--display);color:var(--ink-2)}
   [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <script>window.OS_NO_BACK = true; window.OS_SEM_FAIXA_AVISOS = true; window.OS_SEM_BARRA = true; /* esta página já tem o botão de ligar */</script>
 <main class="pag">
+  <div class="marca-inst"><span class="v-marca"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="16" y="20" width="28" height="28" rx="8" fill="#E8703A"/><circle cx="45" cy="19" r="7" fill="#FFF8F1"/></svg></span><b>%EMPRESA_NOME%</b></div>
   <!-- aberto pelo ÍCONE: só falta ligar os avisos -->
   <section id="noApp" hidden>
-    <div class="over">ÚLTIMO PASSO</div>
+    <div class="over">Último passo</div>
     <h1>Ligue os avisos de mensagem</h1>
     <p class="sub">Assim você fica sabendo na hora quando um cliente escrever, mesmo com o celular bloqueado.</p>
   </section>
 
   <!-- aberto no NAVEGADOR: ensinar a instalar -->
   <section id="noNavegador">
-    <div class="over">FALTA UM PASSO</div>
+    <div class="over">Falta um passo</div>
     <h1>Coloque o app na tela de início</h1>
     <p class="sub">Assim ele abre como um app e você recebe aviso de mensagem nova.</p>
   </section>
@@ -62,26 +65,26 @@
   <!-- iPhone: dentro do WhatsApp/Instagram NÃO dá pra instalar (a Apple só deixa
        pelo Safari). O endereço x-safari-(link da casa) abre a mesma página no Safari
        (iOS 17+). Lá a pessoa entra com o e-mail e a senha que acabou de criar. -->
-  <div id="safariBox" class="aviso" style="background:#fff;border-color:#D4D7DC" hidden>
+  <div id="safariBox" class="v-aviso v-aviso--info" hidden><div>
     <b>Abriu pelo WhatsApp?</b> De lá o iPhone não deixa instalar. Toque abaixo pra abrir no Safari
     (depois entre com seu e-mail e a senha que você criou). Já está no Safari? Pule este passo.
-    <a class="btn" id="abrirSafari" href="#" style="margin-top:12px">Abrir no Safari</a>
-  </div>
+    <a class="v-btn v-btn--bloco" id="abrirSafari" href="#">Abrir no Safari</a>
+  </div></div>
 
   <ol class="passos" id="passos"></ol>
 
-  <div class="aviso" id="avisoIphone">
+  <div class="v-aviso" id="avisoIphone"><div>
     No iPhone, os avisos só funcionam depois deste passo, e precisa ser pelo <b>Safari</b>.
     Se o botão "Abrir no Safari" não funcionar, toque em <b>⋯</b> (ou na bússola) no canto da tela e escolha
     <b>Abrir no Safari</b>. Ou digite no Safari: <b id="enderecoInstalar"></b>
-  </div>
+  </div></div>
 
   <div class="fim"></div>
 
   <div id="msg" class="msg" role="status"></div>
-  <button class="btn" id="instalarAndroid" type="button" hidden>Instalar o app</button>
-  <button class="btn" id="ligar" type="button" hidden>Ligar avisos</button>
-  <a class="btn sec" id="pular" href="/">Agora não, ir para o sistema</a>
+  <button class="v-btn v-btn--bloco" id="instalarAndroid" type="button" hidden>Instalar o app</button>
+  <button class="v-btn v-btn--bloco" id="ligar" type="button" hidden>Ligar avisos</button>
+  <a class="v-btn v-btn--sec v-btn--bloco" id="pular" href="/">Agora não, ir para o sistema</a>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -100,6 +103,9 @@
     ]
   };
   var $ = function (id) { return document.getElementById(id); };
+  // a tela que abre depois: a solução, no pacote de uma solução, e a raiz do site no completo
+  var INICIO = (OS.avulsa && OS.solucao && OS.solucao.caminho) || '/';
+  $('pular').href = INICIO;
   // regra: o endereço sai do OS.link, nunca escrito à mão
   $('abrirSafari').href = 'x-safari-' + OS.link('/instalar/');
   $('enderecoInstalar').textContent = OS.link('/instalar').replace(/^https?:\/\//, '');
@@ -129,14 +135,14 @@
 
   $('ligar').onclick = async function () {
     var b = $('ligar'), m = $('msg');
-    b.disabled = true; b.textContent = 'Ligando…'; m.className = 'msg'; m.textContent = '';
+    b.disabled = true; b.textContent = 'Ligando'; m.className = 'msg'; m.textContent = '';
     try {
       await OS.app.ligarNotificacoes();
       m.className = 'msg ok'; m.textContent = 'Pronto! Os avisos vão chegar neste celular.';
-      setTimeout(function () { location.href = '/'; }, 1200);
+      setTimeout(function () { location.href = INICIO; }, 1200);
     } catch (e) {
       b.disabled = false; b.textContent = 'Tentar de novo';
-      m.className = 'msg err'; m.textContent = (e && e.message) || 'Não deu pra ligar os avisos.';
+      m.className = 'msg err'; m.textContent = (e && e.message) || 'Não deu para ligar os avisos. Confira se o celular permite avisos deste site e toque em Tentar de novo.';
     }
   };
 
@@ -153,7 +159,7 @@
       $('noApp').hidden = false; $('noNavegador').hidden = true;
       $('seg').hidden = true; $('passos').hidden = true; $('avisoIphone').hidden = true; $('safariBox').hidden = true;
       if ('Notification' in window && Notification.permission === 'granted' && OS.app.notificacoesLigadas()) {
-        location.replace('/'); return;
+        location.replace(INICIO); return;
       }
       $('ligar').hidden = false;
       $('pular').textContent = 'Agora não';

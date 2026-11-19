@@ -1,0 +1,50 @@
+{
+  "_leia": "Manifesto do módulo: o que ele é, onde mora no site e do que precisa. Lido pelo tools/instalar/montar/montar.js.",
+  "id": "grupos",
+  "nome": "Acompanhamento de Grupos no WhatsApp com IA",
+  "rotulo": "Grupos",
+  "o_que": "Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude, DeepSeek, OpenAI ou qualquer IA compatível.",
+  "versao": "1.0.0",
+  "versao_minima_base": "1.1.0",
+  "base_pecas": [
+    "essencial"
+  ],
+  "enderecos": [
+    [
+      "grupos",
+      "grupos"
+    ]
+  ],
+  "precisa": [
+    "base"
+  ],
+  "acesso": "grupos",
+  "acesso_estrito": true,
+  "rotulo_sub": "WhatsApp com IA",
+  "marca": "/grupos/img/grupos-marca.svg",
+  "menu": [
+    {
+      "id": "grupos",
+      "rotulo": "Grupos",
+      "href": "/grupos/#grupos",
+      "icone": "grupos",
+      "rotas": [
+        "",
+        "grupos",
+        "grupo"
+      ]
+    },
+    {
+      "id": "ajustes",
+      "rotulo": "Ajustes",
+      "href": "/grupos/#ajustes",
+      "icone": "ajustes",
+      "rotas": [
+        "ajustes"
+      ],
+      "so": "admin"
+    }
+  ],
+  "fora_do_completo": true,
+  "_leia_menu": "Pacote avulso (uma solução por instalação): \"menu\" são os itens da solução no menu lateral, que a casca da base (/shared/casca.js) também mostra em Usuários e em Minha conta; \"rotas\" são os começos do #endereço que marcam o item como ativo, e \"so\": \"admin\" mostra o item só para quem administra a solução. \"acesso_estrito\": true quer dizer que só entra quem tem a chave liberada em Usuários, nem o admin geral."
+}

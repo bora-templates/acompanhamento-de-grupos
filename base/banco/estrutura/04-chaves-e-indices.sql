@@ -202,11 +202,11 @@ CREATE TRIGGER trg_colaboradores_updated BEFORE UPDATE ON hub.colaboradores FOR 
 -- TRIGGER: users trg_users_desligamento
 CREATE TRIGGER trg_users_desligamento BEFORE UPDATE OF active ON hub.users FOR EACH ROW WHEN ((old.active IS DISTINCT FROM new.active)) EXECUTE FUNCTION hub.tg_users_desligamento();
 
--- TRIGGER: users trg_users_outfunnels_conta
-CREATE TRIGGER trg_users_outfunnels_conta AFTER INSERT OR UPDATE OF active, acessos, role_id, cargo_ids, email, full_name ON hub.users FOR EACH ROW EXECUTE FUNCTION hub.tg_users_outfunnels_conta();
+-- TRIGGER: users trg_users_crm_conta
+CREATE TRIGGER trg_users_crm_conta AFTER INSERT OR UPDATE OF active, acessos, role_id, cargo_ids, email, full_name ON hub.users FOR EACH ROW EXECUTE FUNCTION hub.tg_users_crm_conta();
 
 
--- ─── medidor de atividade (tempo de uso de cada tela) — veio do OutSign: toda tela chama, então é da base ───
+-- ─── medidor de atividade (tempo de uso de cada tela) — veio do Contratos: toda tela chama, então é da base ───
 
 -- CONSTRAINT: os_minuto os_minuto_pkey
 ALTER TABLE ONLY hub.os_minuto
@@ -226,7 +226,7 @@ CREATE INDEX idx_os_sessao_sistema ON hub.os_sessao USING btree (sistema, fim DE
 CREATE INDEX idx_os_sessao_user_dia ON hub.os_sessao USING btree (user_id, fim DESC);
 
 
--- ─── estado compartilhado do os-core (hub.os_estado) — veio do OutJourney: toda tela usa ───
+-- ─── estado compartilhado do os-core (hub.os_estado) — veio do Sucesso: toda tela usa ───
 
 -- CONSTRAINT: os_estado os_estado_pkey
 ALTER TABLE ONLY hub.os_estado

@@ -5,18 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gestão de Usuários</title>
 <link rel="icon" href="/shared/favicon.svg">
+<link rel="stylesheet" href="/shared/visual/tokens.css">
+<link rel="stylesheet" href="/shared/visual/componentes.css">
+<link rel="stylesheet" href="/shared/visual/casca.css">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#F5F6F8;--card:#fff;--bd:#E6E8EC;--ink:#101114;--mut:#6B7280;--acc:#1C3E87;--ok:#1a7f4b;--warn:#b45309;--danger:#b42318}
-  body{font-family:-apple-system,'Segoe UI',Roboto,system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+  :root{--card:var(--surface);--mut:var(--ink-2);--danger:var(--risk);--azul:var(--m);--claro:var(--m-mark)}
+  body{font-family:var(--corpo);background:var(--bg);color:var(--ink);min-height:100vh}
   [hidden]{display:none!important}
   .wrap{max-width:1080px;margin:0 auto;padding:32px 22px}
   header.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
   .brand{font-size:13px;font-weight:800;letter-spacing:.4px;color:var(--mut)}
   .brand a{color:var(--acc);text-decoration:none}
-  h1{font-size:24px;font-weight:800;margin:18px 0 2px}
+  h1{font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:-.015em;margin:18px 0 2px}
   .sub{color:var(--mut);font-size:13.5px;margin-bottom:22px}
-  .btn{background:var(--acc);color:#fff;border:none;border-radius:9px;padding:9px 15px;font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn{background:var(--btn);color:var(--btn-ink);border:none;border-radius:9px;padding:9px 15px;font-size:13.5px;font-weight:600;cursor:pointer}
   .btn:hover{filter:brightness(1.08)} .btn:disabled{opacity:.6;cursor:default}
   .btn.ghost{background:none;border:1px solid var(--bd);color:var(--ink)}
   .btn.sm{padding:6px 11px;font-size:12.5px}
@@ -25,11 +28,11 @@
   table{width:100%;border-collapse:collapse;font-size:13.5px}
   th{text-align:left;color:var(--mut);font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--bd)}
   td{padding:11px 10px;border-bottom:1px solid var(--bd);vertical-align:middle}
-  tr:hover td{background:#fafbfc}
+  tr:hover td{background:var(--raised)}
   .badge{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;margin:1px 2px}
-  .b-on{background:#e7f4ed;color:var(--ok)} .b-off{background:#f3f4f6;color:var(--mut)}
-  .b-view{background:#eef2ff;color:var(--acc)} .b-guest{background:#fdf0e3;color:var(--warn)}
-  input,select{width:100%;background:#fff;border:1px solid var(--bd);border-radius:8px;padding:9px 11px;font-size:13.5px;color:var(--ink);outline:none}
+  .b-on{background:var(--ok-bg);color:var(--ok)} .b-off{background:var(--raised);color:var(--mut)}
+  .b-view{background:var(--acc-soft);color:var(--acc)} .b-guest{background:var(--warn-bg);color:var(--warn)}
+  input,select{width:100%;background:var(--surface);border:1px solid var(--bd);border-radius:8px;padding:9px 11px;font-size:13.5px;color:var(--ink);outline:none}
   input:focus,select:focus{border-color:var(--acc)}
   label.fl{display:block;font-size:11.5px;color:var(--mut);font-weight:600;margin-bottom:5px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -42,12 +45,25 @@
   .spinner{width:16px;height:16px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;display:inline-block;animation:sp .7s linear infinite;vertical-align:middle}
   /* Foto do usuário na lista (com fallback de iniciais) */
   .uname{display:flex;align-items:center;gap:10px}
-  .avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex:0 0 32px;border:1px solid var(--bd);background:#eef0f3}
-  .avatar.ini{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--acc);background:#eef2ff}
+  .avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex:0 0 32px;border:1px solid var(--bd);background:var(--raised)}
+  .avatar.ini{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--acc);background:var(--acc-soft)}
   @keyframes sp{to{transform:rotate(360deg)}}
-  .overlay{position:fixed;inset:0;background:rgba(16,17,20,.42);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:9999}
-  .overlay .box{background:#fff;border-radius:14px;padding:22px 28px;display:flex;align-items:center;gap:14px;box-shadow:0 12px 40px rgba(0,0,0,.22);font-size:14px;font-weight:600;color:var(--ink)}
+  .overlay{position:fixed;inset:0;background:var(--overlay);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .overlay .box{background:var(--surface);border-radius:14px;padding:22px 28px;display:flex;align-items:center;gap:14px;box-shadow:var(--sombra);font-size:14px;font-weight:600;color:var(--ink)}
   .spinner.lg{width:26px;height:26px;border-width:3px}
+  /* pacote de uma solução: a tela fica na largura da casca, com os botões e os campos do mesmo tamanho da solução */
+  html.casca .wrap{max-width:1240px;padding:24px}
+  .wrap .btn{min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+  .wrap .btn.link{min-height:36px;padding:6px 8px}
+  .wrap input,.wrap select{min-height:40px}
+  .wrap .tabela-moldura{position:relative;overflow-x:auto;border:1px solid var(--bd);border-radius:12px}
+  .wrap .tabela-moldura table{min-width:640px}
+  .btn:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--foco);outline-offset:2px}
+  @media (max-width:860px){
+    html.casca .wrap{padding:14px}
+    .wrap .btn,.wrap .btn.link,.wrap input,.wrap select{min-height:44px}
+    .grid2{grid-template-columns:minmax(0,1fr)}
+  }
 </style>
 </head>
 <body>
@@ -56,14 +72,14 @@
 
   <!-- Modal de carregamento bloqueante -->
   <div class="overlay" x-show="saving || (loading && users.length)" x-cloak>
-    <div class="box"><span class="spinner lg"></span> <span x-text="busyMsg || (saving ? 'Salvando…' : 'Carregando…')"></span></div>
+    <div class="box"><span class="spinner lg"></span> <span x-text="busyMsg || (saving ? 'Salvando' : 'Carregando')"></span></div>
   </div>
 
   <!-- Modal: senha resetada (mostra a senha nova pro admin repassar) -->
   <div class="overlay" x-show="resetResult" x-cloak @click.self="resetResult=null">
     <div class="box" style="flex-direction:column;align-items:stretch;gap:12px;min-width:340px;max-width:420px">
       <strong style="font-size:15px">Senha redefinida ✔</strong>
-      <p class="sub" style="margin:0">Nova senha de <b x-text="resetResult && (resetResult.full_name || resetResult.email)"></b>. Copie e repasse com segurança — ela <b>não</b> fica salva e não será mostrada de novo. Oriente o usuário a trocá-la em <b>Minha Conta</b>.</p>
+      <p class="sub" style="margin:0">Nova senha de <b x-text="resetResult && (resetResult.full_name || resetResult.email)"></b>. Copie e repasse com segurança, porque ela <b>não</b> fica salva e não será mostrada de novo. Oriente o usuário a trocá-la em <b>Minha Conta</b>.</p>
       <div style="display:flex;gap:8px;align-items:center">
         <input readonly :value="resetResult && resetResult.password" x-ref="pwOut" style="font-family:ui-monospace,Menlo,monospace;font-size:15px;letter-spacing:.5px" @focus="$event.target.select()">
         <button class="btn sm" @click="copyPw()" x-text="copied ? 'Copiado' : 'Copiar'"></button>
@@ -90,20 +106,19 @@
   <div class="gate" x-show="!authed && ready">
     <div class="card" style="max-width:360px">
       <h1>Acesso restrito</h1>
-      <p class="sub" style="margin:8px 0 16px">Entre pelo Hub para gerenciar usuários.</p>
+      <p class="sub" style="margin:8px 0 16px">Entre com o seu e-mail e a sua senha para gerenciar os usuários.</p>
       <a class="btn" href="/">Ir para o login</a>
     </div>
   </div>
 
   <!-- App -->
   <div class="wrap" x-show="authed" :style="embedded ? 'padding-top:18px' : ''">
-    <header class="top" x-show="!embedded">
-      <div class="brand"><a href="/">← Início</a> · Usuários</div>
-      <a class="btn ghost sm" href="/rh/">Onboarding</a>
-    </header>
-
-    <h1>Gestão de Usuários</h1>
-    <p class="sub">Central única — cadastro, cargos e áreas, e acesso a cada sistema desta instalação.</p>
+    <!-- pacote de uma solução: o menu e o cabeçalho são a casca (/shared/casca.js), e este é o cabeçalho da tela -->
+    <div class="casca-hero"><div class="casca-hero-l"><div>
+      <div class="over">Acompanhamento de Grupos no WhatsApp com IA</div>
+      <h1>Usuários</h1>
+      <p>Convide as pessoas da empresa e escolha o que cada uma pode fazer: nada, só ver, editar ou administrar.</p>
+    </div></div></div>
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -114,13 +129,11 @@
       <div x-show="error" class="err" style="margin-bottom:10px" x-text="error"></div>
 
       <!-- Form -->
-      <div class="card" x-show="form.open" style="background:#fafbfc;margin-bottom:16px">
+      <div class="card" x-show="form.open" style="background:var(--raised);margin-bottom:16px">
         <strong x-text="form.id ? 'Editar usuário' : 'Novo usuário'"></strong>
         <div class="grid2" style="margin-top:12px">
           <div><label class="fl">Nome completo</label><input x-model="form.fullName" placeholder="Nome"></div>
           <div><label class="fl">E-mail</label><input type="email" x-model="form.email" :disabled="!!form.id" placeholder="email@empresa.com"></div>
-          <div><label class="fl">WhatsApp <span class="sub" style="font-weight:400">— recebe o aviso quando alocam a pessoa</span></label>
-            <input type="tel" x-model="form.whats" placeholder="(11) 91234-5678"></div>
         </div>
         <div class="grid2" style="margin-top:12px">
           <div><label class="fl">Tipo de usuário</label>
@@ -130,7 +143,7 @@
               <option value="admin">Admin geral</option>
             </select>
             <p class="sub" style="margin-top:4px"
-               x-text="form.perfil === 'admin' ? 'Manda em tudo, em todos os sistemas.' : (form.perfil === 'convidado' ? 'Convidado — só enxerga os sistemas liberados abaixo (padrão só visualizar; libere edição manualmente onde quiser).' : 'Colaborador — acesso aos sistemas marcados abaixo.')"></p>
+               x-text="form.perfil === 'admin' ? 'Manda em tudo, em todos os sistemas.' : (form.perfil === 'convidado' ? 'O convidado só enxerga os sistemas liberados abaixo. O padrão é só visualizar, e você libera a edição onde quiser.' : 'O colaborador acessa os sistemas marcados abaixo.')"></p>
           </div>
           <div x-show="form.id"><label class="fl">Ativo</label>
             <label class="chk"><input type="checkbox" x-model="form.active"> Conta ativa</label>
@@ -146,36 +159,23 @@
             </p>
             <p class="sub" x-show="form.active && form.eraInativo" style="margin-top:6px;line-height:1.5">
               ⚠️ Esta pessoa estava <strong>desligada</strong>. Marcar a caixa devolve a ficha,
-              mas <strong>não devolve o login</strong> — desbloquear a entrada é feito à parte,
+              mas <strong>não devolve o login</strong>, porque desbloquear a entrada é feito à parte,
               de propósito, pra clique errado não devolver acesso a quem saiu.
             </p>
           </div>
         </div>
 
-        <label class="fl" style="margin-top:14px">Cargos / Áreas</label>
-        <div style="max-height:180px;overflow:auto;border:1px solid var(--bd);border-radius:8px;padding:10px">
-          <template x-for="(grupo, area) in cargosByArea" :key="area">
-            <div class="area-grp">
-              <div class="at" x-text="area"></div>
-              <template x-for="c in grupo" :key="c.id">
-                <label class="chk"><input type="checkbox" :value="c.id" :checked="form.cargoIds.includes(c.id)" @change="toggleCargo(c.id)"> <span x-text="c.name"></span></label>
-              </template>
-            </div>
-          </template>
-          <p x-show="cargos.length === 0" class="sub">Nenhum cargo cadastrado.</p>
-        </div>
 
-        <template x-if="form.perfil !== 'admin'">
+        <template x-if="form.perfil !== 'admin' && SUBSYSTEMS.some(x => !x.restrito)">
           <div>
-            <label class="fl" style="margin-top:14px">Acesso por subsistema <span class="sub" style="font-weight:400">— em cada sistema: sem acesso, só visualizar, editar, ou admin daquele sistema</span></label>
+            <label class="fl" style="margin-top:14px">Acesso por subsistema <span class="sub" style="font-weight:400">(em cada sistema: sem acesso, só visualizar, editar ou admin daquele sistema)</span></label>
             <div class="grid2">
               <template x-for="s in SUBSYSTEMS.filter(x => !x.restrito)" :key="s.key">
                 <div class="chk" style="justify-content:space-between;gap:8px" :style="s.child ? 'padding-left:24px' : ''">
                   <span x-text="s.label"></span>
                   <!-- sistema que SEGUE outro: a linha diz de quem depende, sem select que não muda nada -->
-                  <span x-show="s.segue" class="badge b-on">entra junto com o OutFunnels</span>
                   <select x-show="!s.segue" :value="acessoState(s.key)" @change="setAcesso(s.key, $event.target.value)" style="max-width:170px">
-                    <option value="none">— Sem acesso</option>
+                    <option value="none">Sem acesso</option>
                     <option value="view">👁 Só visualizar</option>
                     <option value="user">✏️ Editar</option>
                     <option value="admin" x-show="form.perfil !== 'convidado'">★ Admin do sistema</option>
@@ -185,18 +185,18 @@
             </div>
           </div>
         </template>
-        <p x-show="form.perfil === 'admin'" class="sub" style="margin-top:14px">🔓 <strong>Admin geral</strong> já é admin de todos os sistemas — só a Diretoria, abaixo, precisa ser liberada na mão.</p>
+        <p x-show="form.perfil === 'admin'" class="sub" style="margin-top:14px">🔓 <strong>Admin geral</strong> cuida das pessoas e dos acessos. O que ela pode fazer em cada sistema restrito é escolhido logo abaixo, como para qualquer pessoa.</p>
 
-        <!-- Sistemas restritos (Diretoria): aparecem pra QUALQUER perfil, inclusive admin
+        <!-- Sistemas restritos: aparecem pra QUALQUER perfil, inclusive admin
              geral, porque ninguém entra neles sem alguém liberar aqui. Sem nenhum instalado, o bloco some. -->
         <div x-show="SUBSYSTEMS.some(x => x.restrito)">
-          <label class="fl" style="margin-top:14px">Acesso restrito <span class="sub" style="font-weight:400">— ninguém entra sem ser liberado aqui, nem admin geral</span></label>
+          <label class="fl" style="margin-top:14px">O que esta pessoa pode fazer <span class="sub" style="font-weight:400">(ninguém entra sem ser liberado aqui, nem o admin geral)</span></label>
           <div class="grid2">
             <template x-for="s in SUBSYSTEMS.filter(x => x.restrito)" :key="s.key">
               <div class="chk" style="justify-content:space-between;gap:8px">
                 <span x-text="s.label"></span>
                 <select x-show="!s.niveis" :value="acessoState(s.key)" @change="setAcesso(s.key, $event.target.value)" style="max-width:170px">
-                  <option value="none">— Sem acesso</option>
+                  <option value="none">Sem acesso</option>
                   <option value="user">👁 Pode ver</option>
                 </select>
                 <select x-show="s.niveis" :value="acessoState(s.key)" @change="setAcesso(s.key, $event.target.value)" style="max-width:170px">
@@ -212,35 +212,22 @@
 
         <p x-show="!form.id" class="sub" style="margin-top:12px">Ao criar, o usuário recebe um e-mail para definir a senha.</p>
         <div style="display:flex;gap:8px;margin-top:14px">
-          <button class="btn" @click="save()" :disabled="saving" x-text="saving ? 'Salvando…' : (form.id ? 'Salvar' : 'Criar e convidar')"></button>
+          <button class="btn" @click="save()" :disabled="saving" x-text="saving ? 'Salvando' : (form.id ? 'Salvar' : 'Criar e convidar')"></button>
           <button class="btn ghost" @click="form.open=false">Cancelar</button>
         </div>
       </div>
 
-      <!-- 📱 WHATSAPP DO TIME — é por aqui que o aviso de alocação chega quando a
-           pessoa está com o Hub fechado (Samara, 12/08/2026). Sem número,
+      <!-- 📱 WHATSAPP DO TIME: é por aqui que o aviso de alocação chega quando a
+           pessoa está com o sistema fechado (12/08/2026). Sem número,
            ela só fica sabendo quando abrir o sistema. -->
-      <div class="card" style="margin-bottom:16px" x-show="wppLista.length">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <strong style="font-size:15px">📱 WhatsApp do time</strong>
-          <span class="badge" :class="wppSemNumero ? 'b-off' : 'b-on'"
-                x-text="wppSemNumero ? (wppSemNumero + ' sem número') : 'todo mundo com número ✔'"></span>
-          <span style="margin-left:auto;color:var(--mut);font-size:12px" x-show="wppMsg" x-text="wppMsg"></span>
-        </div>
-        <p class="sub" style="margin:6px 0 12px">
-          Quando alocam alguém, o aviso vai pro sino do Hub <b>e</b> pro WhatsApp da pessoa —
-          é o que faz o recado chegar com o sistema fechado. Preencha na coluna <b>WhatsApp</b> da lista
-          abaixo (com DDD; sai do campo e salva) ou no cadastro da pessoa. Sem número, ela só vê pelo sino.
-        </p>
-      </div>
 
       <!-- Loading -->
-      <div x-show="loading && !users.length" style="text-align:center;padding:30px;color:var(--mut)"><span class="spinner"></span> Carregando usuários…</div>
+      <div x-show="loading && !users.length" style="text-align:center;padding:30px;color:var(--mut)"><span class="spinner"></span> Carregando os usuários</div>
 
       <!-- Lista -->
-      <div style="overflow-x:auto" x-show="!loading || users.length">
+      <div class="tabela-moldura" style="overflow-x:auto" x-show="!loading || users.length">
         <table>
-          <thead><tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Nível</th><th>Cargo</th><th>Acessos</th><th></th></tr></thead>
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Nível</th><th>Acesso</th><th><span class="v-sr">Ações</span></th></tr></thead>
           <tbody>
             <template x-for="u in users" :key="u.id">
               <tr>
@@ -252,11 +239,7 @@
                   </div>
                 </td>
                 <td x-text="u.email"></td>
-                <!-- WhatsApp do aviso de alocação: escreve aqui, sai do campo e salva. -->
-                <td><input type="tel" style="width:150px" placeholder="sem número"
-                           :value="wppDe(u.id)" @change="salvarWppDoTime({ id: u.id }, $event.target.value)"></td>
                 <td><span class="badge" :class="nivelBadge(u)" x-text="nivelLabel(u)"></span></td>
-                <td x-text="(u.cargos && u.cargos.length) ? u.cargos.join(', ') : '—'"></td>
                 <td>
                   <template x-for="s in SUBSYSTEMS" :key="s.key">
                     <span class="badge"
@@ -285,54 +268,21 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/shared/os-core.js"></script>
+<script src="/shared/casca.js"></script>
 <script>
   function rhUsers() {
     return {
       ready: false, authed: false,
-      embedded: (window.parent !== window), // dentro do iframe do RH
+      embedded: (window.parent !== window), // dentro de outra tela, num quadro (iframe)
       users: [], cargos: [], loading: false, saving: false, error: '',
       busyMsg: '', resetResult: null, copied: false, convite: null,
       // Lista canônica de subsistemas (mesmas chaves usadas na porta de entrada). Cada
       // um diz de que sistema é: os que não foram instalados nem aparecem.
       SUBSYSTEMS: [
-        { key: 'journey', sistema: 'outjourney',     label: '🤝 OutJourney',                       short: 'Journey' },
-        { key: 'chat', sistema: 'outchat',           label: '💬 OutChat (dentro do OutJourney)',    short: 'Chat', child: true },
-        { key: 'performance', sistema: 'outperformance', label: '📊 OutPerformance',                short: 'OutPerf.' },   // a chave de acesso continua 'performance' (é o que está gravado em hub.users.acessos)
-        { key: 'central', sistema: 'central',     label: '🏛️ Central',                          short: 'Central' },
-        { key: 'outprojetos', sistema: 'outprojetos', label: '📁 OutProjetos',                       short: 'Projetos' },
-        { key: 'outsign', sistema: 'outsign',     label: '✍️ OutSign (contratos e assinaturas)', short: 'OutSign' },
-        { key: 'processos', sistema: 'outprocessos', label: '📚 OutProcessos (processos e manuais)', short: 'Processos' },
-        { key: 'rh', sistema: 'outpeople',          label: '👥 RH',                               short: 'RH' },
-        // OutFunnels: a chave do comercial é 'comercial'; as conversas (o chat) entram
-        // embaixo dela (`segue`) e não têm escolha própria — liberar o comercial libera os dois.
-        { key: 'comercial', sistema: 'outfunnels',   label: '💼 OutFunnels',                        short: 'OutFunnels' },
-        { key: 'outfunnels', sistema: 'outfunnels',     label: '💬 Conversas (dentro do OutFunnels)',       short: 'Conversas', child: true, segue: 'comercial' },
-        { key: 'financeiro', sistema: 'financeiro',  label: '💰 Financeiro',                       short: 'Fin.' },
-        { key: 'produtos', sistema: 'peca:produtos', label: '🛍️ Produtos (o catálogo)',        short: 'Produtos' },   // peça "produtos" da base: só com os módulos que usam o catálogo
-        { key: 'copiloto', sistema: 'outcopiloto', label: '🎧 OutCopiloto (copiloto de calls)',   short: 'Copiloto' },
-        // OutAssistenteIA: o ✦ de toda tela. Sem marcação = liberado; "Sem acesso" tira o botão da pessoa.
-        { key: 'assistente', sistema: 'outassistenteia', label: '✦ OutAssistenteIA (assistente de IA)', short: 'Assist.' },
-        { key: 'marketing', sistema: 'marketing',   label: '📣 Marketing',                        short: 'Mkt.' },
-        // Diretoria: o ambiente /diretoria (Resultados CEO + Operação). É o ÚNICO com
-        // 'restrito: true' — o padrão é NÃO ter acesso, e nem o admin geral entra
-        // sozinho: alguém precisa liberar aqui, na mão. Motivo: a tela mostra
-        // faturamento, custo por venda e margem da empresa inteira.
-        { key: 'diretoria', sistema: 'outperformance', label: '👑 Diretoria (Resultados CEO/Operação)', short: 'Diret.', restrito: true },
-        // PDP: ver o Plano de Desenvolvimento de Performance de TODA a casa. Restrito
-        // pelo mesmo motivo da Diretoria — avaliação de desempenho é dado de pessoa, não
-        // de sistema. Sem esta chave, cada um vê o SEU e o do seu time (pelo gestor), que
-        // é como deve ser. O admin geral NÃO ganha sozinho: alguém libera aqui, na mão.
-        { key: 'pdp', sistema: 'outpeople',         label: '🎯 Plano de Desenvolvimento (ver o de toda a casa)', short: 'PDP', restrito: true },
-        // Dashboard CS: ver o painel do TIME inteiro (sem a chave, cada um vê o seu).
-        // Restrito pelo mesmo motivo do PDP: é desempenho de pessoa.
-        { key: 'dashboard_cs_time', sistema: 'outjourney', label: '📈 Dashboard CS (ver o do time inteiro)', short: 'Dash CS', restrito: true },
-        // Consulta rápida do Início: o grupo restrito (dados do sócio — CPF, RG, endereço).
-        // Quem tranca é a regra do banco (hub.inicio_ve_dados_socio); admin sozinho não basta.
-        { key: 'dados_socio', sistema: 'base',    label: '🔐 Dados do sócio (Consulta rápida do Início)', short: 'Sócio', restrito: true },
         // Grupos (Acompanhamento de Grupos no WhatsApp com IA): a conversa dos grupos é de terceiros, então o padrão é NÃO ter
         // acesso (restrito). 'niveis: true' troca o único "Pode ver" dos restritos pelos níveis do módulo: sem acesso,
         // só visualizar (grava 'view'), editar (grava true) e admin do sistema (grava 'admin').
-        { key: 'grupos', sistema: 'outgrupos', label: '📱 Grupos (acompanhamento de grupos no WhatsApp com IA)', short: 'Grupos', restrito: true, niveis: true },
+        { key: 'grupos', sistema: 'grupos', label: '📱 Grupos (acompanhamento de grupos no WhatsApp com IA)', short: 'Grupos', restrito: true, niveis: true },
       ].filter(function (s) { return !window.OS || !OS.instalado || OS.instalado(s.sistema); }),   // só o que esta instalação tem
       form: { open: false, id: null, fullName: '', email: '', whats: '', perfil: 'colaborador', cargoIds: [], active: true, acessos: {} },
 
@@ -364,7 +314,7 @@
         if (v === false) return 'none';
         if (v === 'view') return 'view';
         if (v === 'admin') return 'admin';
-        // Sistema restrito (Diretoria): sem marcação = SEM acesso (nos outros, sem
+        // Sistema restrito: sem marcação = SEM acesso (nos outros, sem
         // marcação quer dizer liberado).
         if (this.ehRestrito(key) && v !== true) return 'none';
         return 'user';
@@ -400,7 +350,7 @@
         var p = this.perfilOf(u);
         return p === 'admin' ? 'Admin geral' : p === 'convidado' ? 'Convidado' : 'Colaborador';
       },
-      // Iniciais pro fallback quando o usuário não tem foto (ex.: "Samara Eriksson" → "SE").
+      // Iniciais pro fallback quando o usuário não tem foto (ex.: "Maria Souza" → "MS").
       initials(u) {
         var n = (u.full_name || u.email || '?').trim().split(/\s+/);
         return ((n[0] || '')[0] || '') + ((n.length > 1 ? n[n.length - 1][0] : '') || '');
@@ -411,9 +361,9 @@
       },
 
       // Chama a Edge Function admin-usuarios com o JWT da sessão (via os-core).
-      // Substitui o antigo outfunnels-api (Railway).
+      // Substitui o antigo crm-api (Railway).
       async callFn(payload) {
-        if (!(window.OS && window.OS.getClient)) throw new Error('Sessão expirada — entre de novo.');
+        if (!(window.OS && window.OS.getClient)) throw new Error('A sessão expirou. Saia e entre de novo com o seu e-mail e a sua senha.');
         var r = await OS.getClient().functions.invoke('admin-usuarios', { body: payload });
         if (r.error) {
           var msg = r.error.message || 'Erro na chamada';
@@ -434,7 +384,7 @@
         try {
           var r = await OS.getClient().rpc('whatsapp_do_time');
           if (!r.error) this.wppLista = r.data || [];
-        } catch (e) { console.warn('[RH] whatsapp do time:', e.message); }
+        } catch (e) { console.warn('[Usuários] whatsapp do time:', e.message); }
       },
       async salvarWppDoTime(p, valor) {
         this.wppMsg = '';
@@ -474,7 +424,7 @@
           var convidado = (perfil === 'convidado');
           var acessos = {};
           this.SUBSYSTEMS.forEach((s) => {
-            // Sistema restrito (Diretoria): vale só o que foi marcado aqui, mesmo pra
+            // Sistema restrito: vale só o que foi marcado aqui, mesmo pra
             // admin geral. Liberado → grava true; não liberado → NÃO grava nada.
             // (Não gravar 'false' é de propósito: o CEO e a COO entram pela lista fixa
             //  do sistema, e um 'false' salvo sem querer trancaria os dois pra fora.)
@@ -485,7 +435,7 @@
               return;
             }
             if (adminGeral) { acessos[s.key] = true; return; }        // admin geral abre tudo
-            // OUTFUNNELS-PELO-OUTPEOPLE-17-09-2026: quem segue outro copia a decisão dele
+            // quem segue outro copia a decisão dele (17/09/2026)
             if (s.segue) { acessos[s.key] = this.form.acessos[s.segue] === false ? false : true; return; }
             var v = this.form.acessos[s.key];
             if (v === false) acessos[s.key] = false;                  // sem acesso
@@ -500,7 +450,7 @@
             // confirmação nominal, em vez de deixar passar num salvar distraído.
             if (!this.form.active) {
               var certeza = confirm('Desligar ' + (this.form.fullName || 'esta pessoa') + '?\n\n'
-                + 'Ela perde o acesso a TODOS os sistemas do Hub na hora: acessos zerados, '
+                + 'Ela perde o acesso a TODOS os sistemas na hora: acessos zerados, '
                 + 'login bloqueado e sessões abertas derrubadas. O histórico dela fica.\n\n'
                 + 'Depois, na mão: as ferramentas de fora do sistema (grupos de WhatsApp e afins).');
               if (!certeza) { this.saving = false; return; }
@@ -515,7 +465,7 @@
           var quem = this.form.id || (resp && resp.data && resp.data.id) || null;
           if (quem) {
             try { await OS.getClient().rpc('whatsapp_do_time_salvar', { p_user: quem, p_numero: novoWhats || '' }); }
-            catch (e) { console.warn('[RH] whatsapp:', e.message); }
+            catch (e) { console.warn('[Usuários] whatsapp:', e.message); }
           }
           var criou = !this.form.id && quem;
           var semEmail = !!(resp && resp.data && resp.data.email_enviado === false);
@@ -529,7 +479,7 @@
       // O link de acesso (app-convite): a pessoa abre /entrar/?c=CÓDIGO e cria a senha.
       // Funciona sem e-mail; vale 48h, uma vez só, e gerar de novo cancela o anterior.
       async linkDeAcesso(id, nome, semEmail) {
-        this.busyMsg = 'Gerando o link de acesso…';
+        this.busyMsg = 'Gerando o link de acesso';
         try {
           var r = await OS.getClient().functions.invoke('app-convite', { body: { acao: 'gerar', userId: id } });
           if (r.error) {
@@ -556,7 +506,7 @@
       // checagem de admin no servidor). Devolve a senha nova pra repassar.
       async resetPassword(u) {
         if (!confirm('Resetar a senha de ' + (u.full_name || u.email) + '?\nUma senha nova será gerada e a antiga deixa de funcionar imediatamente.')) return;
-        this.saving = true; this.busyMsg = 'Gerando nova senha…'; this.error = '';
+        this.saving = true; this.busyMsg = 'Gerando a nova senha'; this.error = '';
         try {
           var r = await OS.getClient().functions.invoke('admin-reset-password', { body: { userId: u.id } });
           if (r.error) {
@@ -580,7 +530,7 @@
       },
 
       async removeUser(u) {
-        if (!confirm('Remover ' + (u.full_name || u.email) + '? Apaga o acesso ao Hub (login e subsistemas). Não dá pra desfazer.')) return;
+        if (!confirm('Remover ' + (u.full_name || u.email) + '? Isso apaga o acesso ao sistema (login e todos os sistemas) e não dá para desfazer.')) return;
         this.saving = true; this.error = '';
         try {
           await this.callFn({ action: 'delete', id: u.id });

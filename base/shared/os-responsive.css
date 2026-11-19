@@ -1,7 +1,7 @@
 /* ============================================================
    os-responsive.css — Camada de responsividade compartilhada
    ------------------------------------------------------------
-   Pendurada automaticamente em TODA página do Hub pelo
+   Pendurada automaticamente em TODA página do sistema pelo
    build.sh (uma linha no <head>). Serve pra deixar os sistemas
    utilizáveis no CELULAR sem mexer em cada tela.
 
@@ -40,7 +40,7 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* 5) SEM ZOOM SOZINHO NO IPHONE (28/09/2026, Samara: "entrei no app e a tela
+  /* 5) SEM ZOOM SOZINHO NO IPHONE (28/09/2026, relato de uso: "entrei no app e a tela
         já estava em zoom"). O Safari do iPhone dá zoom ao tocar num campo com
         letra menor que 16px — e não volta. O login tinha 14px. Campo de digitar
         no celular é 16px, sempre. (Não se trava o zoom da página: quem precisa

@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     const alvo = String(body.userId || "");
     const { data: pessoa } = await db.from("users").select("id, full_name, email, active, whatsapp").eq("id", alvo).maybeSingle();
     if (!pessoa) return json({ error: "Pessoa não encontrada no cadastro." }, 404);
-    if (pessoa.active !== true) return json({ error: "Esta pessoa está desativada — ative o acesso antes de gerar o link." }, 409);
+    if (pessoa.active !== true) return json({ error: "Esta pessoa está desativada. Ative o acesso antes de gerar o link." }, 409);
     if (!pessoa.email) return json({ error: "Esta pessoa não tem e-mail de login no cadastro." }, 409);
 
     // o anterior que ainda estava valendo deixa de valer
@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
 
     const { data: link, error } = await db.auth.admin.generateLink({ type: "recovery", email: pessoa.email });
     const token_hash = link?.properties?.hashed_token;
-    if (error || !token_hash) return json({ error: "Não deu pra preparar o acesso agora. Tente de novo em instantes." }, 500);
+    if (error || !token_hash) return json({ error: "Não deu para preparar o acesso agora. Tente de novo." }, 500);
 
     const { data: quem } = conv.criado_por
       ? await db.from("users").select("full_name").eq("id", conv.criado_por).maybeSingle()

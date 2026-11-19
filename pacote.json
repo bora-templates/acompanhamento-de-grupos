@@ -1,9 +1,10 @@
 {
-  "_leia": "O que veio neste pacote do Hub BoraIA. Para acrescentar a uma instalação que já existe, compare com o que está instalado no banco (ver COMECE-AQUI.md).",
-  "produto": "Hub BoraIA",
-  "pacote": "boraia-outgrupos",
-  "principal": "outgrupos",
-  "gerado_em": "2026-10-14",
+  "_leia": "O que veio neste pacote: a solução, os módulos de que ela precisa, as versões e as peças da base. \"tipo\": \"avulsa\" quer dizer uma solução por instalação.",
+  "produto": "Soluções com IA",
+  "pacote": "acompanhamento-de-grupos",
+  "tipo": "avulsa",
+  "principal": "grupos",
+  "gerado_em": "2026-11-19",
   "base": {
     "versao": "1.1.0",
     "pecas": [
@@ -12,7 +13,7 @@
   },
   "modulos": [
     {
-      "id": "outgrupos",
+      "id": "grupos",
       "nome": "Acompanhamento de Grupos no WhatsApp com IA",
       "versao": "1.0.0",
       "versao_minima_base": "1.1.0",

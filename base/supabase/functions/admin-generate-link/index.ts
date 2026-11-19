@@ -1,11 +1,11 @@
 // RH — admin-generate-link
-// Um ADMIN gera um LINK DE ACESSO (definir senha) para um usuário do Hub,
+// Um ADMIN gera um LINK DE ACESSO (definir senha) para um usuário do sistema,
 // para repassar manualmente (WhatsApp/e-mail) quando o convite automático não chega.
-// Chamada pela Gestão de Usuários (OutPeople). Fluxo:
+// Chamada pela Gestão de Usuários (RH). Fluxo:
 //   1) valida o JWT de quem chamou (Authorization: Bearer <sessão Supabase>)
 //   2) confere que o CHAMADOR é admin em hub.users (access_level = 'admin')
 //   3) gera um link de recuperação (type=recovery) no Auth do usuário-alvo
-//   4) devolve o link pro admin repassar (a pessoa define a senha e entra no Hub)
+//   4) devolve o link pro admin repassar (a pessoa define a senha e entra no sistema)
 //
 // Obs.: o link é de uso único e expira (config do projeto, ~1h). Gere na hora de enviar.
 //
@@ -51,8 +51,8 @@ Deno.serve(async (req) => {
   if (tErr) return json({ error: tErr.message }, 500);
   if (!target) return json({ error: "Usuário não encontrado." }, 404);
 
-  // 4) gera o token de recuperação (definir senha). Devolvemos o token_hash — a
-  //    página /entrar/ do Hub consome via verifyOtp (URL nossa, sem depender
+  // 4) gera o token de recuperação (definir senha). Devolvemos o token_hash, e a
+  //    página /entrar/ do sistema consome via verifyOtp (URL nossa, sem depender
   //    do redirect/Site URL do Supabase). O front monta o link com a própria origem.
   const { data: link, error: lErr } = await admin.auth.admin.generateLink({ type: "recovery", email: target.email });
   if (lErr) return json({ error: lErr.message }, 500);

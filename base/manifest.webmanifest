@@ -1,13 +1,13 @@
 {
-  "name": "Hub",
-  "short_name": "Hub",
-  "description": "Hub — o app do time",
-  "start_url": "/",
+  "name": "Acompanhamento de Grupos no WhatsApp com IA",
+  "short_name": "Grupos",
+  "description": "Acompanhamento de Grupos no WhatsApp com IA.",
+  "start_url": "/grupos/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#00133D",
-  "theme_color": "#0A0A0B",
+  "background_color": "#1D1A17",
+  "theme_color": "#1D1A17",
   "icons": [
     {
       "src": "/shared/icon-192.png",

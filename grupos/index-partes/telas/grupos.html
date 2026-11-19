@@ -1,0 +1,104 @@
+<!-- ═══════════════════════ GRUPOS (a primeira tela: o login cai aqui) ═══════════════════════ -->
+<section x-show="rota === 'grupos'" x-cloak class="entra">
+  <div class="hero"><div class="hero-l">
+    <div><div class="over">Acompanhamento de Grupos no WhatsApp com IA</div><h1>Grupos</h1>
+      <p>Acompanhe os grupos de WhatsApp da sua empresa. A IA conta o que aconteceu, aponta o que ficou pendente e responde perguntas sobre cada grupo.</p></div>
+    <!-- só com o WhatsApp ligado: antes disso, quem escolhe os grupos não tem de onde escolher (os passos abaixo guiam) -->
+    <div class="linha" x-show="podeConfigurar && ajustes.whatsapp_estado === 'conectado'" x-cloak>
+      <button type="button" class="btn" @click="abreEscolher()"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Escolher grupos</button>
+    </div>
+  </div></div>
+
+  <div class="estado" x-show="carga.painel === 'carregando'" role="status"><span class="spin"></span><span>Carregando os grupos</span></div>
+  <div class="err" x-show="carga.painel === 'erro'" x-cloak role="alert">
+    <span x-text="'Não foi possível abrir os grupos. ' + cargaErro.painel"></span>
+    <button type="button" class="btn leve mini" @click="carregaPainel()">Tentar de novo</button>
+  </div>
+
+  <template x-if="painel">
+    <div>
+      <!-- ── ainda sem nenhum grupo: o exemplo é a primeira ação, porque mostra a solução funcionando sem configurar nada ── -->
+      <div class="card destaque-exemplo" x-show="podeAdministrar && !grupos.length" x-cloak>
+        <span class="destaque-ic" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg></span>
+        <div class="destaque-tx">
+          <h2>Veja o Grupos funcionando agora</h2>
+          <p>Carregue um grupo de exemplo, com pessoas e uma conversa fictícias de uma clínica de estética, e veja o resumo, as pendências e as perguntas à IA sem ligar nada. Depois você apaga o exemplo com um clique.</p>
+        </div>
+        <button type="button" class="btn" @click="carregaExemplo()">Ver com um grupo de exemplo</button>
+      </div>
+
+      <!-- ── primeiros passos: IA, WhatsApp e grupos (só quem configura; somem quando os três estão feitos) ── -->
+      <div class="card" x-show="podeConfigurar && mostraPrimeirosPassos" style="margin-bottom:14px">
+        <div class="linha entre passos-topo">
+          <h2>Primeiros passos</h2>
+          <span class="pill" :class="passosFeitos === 3 ? 'ok' : ''" x-text="passosFeitos + ' de 3 feitos'"></span>
+        </div>
+        <p class="peq mut">Siga os três passos para começar a acompanhar os grupos da sua empresa.</p>
+        <ol class="passos">
+          <template x-for="(p, i) in passos" :key="p.chave">
+            <li class="passo" :class="{ feito: p.feito }">
+              <span class="num" aria-hidden="true">
+                <svg class="i" viewBox="0 0 24 24" x-show="p.feito" style="stroke-width:2.4"><path d="M5 12l4 4 10-10"/></svg>
+                <span x-show="!p.feito" x-text="i + 1"></span>
+              </span>
+              <div>
+                <b><span x-text="p.titulo"></span><span class="sr-so" x-show="p.feito"> (concluído)</span></b>
+                <p x-text="p.descricao"></p>
+              </div>
+              <div class="passo-acao" x-show="podeConfigurar && !p.feito" x-cloak>
+                <button type="button" class="btn leve mini" :disabled="p.bloqueado" @click="vaiPasso(p.chave)" x-text="p.botao"></button>
+              </div>
+            </li>
+          </template>
+        </ol>
+        <div class="exemplo-chamada" x-show="podeAdministrar && !temExemplo && grupos.length" x-cloak>
+          <p>Quer ver a solução funcionando antes de ligar o WhatsApp? Carregue um grupo de exemplo, com pessoas e uma conversa fictícias de uma clínica de estética.</p>
+          <button type="button" class="btn" @click="carregaExemplo()">Ver com um grupo de exemplo</button>
+        </div>
+      </div>
+
+      <!-- ── números e lista ── -->
+      <div class="kpis" x-show="grupos.length">
+        <template x-for="k in kpisGrupos" :key="k.rotulo">
+          <div class="kpi"><b x-text="k.valor"></b><span x-text="k.rotulo"></span></div>
+        </template>
+      </div>
+
+      <div class="gbusca" x-show="grupos.length > 5" x-cloak>
+        <input type="search" x-model="buscaGrupos" placeholder="Buscar um grupo pelo nome" aria-label="Buscar um grupo pelo nome">
+      </div>
+
+      <div class="ggrade" x-show="grupos.length">
+        <template x-for="g in gruposFiltrados" :key="g.id">
+          <a class="gcard" :href="'#grupo/' + g.id" :class="{ pausado: !g.ativo }">
+            <div class="gtopo">
+              <span class="avatar g" :style="corAvatar(g.nome)" x-text="iniciais(g.nome)"></span>
+              <div class="gnome"><b x-text="g.nome"></b><span class="peq mut" x-text="numero(g.pessoas) + ' ' + plural(g.pessoas, 'pessoa', 'pessoas')"></span></div>
+            </div>
+            <div class="gpills">
+              <template x-for="s in selosGrupo(g)" :key="s.t">
+                <span class="pill" :class="s.c"><span class="spin p" x-show="s.gira"></span><span x-text="s.t"></span></span>
+              </template>
+            </div>
+            <div class="gmeta">
+              <span><b x-text="numero(g.mensagens_hoje)"></b> <span x-text="plural(g.mensagens_hoje, 'mensagem hoje', 'mensagens hoje')"></span></span>
+              <span x-text="g.ultima_mensagem_em ? 'Última mensagem ' + relativo(g.ultima_mensagem_em) : 'Ainda sem mensagens'"></span>
+              <span class="mut" x-text="g.ultimo_resumo_em ? 'Último resumo ' + relativo(g.ultimo_resumo_em) : 'Ainda não há resumos'"></span>
+            </div>
+          </a>
+        </template>
+      </div>
+
+      <!-- ── quem não configura e ainda não vê nenhum grupo: a quem pedir, sem botão que a pessoa não pode usar ── -->
+      <div class="v-vazio" x-show="painel && !podeConfigurar && !grupos.length && carga.painel === 'pronto'">
+        <b>Ainda não há grupos para você acompanhar.</b>
+        <p>Quem administra o sistema liga o WhatsApp e escolhe os grupos que a IA vai acompanhar. Quando isso acontecer, eles aparecem aqui. Se você esperava ver algum grupo, peça a essa pessoa.</p>
+      </div>
+      <div class="v-vazio" x-show="grupos.length && !gruposFiltrados.length">
+        <b>Nenhum grupo tem esse nome.</b>
+        <p>Tente outra palavra ou limpe a busca para ver todos os grupos.</p>
+        <button type="button" class="v-btn v-btn--sec" @click="buscaGrupos = ''">Limpar a busca</button>
+      </div>
+    </div>
+  </template>
+</section>

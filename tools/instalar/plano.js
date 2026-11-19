@@ -81,7 +81,7 @@ function pedacos(arquivo, raiz = RAIZ_PADRAO, pilha = []) {
   return saida;
 }
 
-// ─── as ligações: os *-ligacoes.sql de cada um, e o do OutFunnels por último ──
+// ─── as ligações: os *-ligacoes.sql de cada um, e o do CRM por último ──
 function ligacoes(lista, raiz = RAIZ_PADRAO) {
   const saida = [];
   // os esboços (visões vazias no lugar das que nascem com outro módulo) saem antes de tudo,
@@ -93,8 +93,8 @@ function ligacoes(lista, raiz = RAIZ_PADRAO) {
     for (const f of fs.readdirSync(d).filter(f => /-ligacoes\.sql$/.test(f)).sort())
       saida.push(...pedacos(`${s}/banco/estrutura/${f}`, raiz));
   }
-  if (lista.includes('outfunnels') && fs.existsSync(path.join(raiz, 'outfunnels/banco/outfunnels_ligacoes.sql')))
-    saida.push(...pedacos('outfunnels/banco/outfunnels_ligacoes.sql', raiz));
+  if (lista.includes('crm') && fs.existsSync(path.join(raiz, 'crm/banco/crm_ligacoes.sql')))
+    saida.push(...pedacos('crm/banco/crm_ligacoes.sql', raiz));
   if (fs.existsSync(path.join(raiz, 'base/banco/esbocos.sql'))) saida.push(...pedacos('base/banco/esbocos.sql', raiz));
   return saida;
 }
@@ -105,7 +105,7 @@ const marca = (sistema, versao) =>
 const lit = (s) => `'${String(s).replace(/'/g, "''")}'`;
 
 // ─── o plano do BANCO ────────────────────────────────────────────────────────
-// estado = o que já está no banco: { base: '1.0.0' | null, sistemas: { outjourney: '1.0.0', 'base.produtos': '1.0.0', … } }
+// estado = o que já está no banco: { base: '1.0.0' | null, sistemas: { sucesso: '1.0.0', 'base.produtos': '1.0.0', … } }
 // Sem estado (ou com base null): instalação do zero. Com a base no banco: acrescenta
 // só o que falta, como o instalar-banco.sh faz com um banco em uso.
 // Devolve { etapas: [{ id, titulo, pedacos: [...], marcas: [...] }], ligacoes: [...], modulos, pecas, recusas }
@@ -155,7 +155,7 @@ function planoDoBanco(mods, estado = null, raiz = RAIZ_PADRAO) {
   for (const s of novos) {
     if (!fs.existsSync(path.join(raiz, s, 'banco', 'estrutura.sql'))) throw new Error(`${s} não tem banco/estrutura.sql`);
     const ps = [];
-    if (s === 'outfunnels') ps.push(...pedacos('outfunnels/banco/outfunnels.sql', raiz));
+    if (s === 'crm') ps.push(...pedacos('crm/banco/crm.sql', raiz));
     ps.push(...pedacos(`${s}/banco/estrutura.sql`, raiz));
     etapas.push({ id: s, titulo: M[s].nome || s, pedacos: ps, marcas: [marca(s, M[s].versao || null)] });
   }
@@ -172,10 +172,10 @@ function planoDoBanco(mods, estado = null, raiz = RAIZ_PADRAO) {
 // documentação de cada uma manda publicar com --no-verify-jwt.
 const SEM_LOGIN = new Set([
   'primeiro-acesso', 'app-convite', 'app-push',
-  'wpp-webhook', 'outcopiloto', 'of-email-entrada',
-  'oj-grupos-vincula', 'portal-avisar-grupo', 'portal-grupo-link',
-  'outsign-codigo', 'outsign-arquivo', 'outsign-final',
-  'og-api', 'og-entrada',   // Grupos: a api também recebe a chamada agendada do banco (com chave), e a entrada recebe o webhook (com chave)
+  'wpp-webhook', 'calls', 'crm-email-entrada',
+  'suc-grupos-vincula', 'portal-avisar-grupo', 'portal-grupo-link',
+  'contratos-codigo', 'contratos-arquivo', 'contratos-final',
+  'gr-api', 'gr-entrada',   // Grupos: a api também recebe a chamada agendada do banco (com chave), e a entrada recebe o webhook (com chave)
 ]);
 
 // os arquivos de uma pasta, relativos a outra (para mandar à API com o caminho certo).
@@ -228,7 +228,7 @@ function planoDasFuncoes(mods, raiz = RAIZ_PADRAO, { jaModulos = [] } = {}) {
 // os esquemas que o site lê pela API do Supabase (Project Settings → API → Exposed schemas)
 function esquemasExpostos(mods, raiz = RAIZ_PADRAO) {
   const lista = mods.length ? mods : modulosDaPasta(raiz);
-  return ['public', 'graphql_public', 'hub'].concat(lista.includes('outfunnels') ? ['outfunnels'] : []);
+  return ['public', 'graphql_public', 'hub'].concat(lista.includes('crm') ? ['crm'] : []);
 }
 
 module.exports = { PREAMBULO, modulosDaPasta, pedacos, ligacoes, planoDoBanco, planoDasFuncoes, esquemasExpostos, SEM_LOGIN };
@@ -252,6 +252,6 @@ if (require.main === module) {
       const fs_ = planoDasFuncoes(mods);
       for (const f of fs_) console.log(`${f.sistema}/${f.nome}${f.semLogin ? ' (sem login)' : ''}: ${f.arquivos.length} arquivo(s)`);
       console.log(`${fs_.length} funções`);
-    } else { console.error('uso: node tools/instalar/plano.js banco|funcoes [módulo…]'); process.exit(2); }
+    } else { console.error('uso: node tools/instalar/plano.js banco|funcoes [módulos]'); process.exit(2); }
   } catch (e) { console.error('✗ ' + e.message); process.exit(1); }
 }

@@ -130,7 +130,7 @@ grant execute on function hub.primeiro_acesso_concluir(uuid, text, text)    to s
 
 -- ── O ENDEREÇO DO SITE (os links que saem nos e-mails e avisos) ─────────────
 -- Toda função do banco que monta um link pra pessoa abrir (convite do portal,
--- assinatura do OutSign, aviso com "abrir no sistema"…) pergunta o endereço a
+-- assinatura do Contratos, aviso com "abrir no sistema"…) pergunta o endereço a
 -- hub.site_url(), nunca escreve o domínio. Quem grava é a Edge Function
 -- primeiro-acesso: o endereço de onde o primeiro administrador foi criado
 -- (o cabeçalho Origin). Pra trocar depois (domínio novo):

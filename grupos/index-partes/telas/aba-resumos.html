@@ -1,0 +1,234 @@
+<!-- ── aba Resumos: fazer o resumo, ver os anteriores e mandar para o grupo ── -->
+<div class="aba-resumos" :class="{ 'tem-aberto': res.aberto || res.abrindo }" x-show="aba === 'resumos'" x-cloak>
+  <div class="v-aviso" x-show="!ajustes.ia_configurada" style="margin-bottom:14px" role="status">
+    <span><b>A IA está desligada.</b> <span x-show="podeConfigurar">Ligue a IA nos Ajustes para os resumos funcionarem.</span><span x-show="!podeConfigurar">Peça a quem administra o sistema para ligar a IA nos Ajustes.</span></span>
+    <a class="v-btn v-btn--mini" href="#ajustes/ia" x-show="podeConfigurar" x-cloak>Ligar a IA</a>
+  </div>
+
+  <div class="card" x-show="podeAdministrar" x-cloak style="margin-bottom:14px">
+    <h2>Fazer um resumo</h2>
+    <div class="pedido-g">
+      <label class="rot">Período
+        <select x-model="pedido.periodo" @change="ajustaDatas(pedido)">
+          <option value="6h">Últimas 6 horas</option><option value="12h">Últimas 12 horas</option><option value="24h">Últimas 24 horas</option><option value="hoje">Hoje</option><option value="ontem">Ontem</option>
+          <option value="7d">Últimos 7 dias</option><option value="datas">Escolher datas</option>
+        </select></label>
+      <label class="rot" x-show="pedido.periodo === 'datas'" x-cloak>De <input type="date" x-model="pedido.de" :max="hojeChave"></label>
+      <label class="rot" x-show="pedido.periodo === 'datas'" x-cloak>Até <input type="date" x-model="pedido.ate" :max="hojeChave"></label>
+      <button type="button" class="btn" :disabled="pedido.fazendo" @click="fazResumo()">
+        <span class="spin p" x-show="pedido.fazendo"></span><span x-text="pedido.fazendo ? 'Fazendo o resumo' : 'Fazer o resumo'"></span></button>
+    </div>
+    <p class="dica" x-show="!pedido.fazendo">A IA lê as mensagens do período e escreve o resumo.</p>
+    <p class="dica" x-show="pedido.fazendo" role="status">A IA está lendo as mensagens e escrevendo o resumo. Você pode esperar nesta tela.</p>
+    <div class="err" x-show="pedido.erro" x-cloak role="alert" style="margin:10px 0 0" x-text="pedido.erro"></div>
+  </div>
+
+  <div class="res-layout">
+    <!-- a lista dos resumos já feitos -->
+    <div class="res-col-lista">
+      <h3 class="sec-t">Resumos anteriores</h3>
+      <div class="estado" x-show="res.estado === 'carregando'" role="status"><span class="spin"></span><span>Carregando os resumos</span></div>
+      <div class="err" x-show="res.estado === 'erro'" x-cloak role="alert">
+        <span x-text="'Não foi possível carregar os resumos. ' + res.erro"></span>
+        <button type="button" class="btn leve mini" @click="carregaResumos()">Tentar de novo</button>
+      </div>
+      <div class="vazio card" x-show="res.estado === 'pronto' && !res.lista.length">
+        <b>Este grupo ainda não tem resumos.</b>
+        <span x-show="podeAdministrar">Escolha um período acima e peça o primeiro resumo.</span>
+        <span x-show="!podeAdministrar">Quem edita o grupo pode pedir um resumo.</span>
+      </div>
+      <div class="res-lista" x-show="res.estado === 'pronto' && res.lista.length">
+        <template x-for="r in res.lista" :key="r.id">
+          <button type="button" class="res-item" :class="{ ativo: res.aberto && res.aberto?.id === r.id }" @click="abreResumo(r.id)">
+            <span class="linha entre" style="width:100%">
+              <span class="t" x-text="rotuloPeriodo(r.periodo, r.inicio, r.fim)"></span>
+              <span class="pill ok" x-show="r.enviado_em">Enviado</span>
+            </span>
+            <span class="peq mut" x-text="'Feito ' + relativo(r.criado_em) + ' · ' + origemResumo(r)"></span>
+            <span class="pan" x-show="r.panorama" x-text="r.panorama"></span>
+          </button>
+        </template>
+      </div>
+    </div>
+
+    <!-- o resumo aberto -->
+    <div id="gr-resumo-aberto">
+      <div class="estado" x-show="res.abrindo" role="status"><span class="spin"></span><span>Abrindo o resumo</span></div>
+      <div class="err" x-show="res.erroAberto" x-cloak role="alert" x-text="'Não foi possível abrir o resumo. ' + res.erroAberto"></div>
+      <div class="vazio card sem-celular" x-show="!res.aberto && !res.abrindo">
+        <b>Nenhum resumo está aberto.</b>Escolha um resumo da lista ou peça um novo.
+      </div>
+
+      <template x-if="res.aberto">
+        <div>
+          <div class="card">
+            <div class="linha entre" style="align-items:flex-start">
+              <div style="min-width:0">
+                <h2 x-text="'Resumo: ' + rotuloPeriodo(res.aberto?.periodo, res.aberto?.inicio, res.aberto?.fim)"></h2>
+                <p class="peq mut" x-text="'Feito em ' + quando(res.aberto?.criado_em) + ' · ' + origemResumo(res.aberto) + (res.aberto?.modelo && res.aberto?.origem !== 'exemplo' ? ' · ' + res.aberto?.modelo : '') + ' · ' + numero(res.aberto?.mensagens_usadas) + ' ' + plural(res.aberto?.mensagens_usadas, 'mensagem lida', 'mensagens lidas')"></p>
+              </div>
+              <div class="linha">
+                <button type="button" class="btn" x-show="podeAdministrar" x-cloak :disabled="resumoDoExemplo" :aria-describedby="resumoDoExemplo ? 'gr-envio-exemplo' : null" @click="abreEnvio()">Mandar para o grupo</button>
+                <button type="button" class="btn leve" @click="copiaResumo()">Copiar o texto</button>
+                <button type="button" class="btn leve" x-show="podeAdministrar" x-cloak @click="pedeRefazer()">Refazer o resumo</button>
+                <button type="button" class="btn leve" @click="fechaResumo()">Fechar</button>
+              </div>
+            </div>
+            <p class="dica" id="gr-envio-exemplo" x-show="podeAdministrar && resumoDoExemplo" x-cloak style="margin-top:10px">O grupo de exemplo não recebe mensagens de verdade, então o resumo dele não vai para o grupo. Use Copiar o texto para ver como ele chegaria.</p>
+            <div class="info" x-show="res.aberto?.origem === 'exemplo'" x-cloak style="margin-top:12px">Este resumo foi escrito para o grupo de exemplo, a partir da conversa fictícia dele, para mostrar como a tela fica. Com a IA ligada, os resumos novos são feitos pela IA.</div>
+            <div class="ok-msg" x-show="res.aberto?.enviado_em" style="margin-top:12px">Enviado ao grupo em <span x-text="quando(res.aberto?.enviado_em)"></span>.</div>
+            <div class="aviso" x-show="res.aberto?.mensagens_fora > 0" style="margin-top:12px" x-text="numero(res.aberto?.mensagens_fora) + ' ' + plural(res.aberto?.mensagens_fora, 'mensagem mais antiga ficou', 'mensagens mais antigas ficaram') + ' de fora, porque o período tinha texto demais para a IA ler de uma vez.'"></div>
+          </div>
+
+          <!-- a Leitura do dia e os Destaques: lado a lado, ou um só na linha toda (resumo antigo não tem nenhum) -->
+          <div class="res-topo" :class="{ um: !(temLeitura && temDestaques) }" x-show="temLeitura || temDestaques" style="margin-top:14px">
+            <div class="card res-leitura" x-show="temLeitura">
+              <h2>Leitura do dia</h2>
+              <p class="leitura" x-text="res.aberto?.conteudo?.leitura_do_dia"></p>
+            </div>
+            <div class="card" x-show="temDestaques">
+              <h2>Destaques</h2>
+              <ul class="lista destaques"><template x-for="(d, k) in res.aberto?.conteudo?.destaques" :key="k"><li x-text="d"></li></template></ul>
+            </div>
+          </div>
+
+          <div class="res-g" style="margin-top:14px">
+            <div class="pilha">
+              <div class="card">
+                <h2>O que aconteceu</h2>
+                <p class="panorama" x-text="res.aberto?.conteudo?.panorama || 'A IA não escreveu um panorama para este período.'"></p>
+              </div>
+              <div class="card">
+                <h2>Assuntos</h2>
+                <div class="taxa" x-show="assuntosResolvidos">
+                  <span class="peq" x-text="assuntosResolvidos && assuntosResolvidos.texto"></span>
+                  <div class="barra taxa-b" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+                       :aria-valuenow="assuntosResolvidos ? assuntosResolvidos.pct : 0" :aria-label="assuntosResolvidos ? assuntosResolvidos.texto : ''">
+                    <i :style="'width:' + (assuntosResolvidos ? assuntosResolvidos.pct : 0) + '%'"></i></div>
+                </div>
+                <div x-show="!res.aberto?.conteudo?.assuntos.length" class="peq mut">A IA não encontrou assuntos neste período.</div>
+                <template x-for="(a, k) in res.aberto?.conteudo?.assuntos" :key="k">
+                  <div class="assunto">
+                    <div class="t"><span x-text="a.titulo"></span>
+                      <span class="pill" :class="a.situacao === 'resolvido' ? 'ok' : 'warn'" x-text="a.situacao === 'resolvido' ? 'resolvido' : 'em aberto'"></span></div>
+                    <p x-text="a.o_que_foi_dito"></p>
+                  </div>
+                </template>
+              </div>
+              <div class="card">
+                <h2>Combinados</h2>
+                <div x-show="!res.aberto?.conteudo?.combinados.length" class="peq mut">Nenhuma decisão ou combinado foi registrado neste período.</div>
+                <ul class="lista" x-show="res.aberto?.conteudo?.combinados.length"><template x-for="(c, k) in res.aberto?.conteudo?.combinados" :key="k"><li x-text="c"></li></template></ul>
+              </div>
+              <div class="card">
+                <h2>Pendências</h2>
+                <div x-show="!res.aberto?.conteudo?.pendencias.length" class="peq mut">Nenhum pedido ficou sem resposta neste período.</div>
+                <template x-for="(p, k) in res.aberto?.conteudo?.pendencias" :key="k">
+                  <div class="pend"><b x-text="p.pedido"></b><span x-text="textoPendencia(p)"></span></div>
+                </template>
+              </div>
+            </div>
+
+            <div class="pilha">
+              <div class="card" x-show="climaInfo || sentimentoInfo">
+                <h2>Clima do grupo</h2>
+                <div class="clima" x-show="climaInfo">
+                  <span><span class="pill" :class="climaInfo && climaInfo.classe" x-text="climaInfo && climaInfo.rotulo"></span></span>
+                  <p x-text="climaInfo && climaInfo.explicacao"></p>
+                </div>
+                <h3 class="sent-t">Sentimento das mensagens</h3>
+                <div class="estado mini" x-show="res.abrindo" role="status"><span class="spin p"></span><span>Carregando o sentimento</span></div>
+                <div class="sent" x-show="!res.abrindo && sentimentoInfo">
+                  <template x-for="b in (sentimentoInfo || [])" :key="b.chave">
+                    <div class="sent-l">
+                      <span x-text="b.rotulo"></span>
+                      <div class="sent-b" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="b.valor" :aria-label="b.rotulo + ': ' + b.valor + '%'"><i :class="b.classe" :style="'width:' + b.valor + '%'"></i></div>
+                      <b x-text="b.valor + '%'"></b>
+                    </div>
+                  </template>
+                  <p class="peq mut" x-text="res.aberto?.origem === 'exemplo' ? 'Estimativa escrita para o exemplo, em porcentagem das mensagens do período.' : 'Estimativa da IA, em porcentagem das mensagens do período.'"></p>
+                </div>
+                <p class="peq mut" x-show="!res.abrindo && !sentimentoInfo">Este resumo não traz a porcentagem do sentimento. Os resumos novos trazem.</p>
+              </div>
+              <div class="card">
+                <h2>Números</h2>
+                <div class="nums">
+                  <div><b x-text="numero(res.aberto?.numeros?.mensagens)"></b><span>mensagens</span></div>
+                  <div><b x-text="numero(res.aberto?.numeros?.pessoas)"></b><span>pessoas escreveram</span></div>
+                  <div><b x-text="res.aberto?.numeros?.hora_pico || 'sem dados'"></b><span>horário de mais movimento</span></div>
+                  <div><b x-text="respostaMediaTexto"></b><span>tempo médio até o time responder</span></div>
+                </div>
+              </div>
+              <div class="card">
+                <h2>Quem mais participou</h2>
+                <div x-show="!res.aberto?.conteudo?.participacao.length" class="peq mut">Ninguém escreveu neste período.</div>
+                <div class="part-l">
+                  <template x-for="(p, k) in res.aberto?.conteudo?.participacao" :key="k">
+                    <div class="p">
+                      <span class="part-nome"><span x-text="p.nome"></span><template x-for="s in p.selos" :key="s"><span class="v-selo" :class="seloClasse(s)" x-text="seloRotulo(s)"></span></template></span>
+                      <span class="mut" x-text="numero(p.mensagens) + ' ' + plural(p.mensagens, 'mensagem', 'mensagens')"></span>
+                      <div class="barra"><i :style="'width:' + Math.max(4, Math.round(((Number(p.mensagens) || 0) / participacaoMax) * 100)) + '%'"></i></div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+              <div class="card">
+                <h2>Links e arquivos</h2>
+                <div x-show="!res.aberto?.conteudo?.links.length && !res.aberto?.conteudo?.arquivos.length" class="peq mut">Nenhum link ou arquivo circulou neste período.</div>
+                <div class="ref-l">
+                  <template x-for="(l, k) in res.aberto?.conteudo?.links" :key="'l' + k">
+                    <div>
+                      <a class="lnk" x-show="urlSegura(l.url) !== '#'" :href="urlSegura(l.url)" target="_blank" rel="noopener noreferrer nofollow" x-text="l.url"></a>
+                      <span class="u" x-show="urlSegura(l.url) === '#'" x-text="l.url"></span>
+                      <small x-text="[l.quem, textoQuando(l.quando)].filter(Boolean).join(' · ')"></small>
+                    </div>
+                  </template>
+                  <template x-for="(a, k) in res.aberto?.conteudo?.arquivos" :key="'a' + k">
+                    <div>
+                      <span class="u" x-text="rotuloTipo(a.tipo) + (a.nome ? ': ' + a.nome : '')"></span>
+                      <small x-text="[a.quem, textoQuando(a.quando)].filter(Boolean).join(' · ')"></small>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- as mensagens por hora do período do resumo (gr_atividade_por_hora, no horário de Brasília) -->
+          <div class="card" style="margin-top:14px">
+            <h2>Mensagens por hora</h2>
+            <p class="peq mut">Quantas mensagens o grupo teve em cada hora do dia durante o período deste resumo, no horário de Brasília. A hora de mais movimento aparece em destaque.</p>
+            <div class="estado" x-show="porHora.estado === 'carregando'" role="status"><span class="spin"></span><span>Carregando as mensagens por hora</span></div>
+            <div class="err" x-show="porHora.estado === 'erro'" x-cloak role="alert" style="margin:10px 0 0">
+              <span x-text="'Não foi possível carregar as mensagens por hora. ' + porHora.erro"></span>
+              <button type="button" class="btn leve mini" @click="carregaAtividade()">Tentar de novo</button>
+            </div>
+            <div class="vazio" x-show="atividadeInfo && !atividadeInfo.total"><b>Nenhuma mensagem neste período.</b>O gráfico aparece quando o período tem mensagens.</div>
+            <template x-if="atividadeInfo && atividadeInfo.total">
+              <div class="horas-box">
+                <p class="peq" x-text="'Mais movimento às ' + atividadeInfo.pico + 'h, com ' + numero(atividadeInfo.max) + ' ' + plural(atividadeInfo.max, 'mensagem', 'mensagens') + ' de ' + numero(atividadeInfo.total) + ' no período.'"></p>
+                <div class="horas" role="img" :aria-label="atividadeInfo.alt">
+                  <template x-for="b in atividadeInfo.barras" :key="b.hora">
+                    <div class="hora-c" :class="{ pico: b.pico }" :title="b.titulo">
+                      <span class="pico-n" x-show="b.pico" x-text="numero(b.n)"></span>
+                      <i :style="'height:' + b.altura + '%'"></i>
+                    </div>
+                  </template>
+                </div>
+                <div class="horas-eixo" aria-hidden="true">
+                  <template x-for="b in atividadeInfo.barras" :key="'e' + b.hora"><span :class="{ pico: b.pico }" x-text="b.rotulo"></span></template>
+                </div>
+                <!-- a tabela fica dentro de uma caixa escondida: numa tabela, a largura e a altura de 1px não valem, e ela esticava a página -->
+                <div class="sr-so"><table>
+                  <caption>Mensagens por hora do dia</caption>
+                  <thead><tr><th scope="col">Hora</th><th scope="col">Mensagens</th></tr></thead>
+                  <tbody><template x-for="b in atividadeInfo.barras" :key="'t' + b.hora"><tr><td x-text="b.hora + 'h'"></td><td x-text="b.n"></td></tr></template></tbody>
+                </table></div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>

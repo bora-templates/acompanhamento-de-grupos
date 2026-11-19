@@ -39,11 +39,11 @@ const tem = (n) => args.includes(n);
 // tipo do Supabase → arquivo e assunto (os mesmos do base/README.md)
 const MODELOS = [
   ['invite',           'convite',            'Você foi convidado para o %EMPRESA_NOME%'],
-  ['recovery',         'recuperar-senha',    'Crie uma nova senha — %EMPRESA_NOME%'],
-  ['email_change',     'mudar-email',        'Confirme o seu novo e-mail — %EMPRESA_NOME%'],
-  ['magic_link',       'link-magico',        'Seu link de acesso — %EMPRESA_NOME%'],
-  ['confirmation',     'confirmar-cadastro', 'Confirme o seu e-mail — %EMPRESA_NOME%'],
-  ['reauthentication', 'reautenticacao',     'Seu código de confirmação — %EMPRESA_NOME%'],
+  ['recovery',         'recuperar-senha',    'Crie uma nova senha · %EMPRESA_NOME%'],
+  ['email_change',     'mudar-email',        'Confirme o seu novo e-mail · %EMPRESA_NOME%'],
+  ['magic_link',       'link-magico',        'Seu link de acesso · %EMPRESA_NOME%'],
+  ['confirmation',     'confirmar-cadastro', 'Confirme o seu e-mail · %EMPRESA_NOME%'],
+  ['reauthentication', 'reautenticacao',     'Seu código de confirmação · %EMPRESA_NOME%'],
 ];
 
 function falha(msg) { console.error('✗ ' + msg); process.exit(1); }
@@ -56,7 +56,7 @@ if (!nome && opt('--config', null)) {
   nome = (JSON.parse(fs.readFileSync(f, 'utf8'))['%EMPRESA_NOME%'] || '').trim();
 }
 if (!nome) falha('falta o nome da empresa: ponha "%EMPRESA_NOME%" no empresa.json (--config) ou use --nome "Minha Empresa"');
-if (nome === 'Sua Empresa') console.log('  ! o nome da empresa ainda é o do exemplo ("Sua Empresa") — troque no empresa.json');
+if (nome === 'Sua Empresa') console.log('  ! o nome da empresa ainda é o do exemplo ("Sua Empresa"). Troque no empresa.json');
 
 // ─── os modelos prontos (nome trocado) ───────────────────────────────────────
 const PASTA_MODELOS = path.join(RAIZ, 'base', 'supabase', 'templates');
@@ -82,7 +82,7 @@ if (opt('--para', null)) {
   fs.mkdirSync(d, { recursive: true });
   for (const p of prontos) fs.writeFileSync(path.join(d, p.arq + '.html'), p.html);
   fs.writeFileSync(path.join(d, 'ASSUNTOS.txt'), prontos.map(p => `${p.tipo.padEnd(17)} ${p.assunto}`).join('\n') + '\n');
-  console.log(`✓ ${prontos.length} modelos prontos em ${d} (e os assuntos em ASSUNTOS.txt) — cole no painel: Authentication → Emails`);
+  console.log(`✓ ${prontos.length} modelos prontos em ${d} (e os assuntos em ASSUNTOS.txt). Cole no painel, em Authentication → Emails`);
   process.exit(0);
 }
 
@@ -135,9 +135,9 @@ for (const p of prontos) { corpo[`mailer_subjects_${p.tipo}`] = p.assunto; corpo
 if (opt('--salvar', null)) { fs.writeFileSync(path.resolve(opt('--salvar')), JSON.stringify(corpo, null, 2) + '\n'); console.log(`  pedido completo gravado em ${opt('--salvar')} (sem o token)`); }
 if (tem('--simular')) {
   const curto = {};
-  for (const [k, v] of Object.entries(corpo)) curto[k] = k.includes('_content') ? `${v.replace(/\s+/g, ' ').slice(0, 70)}… (${v.length} caracteres)` : v;
+  for (const [k, v] of Object.entries(corpo)) curto[k] = k.includes('_content') ? `${v.replace(/\s+/g, ' ').slice(0, 70)} (encurtado, ${v.length} caracteres)` : v;
   console.log(`PATCH ${url}`);
-  console.log('Authorization: Bearer <SUPABASE_ACCESS_TOKEN — não mostrado>');
+  console.log('Authorization: Bearer <SUPABASE_ACCESS_TOKEN, não mostrado>');
   console.log('Content-Type: application/json\n');
   console.log(JSON.stringify(curto, null, 2));
   console.log('\n(simulação: nada foi enviado)');
@@ -153,7 +153,7 @@ if (!token) falha('defina SUPABASE_ACCESS_TOKEN (o token de acesso da sua conta 
   } catch (e) { falha(`não consegui falar com ${api} (${e.message})`); }
   if (!r.ok) {
     let txt = ''; try { txt = (await r.text()).slice(0, 300); } catch (e) {}
-    const dica = r.status === 401 ? ' — token inválido ou vencido' : r.status === 403 ? ' — o token não tem acesso a este projeto' : r.status === 404 ? ' — projeto não encontrado (confira o SEU_PROJETO)' : '';
+    const dica = r.status === 401 ? '. O token está inválido ou vencido: crie outro em Account › Access Tokens' : r.status === 403 ? '. O token não tem acesso a este projeto: use um token da conta dona do projeto' : r.status === 404 ? '. O projeto não foi encontrado: confira o SEU_PROJETO' : '';
     falha(`a API respondeu ${r.status}${dica}${txt ? ': ' + txt.split(token).join('***') : ''}`);
   }
   anotaNoMapa('projeto');

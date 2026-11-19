@@ -15,7 +15,7 @@ begin
     headers := jsonb_build_object('Content-Type', 'application/json',
                  'x-app-push-token', (select decrypted_secret from vault.decrypted_secrets where name = 'cron_app-push')),
     body    := jsonb_build_object('user_ids', to_jsonb(v_users),
-                 'titulo', left(coalesce(p_titulo, 'BoraIA'), 80),
+                 'titulo', left(coalesce(p_titulo, 'Aviso'), 80),
                  'corpo',  left(coalesce(p_corpo, ''), 200),
                  'link',   coalesce(p_link, '/'),
                  'tag',    p_tag),
@@ -91,7 +91,7 @@ begin
             perform hub.avisar(
                 v_gestor.id,
                 'liberacao',
-                'OutPerformance',
+                'Metas',
                 'Pedido de liberação · ' || coalesce(v_pessoa, 'alguém'),
                 coalesce(v_pessoa, 'Alguém') || coalesce(' · ' || v_cargo, '') ||
                 ' quer editar o dia ' || to_char(new.reference_date, 'DD/MM/YYYY') ||
@@ -102,8 +102,8 @@ begin
                 -- isso, quem pede dois dias seguidos — foi o caso da Luciane,
                 -- 12 segundos entre um e outro — só geraria UM aviso. A tela lê
                 -- o #liberacoes e ignora a query.
-                '/outperformance/app?lib=' || new.id || '#liberacoes',
-                coalesce(v_pessoa, 'OutPerformance')
+                '/metas/app?lib=' || new.id || '#liberacoes',
+                coalesce(v_pessoa, 'Metas')
             );
         exception when others then
             -- Aviso é recado, não pode derrubar o pedido (mesma cautela do Discord).
@@ -137,8 +137,8 @@ exception when others then
   raise warning 'hub.avisar falhou (alocação segue): %', sqlerrm;
 end; $$;
 
--- FUNCTION: avisar_alocacao_oj_atendimento()
-CREATE FUNCTION hub.avisar_alocacao_oj_atendimento() RETURNS trigger
+-- FUNCTION: avisar_alocacao_suc_atendimento()
+CREATE FUNCTION hub.avisar_alocacao_suc_atendimento() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'hub', 'public'
     AS $$
@@ -148,17 +148,17 @@ begin
   if tg_op = 'UPDATE' and new.cs is not distinct from old.cs then return new; end if;
 
   v_titulo := coalesce(nullif(btrim(new.title), ''), nullif(btrim(new.assunto), ''), 'Atendimento');
-  v_link   := '/outjourney/admin?at=' || new.id;
+  v_link   := '/sucesso/admin?at=' || new.id;
   v_antes  := case when tg_op = 'UPDATE' then nullif(btrim(coalesce(old.cs, '')), '') else null end;
 
   if v_antes is not null and lower(v_antes) is distinct from lower(coalesce(btrim(new.cs), '')) then
-    perform hub.registrar_alocacao('OutJourney', 'atendimento', new.id::text, v_titulo,
+    perform hub.registrar_alocacao('Sucesso', 'atendimento', new.id::text, v_titulo,
                                    v_antes, 'saiu', v_link, nullif(btrim(new.creator), ''));
   end if;
 
   if coalesce(btrim(new.cs), '') = '' then return new; end if;
 
-  perform hub.registrar_alocacao('OutJourney', 'atendimento', new.id::text, v_titulo,
+  perform hub.registrar_alocacao('Sucesso', 'atendimento', new.id::text, v_titulo,
                                  btrim(new.cs), 'entrou', v_link, nullif(btrim(new.creator), ''));
 
   if coalesce(new.status_atendimento, '') in ('concluido', 'cancelado') then return new; end if;
@@ -167,15 +167,15 @@ begin
   if v_user is null then return new; end if;
 
   perform hub.avisar(
-    v_user, 'alocacao', 'OutJourney', v_titulo,
+    v_user, 'alocacao', 'Sucesso', v_titulo,
     coalesce(nullif(btrim(new.client_name), ''), 'Sem cliente')
       || coalesce(' · ' || nullif(btrim(new.assunto), ''), ''),
     v_link, nullif(btrim(new.creator), ''), new.prazo::date);
   return new;
 end; $$;
 
--- FUNCTION: avisar_alocacao_oj_encantamento()
-CREATE FUNCTION hub.avisar_alocacao_oj_encantamento() RETURNS trigger
+-- FUNCTION: avisar_alocacao_suc_encantamento()
+CREATE FUNCTION hub.avisar_alocacao_suc_encantamento() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'hub', 'public'
     AS $$
@@ -186,24 +186,24 @@ begin
   if tg_op = 'UPDATE' and new.responsavel is not distinct from old.responsavel then return new; end if;
 
   v_titulo := coalesce(nullif(btrim(new.titulo), ''), 'Envio da Produção');
-  v_link   := '/outjourney/admin?enc=' || new.id;
+  v_link   := '/sucesso/admin?enc=' || new.id;
   v_antes  := case when tg_op = 'UPDATE' then hub.aloc_nomes(old.responsavel) else '{}'::text[] end;
   v_depois := hub.aloc_nomes(new.responsavel);
 
   foreach nome in array hub.aloc_diff(v_antes, v_depois, 'saiu') loop
-    perform hub.registrar_alocacao('OutJourney', 'producao', new.id::text, v_titulo,
+    perform hub.registrar_alocacao('Sucesso', 'producao', new.id::text, v_titulo,
                                    nome, 'saiu', v_link, null);
   end loop;
 
   foreach nome in array hub.aloc_diff(v_antes, v_depois, 'entrou') loop
-    perform hub.registrar_alocacao('OutJourney', 'producao', new.id::text, v_titulo,
+    perform hub.registrar_alocacao('Sucesso', 'producao', new.id::text, v_titulo,
                                    nome, 'entrou', v_link, null);
     -- envio já resolvido não precisa de aviso novo
     if coalesce(new.status, '') in ('enviado', 'entregue', 'cancelado') then continue; end if;
     v_user := hub.aviso_user_por_nome(nome);
     if v_user is null then continue; end if;
     perform hub.avisar(
-      v_user, 'alocacao', 'OutJourney', v_titulo,
+      v_user, 'alocacao', 'Sucesso', v_titulo,
       'Produção · ' || coalesce(nullif(btrim(new.cliente), ''), 'envio')
         || case when coalesce(new.tipo,'') <> '' then ' · ' || new.tipo else '' end,
       v_link, null, new.prazo::date);
@@ -211,8 +211,8 @@ begin
   return new;
 end; $$;
 
--- FUNCTION: avisar_alocacao_oj_tarefa()
-CREATE FUNCTION hub.avisar_alocacao_oj_tarefa() RETURNS trigger
+-- FUNCTION: avisar_alocacao_suc_tarefa()
+CREATE FUNCTION hub.avisar_alocacao_suc_tarefa() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'hub', 'public'
     AS $$
@@ -223,23 +223,23 @@ begin
   if tg_op = 'UPDATE' and new.responsavel is not distinct from old.responsavel then return new; end if;
 
   v_titulo := coalesce(nullif(btrim(new.titulo), ''), 'Tarefa');
-  v_link   := '/outjourney/admin?tarefa=' || new.id;
+  v_link   := '/sucesso/admin?tarefa=' || new.id;
   v_antes  := case when tg_op = 'UPDATE' then hub.aloc_nomes(old.responsavel) else '{}'::text[] end;
   v_depois := hub.aloc_nomes(new.responsavel);
 
   foreach nome in array hub.aloc_diff(v_antes, v_depois, 'saiu') loop
-    perform hub.registrar_alocacao('OutJourney', 'tarefa', new.id::text, v_titulo,
+    perform hub.registrar_alocacao('Sucesso', 'tarefa', new.id::text, v_titulo,
                                    nome, 'saiu', v_link, nullif(btrim(new."criadoPor"), ''));
   end loop;
 
   foreach nome in array hub.aloc_diff(v_antes, v_depois, 'entrou') loop
-    perform hub.registrar_alocacao('OutJourney', 'tarefa', new.id::text, v_titulo,
+    perform hub.registrar_alocacao('Sucesso', 'tarefa', new.id::text, v_titulo,
                                    nome, 'entrou', v_link, nullif(btrim(new."criadoPor"), ''));
     if new.status = 'concluido' then continue; end if;
     v_user := hub.aviso_user_por_nome(nome);
     if v_user is null then continue; end if;
     perform hub.avisar(
-      v_user, 'alocacao', 'OutJourney', v_titulo,
+      v_user, 'alocacao', 'Sucesso', v_titulo,
       coalesce(nullif(btrim(new.area), ''), 'Tarefa da equipe')
         || case when coalesce(new.urgencia,'') in ('alta','critica') then ' · urgência ' || new.urgencia else '' end,
       v_link, nullif(btrim(new."criadoPor"), ''), new.prazo::date);
@@ -247,8 +247,8 @@ begin
   return new;
 end; $$;
 
--- FUNCTION: avisar_alocacao_outchat()
-CREATE FUNCTION hub.avisar_alocacao_outchat() RETURNS trigger
+-- FUNCTION: avisar_alocacao_atendimento()
+CREATE FUNCTION hub.avisar_alocacao_atendimento() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'hub', 'public'
     AS $$
@@ -259,13 +259,13 @@ begin
   if tg_op = 'UPDATE' and new.responsavel is not distinct from old.responsavel then return new; end if;
 
   v_titulo := coalesce(nullif(btrim(new.titulo), ''), nullif(btrim(new.assunto), ''), 'Atendimento');
-  v_link   := '/outjourney/outchat?at=' || new.id;
+  v_link   := '/sucesso/atendimento?at=' || new.id;
   v_antes  := case when tg_op = 'UPDATE' then hub.aloc_nomes(old.responsavel) else '{}'::text[] end;
   v_depois := hub.aloc_nomes(new.responsavel);
 
   -- saiu da alocação (inclusive quando não sobrou ninguém)
   foreach nome in array hub.aloc_diff(v_antes, v_depois, 'saiu') loop
-    perform hub.registrar_alocacao('OutChat', 'atendimento', new.id::text, v_titulo,
+    perform hub.registrar_alocacao('Atendimento', 'atendimento', new.id::text, v_titulo,
                                    nome, 'saiu', v_link, null);
   end loop;
 
@@ -273,12 +273,12 @@ begin
   if coalesce(btrim(new.pipeline), '') <> '' then v_texto := v_texto || ' · ' || new.pipeline; end if;
 
   foreach nome in array hub.aloc_diff(v_antes, v_depois, 'entrou') loop
-    perform hub.registrar_alocacao('OutChat', 'atendimento', new.id::text, v_titulo,
+    perform hub.registrar_alocacao('Atendimento', 'atendimento', new.id::text, v_titulo,
                                    nome, 'entrou', v_link, null);
     if new.status = 'done' then continue; end if;   -- encerrado: registra, mas não avisa
     v_user := hub.aviso_user_por_nome(nome);
     if v_user is null then continue; end if;
-    perform hub.avisar(v_user, 'alocacao', 'OutChat', v_titulo, v_texto, v_link, null, new.prazo::date);
+    perform hub.avisar(v_user, 'alocacao', 'Atendimento', v_titulo, v_texto, v_link, null, new.prazo::date);
   end loop;
   return new;
 end; $$;
@@ -296,15 +296,15 @@ begin
 
   if tg_op = 'UPDATE' and old.responsavel_id is not null then
     select full_name into v_antigo from hub.users where id = old.responsavel_id;
-    perform hub.registrar_alocacao('OutPeople', 'endomarketing', new.id::text, v_titulo, v_antigo, 'saiu', '/rh/#endomkt', null);
+    perform hub.registrar_alocacao('RH', 'endomarketing', new.id::text, v_titulo, v_antigo, 'saiu', '/rh/#endomkt', null);
   end if;
   if new.responsavel_id is null then return new; end if;
 
   select full_name into v_novo from hub.users where id = new.responsavel_id;
-  perform hub.registrar_alocacao('OutPeople', 'endomarketing', new.id::text, v_titulo, v_novo, 'entrou', '/rh/#endomkt', null);
+  perform hub.registrar_alocacao('RH', 'endomarketing', new.id::text, v_titulo, v_novo, 'entrou', '/rh/#endomkt', null);
 
   if new.status = 'concluida' then return new; end if;
-  perform hub.avisar(new.responsavel_id, 'alocacao', 'OutPeople', v_titulo,
+  perform hub.avisar(new.responsavel_id, 'alocacao', 'RH', v_titulo,
     'Endomarketing' || coalesce(' · ' || nullif(btrim(new.tipo), ''), ''),
     '/rh/#endomkt', null, new.data_inicio);
   return new;
@@ -324,16 +324,16 @@ begin
 
   if tg_op = 'UPDATE' and old.responsavel_id is not null then
     select full_name into v_antigo from hub.users where id = old.responsavel_id;
-    perform hub.registrar_alocacao('OutPeople', 'tarefa', new.id::text, v_titulo, v_antigo, 'saiu', v_link, null);
+    perform hub.registrar_alocacao('RH', 'tarefa', new.id::text, v_titulo, v_antigo, 'saiu', v_link, null);
   end if;
   if new.responsavel_id is null then return new; end if;
 
   select full_name into v_novo from hub.users where id = new.responsavel_id;
-  perform hub.registrar_alocacao('OutPeople', 'tarefa', new.id::text, v_titulo, v_novo, 'entrou', v_link, null);
+  perform hub.registrar_alocacao('RH', 'tarefa', new.id::text, v_titulo, v_novo, 'entrou', v_link, null);
 
   if new.status = 'feito' then return new; end if;
   perform hub.avisar(
-    new.responsavel_id, 'alocacao', 'OutPeople', v_titulo,
+    new.responsavel_id, 'alocacao', 'RH', v_titulo,
     'Tarefa de ' || coalesce(nullif(btrim(new.area), ''), 'RH')
       || case when coalesce(new.prioridade,'') in ('alta','critica') then ' · prioridade ' || new.prioridade else '' end,
     v_link, null, new.prazo);
@@ -460,8 +460,8 @@ CREATE FUNCTION hub.brl(p numeric) RETURNS text
   select translate(to_char(coalesce(p,0), 'FM999G999G999G990D00'), '.,', ',.');
 $$;
 
--- FUNCTION: outfunnels_quem(text)
-CREATE FUNCTION hub.outfunnels_quem(p_email text) RETURNS TABLE(full_name text, access_level text, active boolean, pode_outfunnels boolean)
+-- FUNCTION: crm_quem(text)
+CREATE FUNCTION hub.crm_quem(p_email text) RETURNS TABLE(full_name text, access_level text, active boolean, pode_crm boolean)
     LANGUAGE sql SECURITY DEFINER
     SET search_path TO 'hub', 'public'
     AS $$
@@ -469,7 +469,7 @@ CREATE FUNCTION hub.outfunnels_quem(p_email text) RETURNS TABLE(full_name text, 
          u.access_level,
          coalesce(u.active, false),
          -- padrão LIBERADO: só o `false` escrito fecha a porta
-         coalesce(u.acessos->>'outfunnels', '') is distinct from 'false'
+         coalesce(u.acessos->>'crm', '') is distinct from 'false'
     from hub.users u
    where lower(u.email) = lower(btrim(p_email))
      -- convidado marcado no acessos não entra
@@ -537,7 +537,7 @@ declare
 begin
   -- Ascensão é do comercial: se ninguém foi alocado (ou ficou "A definir"),
   -- entram os LÍDERES da área Comercial do cadastro (hub.areas, slug
-  -- 'comercial', coluna lider_ids), venha de onde vier (OutChat, admin, sync).
+  -- 'comercial', coluna lider_ids), venha de onde vier (Atendimento, admin, sync).
   -- Sem a área ou sem líder cadastrado, o card fica sem dono, no balcão geral.
   if new.assunto ilike 'ascens%' and (new.cs is null or btrim(new.cs) = '' or new.cs ilike 'a definir%') then
     select string_agg(distinct u.full_name, ', ' order by u.full_name) into v_lideres
@@ -744,28 +744,28 @@ begin
   return case when v_qtd = 1 then v_first else btrim(v_full) end;
 end; $$;
 
--- FUNCTION: outfunnels_conta_desativa(uuid)
-CREATE FUNCTION hub.outfunnels_conta_desativa(p_user_id uuid) RETURNS void
+-- FUNCTION: crm_conta_desativa(uuid)
+CREATE FUNCTION hub.crm_conta_desativa(p_user_id uuid) RETURNS void
     LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'hub', 'outfunnels', 'public'
+    SET search_path TO 'hub', 'crm', 'public'
     AS $$
 declare v_email text;
 begin
-  -- a conta do OutFunnels só existe com o OutFunnels instalado
-  if to_regclass('outfunnels.users') is null then return; end if;
+  -- a conta do CRM só existe com o CRM instalado
+  if to_regclass('crm.users') is null then return; end if;
   select lower(btrim(u.email)) into v_email from hub.users u where u.id = p_user_id;
   if v_email is null or v_email = '' then return; end if;
 
-  update outfunnels.users
+  update crm.users
      set is_active = false, updated_at = now()
    where lower(email) = v_email and is_active;
 end;
 $$;
 
--- FUNCTION: outfunnels_conta_garante(uuid)
-CREATE FUNCTION hub.outfunnels_conta_garante(p_user_id uuid) RETURNS text
+-- FUNCTION: crm_conta_garante(uuid)
+CREATE FUNCTION hub.crm_conta_garante(p_user_id uuid) RETURNS text
     LANGUAGE plpgsql SECURITY DEFINER
-    SET search_path TO 'hub', 'outfunnels', 'public'
+    SET search_path TO 'hub', 'crm', 'public'
     AS $$
 declare
   v_email  text;
@@ -773,7 +773,7 @@ declare
   v_nivel  text;
   v_org    text;
   v_id     text;
-  v_papel  outfunnels."OrgRole";
+  v_papel  crm."OrgRole";
 begin
   select lower(btrim(u.email)), u.full_name, u.access_level
     into v_email, v_nome, v_nivel
@@ -785,7 +785,7 @@ begin
   end if;
 
   select o.id into v_org
-    from outfunnels.organizations o
+    from crm.organizations o
    order by o.created_at
    limit 1;
 
@@ -795,11 +795,11 @@ begin
 
   v_papel := case when v_nivel = 'admin' then 'ADMIN' else 'AGENT' end;
 
-  select s.id into v_id from outfunnels.users s where lower(s.email) = v_email;
+  select s.id into v_id from crm.users s where lower(s.email) = v_email;
 
   if v_id is null then
     v_id := 'c' || replace(gen_random_uuid()::text, '-', '');
-    insert into outfunnels.users (id, name, email, password, is_active, created_at, updated_at)
+    insert into crm.users (id, name, email, password, is_active, created_at, updated_at)
     values (v_id,
             coalesce(nullif(btrim(v_nome), ''), split_part(v_email, '@', 1)),
             v_email,
@@ -807,15 +807,15 @@ begin
             true, now(), now());
   else
     -- reativa quem tinha sido desligado e voltou
-    update outfunnels.users
+    update crm.users
        set is_active = true, deleted_at = null, updated_at = now()
      where id = v_id and (is_active is distinct from true or deleted_at is not null);
   end if;
 
-  insert into outfunnels.user_organizations (id, user_id, organization_id, role)
+  insert into crm.user_organizations (id, user_id, organization_id, role)
   select 'c' || replace(gen_random_uuid()::text, '-', ''), v_id, v_org, v_papel
    where not exists (
-     select 1 from outfunnels.user_organizations m
+     select 1 from crm.user_organizations m
       where m.user_id = v_id and m.organization_id = v_org
    );
 
@@ -914,7 +914,7 @@ begin
     raise exception 'A faixa mínima (%) não pode ser maior que a máxima (%).', p_faixa_min, p_faixa_max;
   end if;
   if p_id is null then
-    select tenant_id into v_tenant from hub.roles limit 1;  -- mesmo tenant do OutPerformance
+    select tenant_id into v_tenant from hub.roles limit 1;  -- mesmo tenant do Metas
     insert into hub.roles (tenant_id, area_id, slug, name, cadence, order_index, faixa_min, faixa_max)
       values (v_tenant, p_area, p_slug, btrim(p_name), p_cadence, coalesce(p_ordem, 0), p_faixa_min, p_faixa_max)
       returning id into v_id;
@@ -1036,7 +1036,7 @@ CREATE FUNCTION hub.tg_users_desligamento() RETURNS trigger
 declare
   v_quem  uuid := auth.uid();
   v_chaves constant text[] := array[
-    'journey','chat','performance','central','outprojetos','rh',
+    'journey','chat','performance','central','projetos','rh',
     'comercial','financeiro','marketing','dre','recrutamento','vault',
     'trilha'
   ];
@@ -1064,12 +1064,12 @@ begin
     with y as (delete from auth.refresh_tokens where user_id::text = new.id::text returning 1)
       select count(*) into v_tok from y;
 
-    -- o registro do desligamento mora no OutPeople: sem ele instalado, desliga igual e só não registra
+    -- o registro do desligamento mora no RH: sem ele instalado, desliga igual e só não registra
     if to_regclass('hub.rh_offboarding_log') is not null then
     insert into hub.rh_offboarding_log (user_id, nome, email, sistema, status, detalhe, feito_por)
     values (new.id, new.full_name, new.email, 'hub', 'revogado',
             format('Desligamento automático (gatilho): acessos zerados (inclusive Minha trilha), login banido, %s sessão(ões) e %s token(s) apagados. '
-                || 'FALTA NA MÃO (não têm API): 1Password/Vault, ClickUp, Kommo, Notion, Alpaclass, grupos de WhatsApp do OutChat.',
+                || 'FALTA NA MÃO (não têm API): 1Password/Vault, ClickUp, Kommo, Notion, Alpaclass, grupos de WhatsApp do Atendimento.',
                 v_sess, v_tok),
             v_quem);
     end if;
@@ -1080,20 +1080,20 @@ begin
   -- que é um ato consciente. Aqui só fica registrado, pra ninguém descobrir
   -- tarde.
   elsif not coalesce(old.active, true) and coalesce(new.active, true)
-        and to_regclass('hub.rh_offboarding_log') is not null then   -- registro só com o OutPeople
+        and to_regclass('hub.rh_offboarding_log') is not null then   -- registro só com o RH
     insert into hub.rh_offboarding_log (user_id, nome, email, sistema, status, detalhe, feito_por)
     values (new.id, new.full_name, new.email, 'hub', 'manual',
             'REATIVADA: a ficha voltou a ativa. O login continua banido de propósito — pra entrar de novo, '
          || 'tirar o banned_until à mão, que é ato consciente. Se ninguém quis reativar, foi tela salvando '
-         || 'o campo active sem querer (o OutPerformance faz isso).',
+         || 'o campo active sem querer (o Metas faz isso).',
             v_quem);
   end if;
 
   return new;
 end; $$;
 
--- FUNCTION: tg_users_outfunnels_conta()
-CREATE FUNCTION hub.tg_users_outfunnels_conta() RETURNS trigger
+-- FUNCTION: tg_users_crm_conta()
+CREATE FUNCTION hub.tg_users_crm_conta() RETURNS trigger
     LANGUAGE plpgsql SECURITY DEFINER
     SET search_path TO 'hub', 'public'
     AS $$
@@ -1101,12 +1101,12 @@ declare
   v_pode    boolean;
   v_cadeira boolean;
 begin
-  -- a conta do OutFunnels só existe com o OutFunnels instalado
-  if to_regclass('outfunnels.users') is null then return new; end if;
+  -- a conta do CRM só existe com o CRM instalado
+  if to_regclass('crm.users') is null then return new; end if;
 
-  -- pode entrar no OutFunnels? (padrão liberado; só o `false` fecha)
+  -- pode entrar no CRM? (padrão liberado; só o `false` fecha)
   v_pode := coalesce(new.active, false)
-        and coalesce(new.acessos->>'outfunnels', '') is distinct from 'false'
+        and coalesce(new.acessos->>'crm', '') is distinct from 'false'
         and coalesce(new.acessos->>'_perfil', '') <> 'convidado';
 
   -- senta numa cadeira do comercial? (regra — cargo da área, nunca o nome
@@ -1120,9 +1120,9 @@ begin
   ) into v_cadeira;
 
   if v_pode and v_cadeira then
-    perform hub.outfunnels_conta_garante(new.id);
+    perform hub.crm_conta_garante(new.id);
   elsif not v_pode then
-    perform hub.outfunnels_conta_desativa(new.id);
+    perform hub.crm_conta_desativa(new.id);
   end if;
 
   return null;   -- AFTER trigger
@@ -1151,10 +1151,10 @@ begin
     v_user := hub.aviso_user_por_nome(new.aprovador);
     if v_user is not null then
       perform hub.avisar(
-        v_user, 'alocacao', 'OutProcessos',
+        v_user, 'alocacao', 'Processos',
         'Aprovar ' || coalesce(new.numero || ' · ', '') || new.titulo,
         'Esta norma está aguardando a sua aprovação. Abra, leia e publique — ou devolva com o que falta.',
-        '/outprocessos/?doc=' || new.id,
+        '/processos/?doc=' || new.id,
         coalesce(new.atualizado_por, new.criado_por),
         new.revisar_em);
     end if;
@@ -1165,8 +1165,8 @@ begin
   return new;
 end $$;
 
--- FUNCTION: trg_of_reabre_tira_selo()
-CREATE FUNCTION hub.trg_of_reabre_tira_selo() RETURNS trigger
+-- FUNCTION: trg_crm_reabre_tira_selo()
+CREATE FUNCTION hub.trg_crm_reabre_tira_selo() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 begin
@@ -1232,10 +1232,10 @@ begin
 end $$;
 
 
--- ─── medidor de atividade (tempo de uso de cada tela) — veio do OutSign: toda tela chama, então é da base ───
+-- ─── medidor de atividade (tempo de uso de cada tela) — veio do Contratos: toda tela chama, então é da base ───
 
 -- FUNCTION: os_atividade_dia(date, date)
-CREATE FUNCTION hub.os_atividade_dia(p_de date DEFAULT NULL::date, p_ate date DEFAULT NULL::date) RETURNS TABLE(user_id uuid, pessoa text, dia date, min_total integer, min_aberto integer, min_journey integer, min_outchat integer, cliques integer, primeiro timestamp with time zone, ultimo timestamp with time zone, telas integer)
+CREATE FUNCTION hub.os_atividade_dia(p_de date DEFAULT NULL::date, p_ate date DEFAULT NULL::date) RETURNS TABLE(user_id uuid, pessoa text, dia date, min_total integer, min_aberto integer, min_journey integer, min_atendimento integer, cliques integer, primeiro timestamp with time zone, ultimo timestamp with time zone, telas integer)
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'hub', 'public'
     AS $$
@@ -1251,7 +1251,7 @@ CREATE FUNCTION hub.os_atividade_dia(p_de date DEFAULT NULL::date, p_ate date DE
          count(*) filter (where m.segundos   >= 30)::int,
          count(*) filter (where m.seg_aberto >= 30)::int,
          count(*) filter (where m.seg_aberto >= 30 and m.sistema='journey')::int,
-         count(*) filter (where m.seg_aberto >= 30 and m.sistema='outchat')::int,
+         count(*) filter (where m.seg_aberto >= 30 and m.sistema='atendimento')::int,
          sum(m.cliques)::int, min(m.minuto), max(m.minuto),
          (select count(distinct t.tela)::int from hub.os_sessao t
            where t.user_id=m.user_id and (t.fim at time zone 'America/Sao_Paulo')::date=m.dia)
@@ -1295,8 +1295,8 @@ begin
 end $$;
 
 
--- ─── cargos (hub.roles é da base) — vieram do OutPerformance em 07/10/2026. Os contadores
---     de indicadores e lançamentos só existem com o OutPerformance instalado; sem ele, valem 0.
+-- ─── cargos (hub.roles é da base) — vieram do Metas em 07/10/2026. Os contadores
+--     de indicadores e lançamentos só existem com o Metas instalado; sem ele, valem 0.
 
 -- FUNCTION: role_delete(uuid)
 CREATE FUNCTION hub.role_delete(p_id uuid) RETURNS text
@@ -1340,7 +1340,7 @@ begin
     from hub.roles r left join hub.areas a on a.id = r.area_id
     order by a.order_index nulls last, r.order_index, r.name;
   else
-    -- sem o OutPerformance: os mesmos cargos, sem os contadores dele
+    -- sem o Metas: os mesmos cargos, sem os contadores dele
     return query
     select r.id, r.name, r.slug, r.area_id, a.name, r.cadence, r.order_index,
       r.faixa_min, r.faixa_max,
@@ -1354,7 +1354,7 @@ begin
   end if;
 end; $$;
 
--- ─── normalizar CPF/CNPJ: veio do Financeiro, o OutFunnels também usa (função pura, de todos) ───
+-- ─── normalizar CPF/CNPJ: veio do Financeiro, o CRM também usa (função pura, de todos) ───
 
 -- FUNCTION: fin_com_doc_norm(text)
 CREATE FUNCTION hub.fin_com_doc_norm(d text) RETURNS text
@@ -1368,7 +1368,7 @@ CREATE FUNCTION hub.fin_com_doc_norm(d text) RETURNS text
 $$;
 
 -- FUNCTION: pessoas_roster() — as pessoas ativas do time com a área e a foto (o
--- "rostinho" das listas de pessoa; quem usa hoje: OutProcessos)
+-- "rostinho" das listas de pessoa; quem usa hoje: Processos)
 CREATE OR REPLACE FUNCTION hub.pessoas_roster() RETURNS TABLE(id uuid, nome text, email text, area_slug text, area_nome text, avatar_url text)
     LANGUAGE sql STABLE SECURITY DEFINER
     SET search_path TO 'hub', 'public'

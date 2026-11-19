@@ -6,7 +6,7 @@
 --    balde mora no módulo dono). Roda só na instalação, como dono do banco:
 --    ninguém do site chama (fechada de public, anon e authenticated).
 -- 2) os baldes da base:
---      avatars   PÚBLICO  — a foto de perfil de quem é do time (conta, OutPeople);
+--      avatars   PÚBLICO  — a foto de perfil de quem é do time (conta, RH);
 --      produtos  PÚBLICO  — capa, logo e material dos produtos do catálogo.
 --
 -- A regra da casa: FOTO, CAPA E LOGO = PÚBLICO (aparecem pelo link pra todo mundo

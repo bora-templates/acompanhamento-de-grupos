@@ -1,5 +1,5 @@
 // RH — admin-reset-password
-// Um ADMIN reseta a senha de um usuário do Hub (Supabase Auth).
+// Um ADMIN reseta a senha de um usuário do sistema (Supabase Auth).
 // Chamada pelo /usuarios/. Fluxo:
 //   1) valida o JWT de quem chamou (Authorization: Bearer <sessão Supabase>)
 //   2) confere que o CHAMADOR é admin em hub.users (access_level = 'admin')

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Primeiro acesso · Hub</title>
+<title>Primeiro acesso · %EMPRESA_NOME%</title>
 <link rel="icon" type="image/svg+xml" href="/shared/favicon.svg">
 <!--
   PRIMEIRO ACESSO DE ADMINISTRADOR — numa instalação nova, quem instalou cria
@@ -11,61 +11,63 @@
   PRIMEIRO_ACESSO_CHAVE da Edge Function `primeiro-acesso`). Quem decide se a
   porta está aberta é a função (e o banco): depois que existe um administrador,
   esta tela só diz "este sistema já tem administrador".
-  Visual: o mesmo cartão de entrada do Início (/shared/launcher/inicio.css).
+  Visual: o cartão de entrada do design system (/shared/visual/), no tema do aparelho.
 -->
-<link rel="stylesheet" href="/shared/launcher/inicio.css">
+<link rel="stylesheet" href="/shared/visual/tokens.css">
+<link rel="stylesheet" href="/shared/visual/componentes.css">
 <style>
-  .gate-card{max-width:440px}
-  .senha{position:relative}
-  .senha input{padding-right:86px}
-  .ver{position:absolute;right:6px;top:50%;transform:translateY(-50%);height:32px;padding:0 10px;border-radius:9px;background:var(--surface);color:var(--ink2);font-size:12.5px;font-weight:500;box-shadow:0 0 0 1px var(--line2)}
-  .gate-card input.falta{border-color:#C2413A}
+  body{margin:0}
+  .v-entrada-cartao{max-width:460px}
   /* a chave fica escondida como senha, mas sem ser campo de senha: o navegador não
      a confunde com a senha do login (nem oferece salvar) */
   .mascara{-webkit-text-security:disc;text-security:disc}
-  .dica{font-size:11.5px;color:var(--mut);margin-top:5px;line-height:1.4}
-  .faltam{font-size:12.5px;color:var(--mut);margin-top:10px;line-height:1.6;text-align:center}
-  .faltam button{color:var(--accent);text-decoration:underline;font-size:12.5px}
-  .caixa-err{margin-top:12px;padding:10px 12px;border-radius:10px;background:rgba(194,65,58,.1);color:#C2413A;font-size:12.5px;line-height:1.45}
-  .fechado{text-align:center;font-size:14px;line-height:1.55;color:var(--ink2)}
-  .fechado a{display:inline-block;margin-top:16px;padding:11px 18px;border-radius:12px;color:#fff;background:linear-gradient(-75deg,#1C3E87,#00133D);font-weight:600}
+  .faltam{font-size:13px;color:var(--ink-2);margin:12px 0 0;line-height:1.6;text-align:center}
+  .faltam:empty{display:none}
+  .faltam button{color:var(--acc);text-decoration:underline;text-underline-offset:2px;font:inherit;background:none;border:0;padding:6px 0;cursor:pointer}
+  .fechado{font-size:15px;line-height:1.6;color:var(--ink-2)}
+  .fechado a{display:flex;margin-top:20px}
+  #criar{margin-top:8px}
 </style>
 <script>window.OS_NO_BACK = true; window.OS_NO_DESK = true;</script>
 </head>
 <body>
 
-<div class="overlay" id="overlay"><div class="box"><span class="spin"></span> <span id="overlayMsg">Conferindo…</span></div></div>
+<div class="v-cobre" id="overlay"><div class="v-cobre-caixa"><span class="v-gira"></span> <span id="overlayMsg">Conferindo</span></div></div>
 
-<div class="gate">
-  <div class="gate-card">
-    <div class="marca"><svg viewBox="0 0 30 18" aria-hidden="true"><circle cx="9" cy="9" r="9"/><path d="M21 0a9 9 0 0 1 0 18z"/></svg><b>Hub</b></div>
+<main class="v-entrada">
+  <div class="v-entrada-cartao">
+    <span class="v-marca"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="16" y="20" width="28" height="28" rx="8" fill="#E8703A"/><circle cx="45" cy="19" r="7" fill="#FFF8F1"/></svg></span>
+    <p class="v-sub" style="margin:0 0 4px">%EMPRESA_NOME%</p>
 
     <!-- a porta já se fechou (ou a função não respondeu) -->
     <div id="fechado" class="fechado" hidden></div>
 
     <form id="form" hidden novalidate>
       <h1>Primeiro acesso</h1>
-      <p class="sub">Crie o administrador desta instalação. Depois disso esta tela se fecha e as próximas pessoas são convidadas na Gestão de Usuários.</p>
+      <p class="v-sub">Crie o administrador desta instalação. Depois disso esta tela se fecha, e as próximas pessoas são convidadas na tela Usuários.</p>
 
-      <div class="field"><label for="chave">Chave de instalação</label>
-        <div class="senha"><input id="chave" type="text" class="mascara" data-mascara autocomplete="off" spellcheck="false" required><button type="button" class="ver" data-ver="chave">Mostrar</button></div>
-        <div class="dica">É o segredo <b>PRIMEIRO_ACESSO_CHAVE</b> que quem instalou definiu no Supabase.</div></div>
-      <div class="field"><label for="empresa">Nome da empresa</label><input id="empresa" type="text" maxlength="120" autocomplete="organization" required></div>
-      <div class="field"><label for="nome">Seu nome</label><input id="nome" type="text" maxlength="120" autocomplete="name" required></div>
-      <div class="field"><label for="email">Seu e-mail</label><input id="email" type="email" autocomplete="email" required></div>
-      <div class="field"><label for="senha">Senha</label>
-        <div class="senha"><input id="senha" type="password" autocomplete="new-password" minlength="8" required><button type="button" class="ver" data-ver="senha">Mostrar</button></div>
-        <div class="dica">Pelo menos 8 caracteres.</div></div>
-      <div class="field"><label for="senha2">Repita a senha</label>
-        <div class="senha"><input id="senha2" type="password" autocomplete="new-password" required><button type="button" class="ver" data-ver="senha2">Mostrar</button></div></div>
+      <div class="v-campos">
+        <div><label class="v-rotulo" for="chave">Chave de instalação</label>
+          <div class="v-senha"><input class="v-campo mascara" id="chave" type="text" data-mascara autocomplete="off" spellcheck="false" placeholder="Cole a chave de instalação" required aria-describedby="chave-msg"><button type="button" class="v-ver" data-ver="chave" aria-label="Mostrar a chave">Mostrar</button></div>
+          <span class="v-ajuda" id="chave-msg" data-dica="É o segredo PRIMEIRO_ACESSO_CHAVE que quem instalou definiu no Supabase.">É o segredo <b>PRIMEIRO_ACESSO_CHAVE</b> que quem instalou definiu no Supabase.</span></div>
+        <div><label class="v-rotulo" for="empresa">Nome da empresa</label><input class="v-campo" id="empresa" type="text" maxlength="120" autocomplete="organization" placeholder="Clínica Exemplo" required aria-describedby="empresa-msg"><span class="v-ajuda" id="empresa-msg"></span></div>
+        <div><label class="v-rotulo" for="nome">Seu nome</label><input class="v-campo" id="nome" type="text" maxlength="120" autocomplete="name" placeholder="Maria Souza" required aria-describedby="nome-msg"><span class="v-ajuda" id="nome-msg"></span></div>
+        <div><label class="v-rotulo" for="email">Seu e-mail</label><input class="v-campo" id="email" type="email" autocomplete="email" placeholder="maria@empresa.com.br" required aria-describedby="email-msg"><span class="v-ajuda" id="email-msg"></span></div>
+        <div><label class="v-rotulo" for="senha">Senha</label>
+          <div class="v-senha"><input class="v-campo" id="senha" type="password" autocomplete="new-password" minlength="8" placeholder="Pelo menos 8 caracteres" required aria-describedby="senha-msg"><button type="button" class="v-ver" data-ver="senha" aria-label="Mostrar a senha">Mostrar</button></div>
+          <span class="v-ajuda" id="senha-msg" data-dica="Pelo menos 8 caracteres.">Pelo menos 8 caracteres.</span></div>
+        <div><label class="v-rotulo" for="senha2">Repita a senha</label>
+          <div class="v-senha"><input class="v-campo" id="senha2" type="password" autocomplete="new-password" placeholder="Digite a mesma senha" required aria-describedby="senha2-msg"><button type="button" class="v-ver" data-ver="senha2" aria-label="Mostrar a senha repetida">Mostrar</button></div>
+          <span class="v-ajuda" id="senha2-msg"></span></div>
+      </div>
 
-      <button class="btn-pri" id="criar" type="submit" disabled>Criar administrador e entrar</button>
+      <button class="v-btn v-btn--bloco" id="criar" type="submit" disabled>Criar administrador e entrar</button>
       <!-- o botão apagado diz POR QUÊ, ao lado dele, com o nome do que falta (clicar leva ao campo) -->
       <div class="faltam" id="faltam" aria-live="polite"></div>
-      <div class="caixa-err" id="erro" role="alert" hidden></div>
+      <div class="v-aviso v-aviso--risco" id="erro" role="alert" hidden style="margin-top:14px"></div>
     </form>
   </div>
-</div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/shared/os-core.js"></script>
@@ -81,7 +83,7 @@
     ['senha', 'a senha (8 caracteres ou mais)', (v) => v.length >= 8 && v.length <= 72],
     ['senha2', 'a senha repetida igual', (v) => v.length > 0 && v === $('#senha').value],
   ];
-  const carregando = (m) => { $('#overlayMsg').textContent = m || 'Conferindo…'; $('#overlay').hidden = false; };
+  const carregando = (m) => { $('#overlayMsg').textContent = m || 'Conferindo'; $('#overlay').hidden = false; };
   const pronto = () => { $('#overlay').hidden = true; };
   const erro = (t) => { const e = $('#erro'); e.textContent = t || ''; e.hidden = !t; };
 
@@ -94,6 +96,14 @@
     for (const [id, nome, ok] of CAMPOS) {
       const el = $('#' + id), bom = ok(el.value);
       el.classList.toggle('falta', !bom && !!tocou[id]);
+      el.setAttribute('aria-invalid', !bom && tocou[id] ? 'true' : 'false');
+      const msg = $('#' + id + '-msg');
+      if (msg) {
+        const mostraErro = !bom && !!tocou[id];
+        msg.classList.toggle('v-ajuda--erro', mostraErro);
+        if (mostraErro) msg.textContent = 'Preencha ' + nome + '.';
+        else if (msg.dataset.dica) msg.textContent = msg.dataset.dica; else msg.textContent = '';
+      }
       if (!bom) faltam.push([id, nome]);
     }
     $('#criar').disabled = faltam.length > 0;
@@ -112,21 +122,21 @@
   }
 
   async function inicio() {
-    carregando('Conferindo…');
+    carregando('Conferindo');
     try {
       const { dados } = await Promise.race([chama('GET'), new Promise((ok) => setTimeout(() => ok({ dados: null }), 8000))]);
       if (!dados || typeof dados.disponivel !== 'boolean') {
-        fechado('Não consegui falar com o servidor agora.<br>Confira se a função <b>primeiro-acesso</b> foi publicada e recarregue a página.<br><a href="/">Ir para a página inicial</a>');
+        fechado('Não consegui falar com o servidor agora.<br>Confira se a função <b>primeiro-acesso</b> foi publicada e recarregue a página.<br><a class="v-btn v-btn--sec" href="/">Ir para a página inicial</a>');
         return;
       }
-      if (!dados.disponivel) { fechado('Este sistema já tem administrador.<br>Entre pela página inicial.<br><a href="/">Ir para a página inicial</a>'); return; }
+      if (!dados.disponivel) { fechado('Este sistema já tem administrador.<br>Entre pela página inicial.<br><a class="v-btn v-btn--sec" href="/">Ir para a página inicial</a>'); return; }
       if (dados.configurada === false) erro('Esta instalação ainda está sem a chave de primeiro acesso. Quem instalou precisa definir o segredo PRIMEIRO_ACESSO_CHAVE no Supabase.');
       $('#form').hidden = false;
       pronto();
       confere();
       $('#chave').focus();
     } catch (e) {
-      fechado('Não consegui abrir o primeiro acesso (' + String((e && e.message) || e).replace(/[<>&]/g, '') + ').<br><a href="/">Ir para a página inicial</a>');
+      fechado('Não consegui abrir o primeiro acesso (' + String((e && e.message) || e).replace(/[<>&]/g, '') + ').<br><a class="v-btn v-btn--sec" href="/">Ir para a página inicial</a>');
     }
   }
 
@@ -150,20 +160,20 @@
     if (!confere()) return;
     erro('');
     const email = $('#email').value.trim().toLowerCase(), senha = $('#senha').value;
-    carregando('Criando o administrador…');
+    carregando('Criando o administrador');
     try {
       const { dados } = await chama('POST', {
         chave: $('#chave').value, empresa: $('#empresa').value.trim(), nome: $('#nome').value.trim(), email, senha,
       });
       if (!dados || !dados.ok) {
         pronto();
-        if (dados && /já tem administrador/i.test(dados.erro || '')) { fechado('Este sistema já tem administrador.<br>Entre pela página inicial.<br><a href="/">Ir para a página inicial</a>'); return; }
+        if (dados && /já tem administrador/i.test(dados.erro || '')) { fechado('Este sistema já tem administrador.<br>Entre pela página inicial.<br><a class="v-btn v-btn--sec" href="/">Ir para a página inicial</a>'); return; }
         erro((dados && dados.erro) || 'Não consegui criar o administrador agora. Tente de novo.');
         return;
       }
-      carregando('Entrando…');
+      carregando('Entrando');
       try { await OS.Auth.signIn(email, senha); }
-      catch (e2) { pronto(); fechado('Administrador criado! Entre com o seu e-mail e a senha na página inicial.<br><a href="/">Ir para a página inicial</a>'); return; }
+      catch (e2) { pronto(); fechado('Administrador criado! Entre com o seu e-mail e a senha na página inicial.<br><a class="v-btn v-btn--sec" href="/">Ir para a página inicial</a>'); return; }
       location.replace('/');
     } catch (e3) {
       pronto();

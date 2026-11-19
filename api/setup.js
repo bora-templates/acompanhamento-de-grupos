@@ -10,7 +10,7 @@
  *   conferir   confere o projeto do Supabase e o token da Vercel (antes de mexer em qualquer coisa)
  *   preparar   cria o caderno da instalação no banco
  *   banco      instala o banco, um pedaço por vez (a tela repete até "terminou")
- *   esquemas   libera os esquemas do Hub para o site
+ *   esquemas   libera os esquemas do banco para o site
  *   login      endereço do site, cadastro fechado e e-mails do login em português
  *   segredos   os segredos que as funções leem
  *   funcoes    publica as Edge Functions (a tela repete até "terminou")
@@ -18,8 +18,8 @@
  *   vercel     grava as variáveis do site na Vercel
  *   publicar   publica o site de novo, já ligado ao banco
  *   situacao   diz se a publicação nova já está no ar
- *   outfunnels         os valores para a Render (API do OutFunnels) e para o projeto do painel na Vercel
- *   outfunnels-ligar   grava o endereço do painel no Hub e publica o Hub de novo
+ *   crm         os valores para a Render (API do CRM) e para o projeto do painel na Vercel
+ *   crm-ligar   grava o endereço do painel no sistema e publica o sistema de novo
  */
 'use strict';
 const I = require('../tools/instalar/instalar-pela-api');
@@ -130,7 +130,7 @@ module.exports = async function handler(req, res) {
           ['SUPABASE_URL', url, 'encrypted'],
           ['SUPABASE_ANON_KEY', chaves.site, 'encrypted'],
           ['SUPABASE_SERVICE_KEY', chaves.servicoFinal, 'encrypted'],
-          ['EMPRESA_NOME', empresa || 'Hub', 'encrypted'],
+          ['EMPRESA_NOME', empresa || 'Sistema da empresa', 'encrypted'],
           ['VAPID_PUBLIC_KEY', v.VAPID_PUBLIC_KEY, 'encrypted'],
         ];
         for (const [key, value, type] of vars)
@@ -155,8 +155,8 @@ module.exports = async function handler(req, res) {
         const d = await vercel(token, 'GET', `/v13/deployments/${encodeURIComponent(id)}`, null, equipe);
         return res.json({ ok: true, estado: d.readyState || d.status, site });
       }
-      case 'outfunnels': {
-        // os valores para a Render (API do OutFunnels) e para o projeto do painel na Vercel
+      case 'crm': {
+        // os valores para a Render (API do CRM) e para o projeto do painel na Vercel
         const chaves = await I.chavesDoProjeto(api, ref);
         let pool = null;
         try { pool = await api.pede('GET', `/v1/projects/${ref}/config/database/pooler`); } catch (e) { pool = null; }
@@ -164,25 +164,25 @@ module.exports = async function handler(req, res) {
         const host = p && (p.db_host || ((p.connection_string || '').match(/@([^:/]+)/) || [])[1]);
         const usuario = (p && p.db_user) || `postgres.${ref}`;
         // a Render não fala IPv6: vai pelo pooler do Supabase no modo sessão (porta 5432), em IPv4
-        const banco = host ? `postgresql://${usuario}:[SENHA-DO-BANCO]@${host}:5432/postgres?schema=outfunnels&connection_limit=5` : null;
+        const banco = host ? `postgresql://${usuario}:[SENHA-DO-BANCO]@${host}:5432/postgres?schema=crm&connection_limit=5` : null;
         return res.json({
           ok: true,
-          render: { DATABASE_URL: banco, DIRECT_URL: banco, SUPABASE_URL: url, SUPABASE_ANON_KEY: chaves.site, CORS_ORIGIN: site, OUTFUNNELS_WEB_URL: site + '/outfunnels', EMPRESA_NOME: empresa || 'Hub' },
+          render: { DATABASE_URL: banco, DIRECT_URL: banco, SUPABASE_URL: url, SUPABASE_ANON_KEY: chaves.site, CORS_ORIGIN: site, CRM_WEB_URL: site + '/crm', EMPRESA_NOME: empresa || 'Sistema da empresa' },
           web: { NEXT_PUBLIC_SUPABASE_URL: url, NEXT_PUBLIC_SUPABASE_ANON_KEY: chaves.site },
         });
       }
-      case 'outfunnels-ligar': {
-        // grava o endereço do painel no projeto do Hub e publica o Hub de novo (o middleware.js desvia /outfunnels)
+      case 'crm-ligar': {
+        // grava o endereço do painel no projeto do sistema e publica o sistema de novo (o middleware.js desvia /crm)
         const token = String(b.vercel_token || '').trim();
-        const web = String(b.web_url || '').trim().replace(/\/+$/, '').replace(/\/outfunnels$/, '');
+        const web = String(b.web_url || '').trim().replace(/\/+$/, '').replace(/\/crm$/, '');
         if (!/^https:\/\/[a-z0-9.-]+$/i.test(web)) return res.status(400).json({ ok: false, campo: 'web_url', erro: 'O endereço do painel tem o formato https://nome-do-projeto.vercel.app.' });
         const equipe = await equipeDoProjeto(token, projetoVercel);
-        await vercel(token, 'POST', `/v10/projects/${projetoVercel}/env?upsert=true`, { key: 'OUTFUNNELS_WEB_URL', value: web, type: 'encrypted', target: ['production', 'preview', 'development'] }, equipe);
+        await vercel(token, 'POST', `/v10/projects/${projetoVercel}/env?upsert=true`, { key: 'CRM_WEB_URL', value: web, type: 'encrypted', target: ['production', 'preview', 'development'] }, equipe);
         const lista = await vercel(token, 'GET', `/v6/deployments?projectId=${projetoVercel}&target=production&limit=1`, null, equipe);
         const ultimo = lista && lista.deployments && lista.deployments[0];
         if (!ultimo) throw new Error('Não achei a publicação do site na Vercel.');
         const nova = await vercel(token, 'POST', '/v13/deployments?forceNew=1', { name: ultimo.name, deploymentId: ultimo.uid, target: 'production' }, equipe);
-        await I.guarda(api, ref, 'outfunnels', { web, em: new Date().toISOString() });
+        await I.guarda(api, ref, 'crm', { web, em: new Date().toISOString() });
         return res.json({ ok: true, publicacao: nova.id });
       }
       default: return res.status(400).json({ ok: false, erro: 'ação desconhecida' });

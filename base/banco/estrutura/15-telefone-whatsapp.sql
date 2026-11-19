@@ -1,7 +1,7 @@
 -- =============================================================================
 -- base · 15-telefone-whatsapp.sql — hub.wpp_numero: telefone → número do WhatsApp
 -- (com "+" o DDI fica; 10–11 dígitos ganham o 55; o resto vira NULL). Usada por
--- vários módulos (OutSign, OutChat, OutFunnels, OutPeople), por isso mora no
+-- vários módulos (Contratos, Atendimento, CRM, RH), por isso mora no
 -- ESSENCIAL da base (morava no catálogo de produtos até 10/10/2026).
 -- =============================================================================
 
@@ -34,4 +34,4 @@ COMMENT ON FUNCTION hub.wpp_numero(p_telefone text) IS 'Telefone -> dígitos do 
 REVOKE ALL ON FUNCTION hub.wpp_numero(p_telefone text) FROM PUBLIC;
 GRANT ALL ON FUNCTION hub.wpp_numero(p_telefone text) TO authenticated;
 GRANT ALL ON FUNCTION hub.wpp_numero(p_telefone text) TO service_role;
-GRANT ALL ON FUNCTION hub.wpp_numero(p_telefone text) TO outfunnels_app;
+GRANT ALL ON FUNCTION hub.wpp_numero(p_telefone text) TO crm_app;

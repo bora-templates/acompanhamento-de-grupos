@@ -3,28 +3,28 @@
  * montar.js — monta o SITE a partir do código-fonte, pronto pra publicar em
  * qualquer hospedagem estática (Vercel, Netlify, Cloudflare Pages, um nginx…).
  *
- *   node tools/instalar/montar/montar.js --saida dist --config empresa.json [--sistemas base,outjourney,…]
+ *   node tools/instalar/montar/montar.js --saida dist --config empresa.json [--sistemas base,sucesso,…]
  *
  * O que faz, nesta ordem:
  *   1. copia a base e cada módulo pro endereço dele (o "mapa de endereços" do README);
  *      da base, só as PEÇAS que os módulos da montagem usam ("base_pecas" de cada
- *      um; a lista de peças em base/sistema.json → "pecas"): sem o OutJourney nem o
- *      OutFunnels, por exemplo, o catálogo /produtos/ não entra;
+ *      um; a lista de peças em base/sistema.json → "pecas"): sem o Sucesso nem o
+ *      CRM, por exemplo, o catálogo /produtos/ não entra;
  *   2. encaixa os pedaços das telas divididas: cada <div data-parte="…"></div>
  *      vira o conteúdo do arquivo — o que vai ao ar é a tela inteira;
  *   2b. cola os menus em pasta: cada <div data-os-menu="<nome>"></div> recebe o
  *      menus/<nome>/tela.html, e o .css e o .js do menu entram na tela (menus.js);
  *   2c. pendura a central de avisos (os-avisos.js, da peça "avisos") em toda tela que carrega o
- *      os-core.js — e o assistente (/outassistenteia/os-agente.js) só quando o
- *      módulo OutAssistenteIA está na montagem (sem ele, o ✦ não existe);
+ *      os-core.js — e o assistente (/assistente/os-agente.js) só quando o
+ *      módulo Assistente está na montagem (sem ele, o ✦ não existe);
  *   3. troca os marcadores (%SUPABASE_URL%, %SUPABASE_ANON_KEY%, SEU_PROJETO…)
  *      pelos valores do empresa.json.
  *
  * Sem --sistemas, monta todos os módulos que existem nesta pasta (cada um tem um
- * sistema.json); a BASE (base/) vai sempre, mesmo fora da lista. O OutFunnels entra na LISTA do que foi comprado (os links pra ele
- * aparecem), mas não no site: ele é uma aplicação à parte (ver outfunnels/README.md).
- * Se um módulo precisa de outro que não está na lista (o OutChat precisa do
- * OutJourney), a montagem para e diz.
+ * sistema.json); a BASE (base/) vai sempre, mesmo fora da lista. O CRM entra na LISTA do que foi comprado (os links pra ele
+ * aparecem), mas não no site: ele é uma aplicação à parte (ver crm/README.md).
+ * Se um módulo precisa de outro que não está na lista (o Atendimento precisa do
+ * Sucesso), a montagem para e diz.
  *
  * empresa.json (exemplo em tools/instalar/montar/empresa.exemplo.json):
  *   { "%SUPABASE_URL%": "https://abcd.supabase.co", "%SUPABASE_ANON_KEY%": "sb_publishable_…", … }
@@ -62,7 +62,7 @@ if (!sistemas.includes('base')) sistemas.unshift('base');   // a base vai sempre
 for (const s of sistemas) if (!MANIFESTOS[s]) { console.error(`✗ módulo desconhecido: ${s} (conheço: ${Object.keys(MANIFESTOS).join(', ')})`); process.exit(1); }
 // compra que não fecha: um módulo que precisa de outro que não veio
 const faltando = sistemas.flatMap(s => (MANIFESTOS[s].precisa || []).filter(p => !sistemas.includes(p))
-  .map(p => `  ${MANIFESTOS[s].nome} precisa de ${MANIFESTOS[p] ? MANIFESTOS[p].nome : p}${(MANIFESTOS[s].por_que_precisa || {})[p] ? ` — ${MANIFESTOS[s].por_que_precisa[p]}` : ''}`));
+  .map(p => `  ${MANIFESTOS[s].nome} precisa de ${MANIFESTOS[p] ? MANIFESTOS[p].nome : p}${(MANIFESTOS[s].por_que_precisa || {})[p] ? `: ${MANIFESTOS[s].por_que_precisa[p]}` : ''}`));
 if (faltando.length) { console.error('✗ falta módulo nesta montagem:\n' + faltando.join('\n')); process.exit(1); }
 
 // ─── 1b. as PEÇAS da base (base/sistema.json → "pecas") ────────────────────
@@ -126,15 +126,15 @@ catch (e) { console.error('✗ ' + e.message); process.exit(1); }
 // o desenho já está dentro da tela: o tela.html solto não vai ao ar (o .js e o .css ficam)
 for (const pasta of colados.usados) fs.rmSync(path.join(pasta, 'tela.html'), { force: true });
 const menusSoltos = todosArquivos(SAIDA).filter(a => /[\\/]menus[\\/][^\\/]+[\\/]tela\.html$/.test(a));
-for (const a of menusSoltos) console.log(`  ! ${path.relative(SAIDA, path.dirname(a))}: nenhuma tela usa este menu (falta a linha <div data-os-menu="…"></div>)`);
+for (const a of menusSoltos) console.log(`  ! ${path.relative(SAIDA, path.dirname(a))}: nenhuma tela usa este menu (falta a linha <div data-os-menu="nome-do-menu"></div>)`);
 
 // ─── 2c. a central de avisos (e o assistente, se veio) em toda tela do time ─
 // Toda tela que carrega o os-core.js ganha, antes do ÚLTIMO </body>, a gaveta de
 // avisos do sino (/shared/os-avisos.js, da base) e — SÓ com o módulo
-// OutAssistenteIA na montagem — o assistente (/outassistenteia/os-agente.js).
+// Assistente na montagem — o assistente (/assistente/os-agente.js).
 // Nenhuma tela precisa citar os dois. Quem decide se eles aparecem é cada um
 // (sessão do time, tela de cliente, tela dentro de quadro) — aqui só se pendura.
-const PENDURA = (pecas.includes('avisos') ? ['/shared/os-avisos.js'] : []).concat(sistemas.includes('outassistenteia') ? ['/outassistenteia/os-agente.js'] : []);
+const PENDURA = (pecas.includes('avisos') ? ['/shared/os-avisos.js'] : []).concat(sistemas.includes('assistente') ? ['/assistente/os-agente.js'] : []);
 let pendurados = 0;
 for (const arq of todosArquivos(SAIDA).filter(a => a.endsWith('.html'))) {
   let t = fs.readFileSync(arq, 'utf8');
@@ -163,7 +163,7 @@ if (CONFIG) {
   const cfg = JSON.parse(fs.readFileSync(path.resolve(CONFIG), 'utf8'));
   for (const [k, v] of Object.entries(cfg)) {
     if (k.startsWith('_')) continue;   // "_leia" e afins são comentário: não entram no site
-    if (/sb_secret_|service_role/i.test(String(v))) { console.error(`✗ ${k}: isso é a chave SECRETA — ela nunca vai pro site`); process.exit(1); }
+    if (/sb_secret_|service_role/i.test(String(v))) { console.error(`✗ ${k}: isso é a chave SECRETA, e ela nunca vai para o site`); process.exit(1); }
   }
   const chaves = Object.keys(cfg).filter(k => !k.startsWith('_')).sort((a, b) => b.length - a.length);   // a mais comprida primeiro
   for (const arq of todosArquivos(SAIDA).filter(a => /\.(html|js|css|json|webmanifest)$/.test(a))) {
@@ -180,7 +180,7 @@ console.log(`✓ site montado em ${path.relative(process.cwd(), SAIDA) || '.'}`)
 console.log(`  base + módulos: ${sistemas.join(', ')}`);
 console.log(`  peças da base: ${pecas.join(', ')}`);
 console.log(`  ${encaixes} pedaços encaixados nas telas · ${colados.menus} menus em pasta colados em ${colados.telas} telas · marcadores trocados em ${trocas} arquivos`);
-console.log(`  ${pecas.includes('avisos') ? 'central de avisos' : '(sem a peça avisos: sem sino)'}${sistemas.includes('outassistenteia') ? ' e assistente (OutAssistenteIA)' : ' (sem o OutAssistenteIA: sem o ✦)'} pendurados em ${pendurados} telas`);
-if (!CONFIG) console.log('  ! sem --config: os marcadores (%SUPABASE_URL%…) ficaram como estão');
-else if (sobrou.length) console.log(`  ! ainda há marcador do Supabase em ${sobrou.length} arquivo(s) — confira o empresa.json`);
-if (semNome.length) console.log(`  ! o nome da empresa (%EMPRESA_NOME%) ficou sem trocar em ${semNome.length} arquivo(s) — ponha "%EMPRESA_NOME%" no empresa.json`);
+console.log(`  ${pecas.includes('avisos') ? 'central de avisos' : '(sem a peça avisos: sem sino)'}${sistemas.includes('assistente') ? ' e assistente (Assistente)' : ' (sem o Assistente: sem o ✦)'} pendurados em ${pendurados} telas`);
+if (!CONFIG) console.log('  ! sem --config: os marcadores (%SUPABASE_URL% e os outros) ficaram como estão');
+else if (sobrou.length) console.log(`  ! ainda há marcador do Supabase em ${sobrou.length} arquivo(s). Confira o empresa.json`);
+if (semNome.length) console.log(`  ! o nome da empresa (%EMPRESA_NOME%) ficou sem trocar em ${semNome.length} arquivo(s). Ponha "%EMPRESA_NOME%" no empresa.json`);

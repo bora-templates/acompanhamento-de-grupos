@@ -3,103 +3,89 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Definir acesso · Hub</title>
+<title>Definir acesso · %EMPRESA_NOME%</title>
 <link rel="icon" type="image/svg+xml" href="/shared/favicon.svg">
+<link rel="stylesheet" href="/shared/visual/tokens.css">
+<link rel="stylesheet" href="/shared/visual/componentes.css">
 <style>
-  /* Visual P&B da casa — desenho aprovado 28/09/2026:
-     https://claude.ai/artifact/3aQ8bt6GkZrXDsCFZ7icEC */
-  *{box-sizing:border-box;margin:0;padding:0}
-  :root{--bg:#F7F7F7;--card:#FFFFFF;--bd:#D4D7DC;--ink:#0A0A0B;--mut:#5A5E66;--acc:#0A0A0B;--danger:#B85450;--ok:#4A8E6F}
-  body{font-family:-apple-system,"SF Pro Text","SF Pro Display",system-ui,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-  .card{width:100%;max-width:400px;background:var(--card);border:1px solid #ECEEF1;border-radius:18px;overflow:hidden;box-shadow:0 12px 40px rgba(10,10,11,.08)}
-  .topo{background:#0A0A0B;color:#F7F7F7;padding:28px 26px 24px}
-  .logo{width:48px;height:48px;border-radius:12px;display:block;margin-bottom:16px}
-  .topo h1{font-size:26px;font-weight:500;line-height:1.2;margin-bottom:8px;text-align:left}
-  .topo p{font-size:15px;color:#D4D7DC;line-height:1.5}
-  .corpo{padding:24px 26px 26px}
-  h1{font-size:20px;font-weight:500;text-align:center;margin-bottom:6px}
-  p.sub{color:var(--mut);font-size:14px;text-align:center;margin-bottom:20px;line-height:1.5}
-  label{display:block;font-size:13px;color:var(--mut);font-weight:600;margin:0 0 6px}
-  input{width:100%;background:#fff;border:1px solid var(--bd);border-radius:10px;padding:13px 14px;color:var(--ink);font-size:16px;outline:none;margin-bottom:14px;font-family:inherit}
-  input[readonly]{background:#F1F2F4;color:var(--mut);border-color:#ECEEF1}
-  input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(10,10,11,.08)}
-  .btn{width:100%;background:var(--acc);color:#F7F7F7;border:none;border-radius:12px;padding:15px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;min-height:52px}
-  .btn:hover{filter:brightness(1.15)} .btn:disabled{opacity:.6;cursor:default}
-  /* ver a senha (Samara, 28/09/2026: "não consigo ver a senha") */
-  .senha{position:relative;margin-bottom:14px}
-  .senha input{margin-bottom:0;padding-right:84px}
-  .ver{position:absolute;right:6px;top:50%;transform:translateY(-50%);min-height:40px;padding:0 12px;border:0;border-radius:8px;background:#F1F2F4;color:var(--ink);font:600 13px/1 inherit;font-family:inherit;cursor:pointer}
-  .msg{font-size:13px;text-align:center;margin-top:12px;line-height:1.5}
-  .msg.err{color:var(--danger)} .msg.ok{color:var(--ok)}
-  .nota{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--mut);line-height:1.5;margin-top:18px}
-  .spin{width:20px;height:20px;border:2px solid var(--acc);border-top-color:transparent;border-radius:50%;display:inline-block;animation:s .7s linear infinite;vertical-align:middle}
-  @keyframes s{to{transform:rotate(360deg)}}
-  .center{text-align:center;color:var(--mut);font-size:14px;padding:10px 0}
+  /* Definir a senha (convite e "Esqueci minha senha"): o cartão de entrada do design system, no tema do aparelho */
+  body{margin:0}
+  .v-entrada-cartao h2{margin:0;font:600 20px/1.25 var(--display);color:var(--ink)}
+  .msg{font-size:14px;line-height:1.5;margin:12px 0 0}
+  .msg:empty{display:none}
+  .msg.err{color:var(--risk)} .msg.ok{color:var(--ok)}
+  .nota{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink-2);line-height:1.5;margin-top:20px;padding-top:16px;border-top:1px solid var(--bd)}
+  .nota svg{flex-shrink:0;margin-top:1px;color:var(--ink-2)}
+  .carrega{display:flex;align-items:center;gap:10px;color:var(--ink-2);font-size:15px;margin-top:20px}
+  .carrega .v-gira{color:var(--acc)}
+  #go{margin-top:8px}
   [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <script>window.OS_NO_BACK = true; window.OS_SEM_BARRA = true;</script>
 
-<div class="card">
-  <div class="topo">
-    <img class="logo" src="/shared/favicon.svg" alt="Hub">
-    <h1 id="ola">Bem-vindo(a)!</h1>
-    <p id="olaSub">Crie uma senha para acessar o Hub.</p>
-  </div>
-  <div class="corpo">
+<main class="v-entrada">
+<div class="v-entrada-cartao">
+  <span class="v-marca"><svg viewBox="0 0 64 64" aria-hidden="true"><rect x="16" y="20" width="28" height="28" rx="8" fill="#E8703A"/><circle cx="45" cy="19" r="7" fill="#FFF8F1"/></svg></span>
+  <h1 id="ola">Bem-vindo(a)!</h1>
+  <p class="v-sub" id="olaSub">Crie uma senha para entrar no sistema.</p>
 
   <!-- Verificando o link -->
   <div id="loading">
-    <h1>Preparando seu acesso…</h1>
-    <p class="center"><span class="spin"></span></p>
+    <p class="carrega" role="status"><span class="v-gira"></span>Preparando o seu acesso</p>
   </div>
 
   <!-- Definir senha -->
   <div id="form" hidden>
     <form id="pwForm">
-      <div id="emailBox" hidden>
-        <label for="email">E-mail</label>
-        <input id="email" type="email" readonly>
+      <div class="v-campos">
+        <div id="emailBox" hidden>
+          <label class="v-rotulo" for="email">E-mail</label>
+          <input class="v-campo" id="email" type="email" readonly>
+        </div>
+        <div>
+          <label class="v-rotulo" for="pw">Crie uma senha</label>
+          <div class="v-senha"><input class="v-campo" id="pw" type="password" autocomplete="new-password" placeholder="Pelo menos 8 caracteres" minlength="8" required aria-describedby="pw-dica"><button type="button" class="v-ver ver" aria-label="Mostrar a senha" aria-pressed="false">Mostrar</button></div>
+          <span class="v-ajuda" id="pw-dica">Use pelo menos 8 caracteres.</span>
+        </div>
+        <div>
+          <label class="v-rotulo" for="pw2">Repita a senha</label>
+          <div class="v-senha"><input class="v-campo" id="pw2" type="password" autocomplete="new-password" placeholder="Digite a mesma senha" minlength="8" required><button type="button" class="v-ver ver" aria-label="Mostrar a senha" aria-pressed="false">Mostrar</button></div>
+        </div>
       </div>
-      <label for="pw">Crie uma senha</label>
-      <div class="senha"><input id="pw" type="password" autocomplete="new-password" placeholder="mínimo 8 caracteres" minlength="8" required><button type="button" class="ver" aria-label="Mostrar a senha" aria-pressed="false">Mostrar</button></div>
-      <label for="pw2">Repita a senha</label>
-      <div class="senha"><input id="pw2" type="password" autocomplete="new-password" placeholder="repita a mesma senha" minlength="8" required><button type="button" class="ver" aria-label="Mostrar a senha" aria-pressed="false">Mostrar</button></div>
-      <button class="btn" id="go" type="submit">Entrar</button>
+      <button class="v-btn v-btn--bloco" id="go" type="submit">Entrar</button>
     </form>
-    <div id="formMsg" class="msg"></div>
+    <div id="formMsg" class="msg" role="alert"></div>
     <div class="nota" id="notaConvite" hidden>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5A5E66" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
       <div>Este link é só seu: vale uma vez e vence em 48h. O e-mail vem do seu cadastro e não pode ser trocado aqui.</div>
     </div>
   </div>
 
   <!-- Erro (link inválido/expirado) -->
   <div id="bad" hidden>
-    <h1>Link vencido ou já usado</h1>
-    <p class="sub">Este link já foi usado ou passou da validade. Peça ao RH um link novo (é rapidinho). Se você já criou a senha, é só entrar com seu e-mail.</p>
-    <a class="btn" href="/" style="display:block;text-align:center;text-decoration:none;line-height:22px">Ir para o login</a>
-  </div>
+    <h2 style="margin-top:20px">Link vencido ou já usado</h2>
+    <p class="v-sub">Este link já foi usado ou passou da validade. Peça a quem administra o sistema um link novo. Se você já criou a senha, entre com o seu e-mail.</p>
+    <a class="v-btn v-btn--bloco" href="/" style="margin-top:20px">Ir para o login</a>
   </div>
 </div>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/shared/os-core.js"></script>
 <script>
   // Mapa: chave de acesso (acessos) → caminho do hub. Se a pessoa tiver acesso a
   // exatamente 1 hub, mandamos direto pra ele; senão, pro launcher (que mostra os dela).
+  // Cada linha só vai no pacote que tem o sistema (marcador @so da fábrica).
   var HUB_PATH = {
-    journey: '/outjourney/', comercial: '/outfunnels', outprojetos: '/outprojetos/',
-    outsign: '/outsign/', rh: '/rh/', performance: '/outperformance/',
-    financeiro: '/outfinanceiro/', chat: '/outjourney/outchat', produtos: '/produtos/', processos: '/outprocessos/',
-    grupos: '/outgrupos/'
+    grupos: '/grupos/',
   };
 
   function show(id){
     ['loading','form','bad'].forEach(function(x){ document.getElementById(x).hidden = (x !== id); });
     // link que não abriu não dá boas-vindas: o topo vira só a marca
-    if (id === 'bad') { document.getElementById('ola').textContent = 'Hub'; document.getElementById('olaSub').hidden = true; }
+    if (id === 'bad') { document.getElementById('ola').textContent = '%EMPRESA_NOME%'; document.getElementById('olaSub').hidden = true; }
   }
   function getParam(n){
     var u = new URL(location.href);
@@ -116,6 +102,8 @@
     // casa: começa com uma barra só — "//outro.site" e "https://…" são recusados.
     var v = getParam('volta');
     if (v && v.charAt(0) === '/' && v.charAt(1) !== '/') return v;
+    // pacote de uma solução: a porta de entrada decide (vai para a solução, ou diz que falta a liberação)
+    if (window.OS && OS.avulsa) return '/';
     try{
       var acc = await OS.getMyAccess();               // { acessos, level }
       // instalação com uma solução só: todo mundo, inclusive o admin, vai direto para ela (14/10/2026)
@@ -166,7 +154,7 @@
         if (!th) { show('bad'); return; }
       }
       if (th){
-        // Link do RH (recovery) ou convite do Supabase (invite) via token_hash.
+        // Link de nova senha (recovery) ou convite do Supabase (invite) via token_hash.
         var otpType = LINK_TYPE === 'invite' ? 'invite' : LINK_TYPE === 'signup' ? 'signup' : 'recovery';
         var r = await sb.auth.verifyOtp({ token_hash: th, type: otpType });
         if (r.error) { show('bad'); return; }
@@ -201,7 +189,7 @@
     if (/session|missing|expired|JWT|not authenticated/i.test(t)) return 'O link venceu enquanto a tela estava aberta. Abra o mesmo link de novo (ele continua valendo até você criar a senha).';
     if (/weak|short|at least/i.test(t)) return 'Essa senha é fraca demais. Use pelo menos 8 caracteres, misturando letras e números.';
     if (/network|fetch|Failed/i.test(t)) return 'Sem conexão agora. Confira a internet e toque em Entrar de novo.';
-    return 'Não deu pra salvar a senha (' + t + '). Tente de novo; se repetir, mande um print pro RH.';
+    return 'Não deu pra salvar a senha (' + t + '). Tente de novo. Se repetir, mande um print para quem administra o sistema.';
   }
 
   document.getElementById('pwForm').addEventListener('submit', async function(ev){
@@ -211,17 +199,17 @@
     msg.className = 'msg'; msg.textContent = '';
     if (pw.length < 8){ msg.className='msg err'; msg.textContent='A senha precisa de ao menos 8 caracteres.'; return; }
     if (pw !== pw2){ msg.className='msg err'; msg.textContent='As duas senhas estão diferentes. Toque em "Mostrar" pra conferir.'; return; }
-    btn.disabled = true; btn.textContent = 'Salvando…';
+    btn.disabled = true; btn.textContent = 'Salvando';
     try{
       var up = await OS.getClient().auth.updateUser({ password: pw });
       if (up.error) throw up.error;
-      msg.className='msg ok'; msg.textContent='Senha definida! Entrando…';
+      msg.className='msg ok'; msg.textContent='A senha foi definida. Entrando no sistema.';
       location.href = await depoisDaSenha();
     }catch(e){
       var motivo = motivoDaSenha(e);
       // escolheu a senha que já usava: não é erro — ela sabe a senha, segue em frente
       if (motivo === 'mesma'){
-        msg.className='msg ok'; msg.textContent='Essa já é a sua senha. Entrando…';
+        msg.className='msg ok'; msg.textContent='Essa já é a sua senha. Entrando no sistema.';
         location.href = await depoisDaSenha(); return;
       }
       console.warn('[entrar] senha:', e);

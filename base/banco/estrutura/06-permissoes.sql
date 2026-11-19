@@ -2,7 +2,7 @@
 GRANT USAGE ON SCHEMA hub TO anon;
 GRANT USAGE ON SCHEMA hub TO authenticated;
 GRANT USAGE ON SCHEMA hub TO service_role;
-GRANT USAGE ON SCHEMA hub TO outfunnels_app;
+GRANT USAGE ON SCHEMA hub TO crm_app;
 GRANT USAGE ON SCHEMA hub TO hub_agente_leitor;
 GRANT USAGE ON SCHEMA hub TO hub_agente_leitor_sem_rh;
 GRANT USAGE ON SCHEMA hub TO hub_agente_leitor_vendas;
@@ -100,9 +100,9 @@ REVOKE ALL ON FUNCTION hub.brl(p numeric) FROM PUBLIC;
 GRANT ALL ON FUNCTION hub.brl(p numeric) TO authenticated;
 GRANT ALL ON FUNCTION hub.brl(p numeric) TO service_role;
 
--- ACL: FUNCTION outfunnels_quem(p_email text)
-REVOKE ALL ON FUNCTION hub.outfunnels_quem(p_email text) FROM PUBLIC;
-GRANT ALL ON FUNCTION hub.outfunnels_quem(p_email text) TO outfunnels_app;
+-- ACL: FUNCTION crm_quem(p_email text)
+REVOKE ALL ON FUNCTION hub.crm_quem(p_email text) FROM PUBLIC;
+GRANT ALL ON FUNCTION hub.crm_quem(p_email text) TO crm_app;
 
 -- ACL: FUNCTION e_do_time()
 GRANT ALL ON FUNCTION hub.e_do_time() TO anon;
@@ -148,13 +148,13 @@ REVOKE ALL ON FUNCTION hub.nome_canonico(p_nome text) FROM PUBLIC;
 GRANT ALL ON FUNCTION hub.nome_canonico(p_nome text) TO authenticated;
 GRANT ALL ON FUNCTION hub.nome_canonico(p_nome text) TO service_role;
 
--- ACL: FUNCTION outfunnels_conta_desativa(p_user_id uuid)
-REVOKE ALL ON FUNCTION hub.outfunnels_conta_desativa(p_user_id uuid) FROM PUBLIC;
-GRANT ALL ON FUNCTION hub.outfunnels_conta_desativa(p_user_id uuid) TO service_role;
+-- ACL: FUNCTION crm_conta_desativa(p_user_id uuid)
+REVOKE ALL ON FUNCTION hub.crm_conta_desativa(p_user_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION hub.crm_conta_desativa(p_user_id uuid) TO service_role;
 
--- ACL: FUNCTION outfunnels_conta_garante(p_user_id uuid)
-REVOKE ALL ON FUNCTION hub.outfunnels_conta_garante(p_user_id uuid) FROM PUBLIC;
-GRANT ALL ON FUNCTION hub.outfunnels_conta_garante(p_user_id uuid) TO service_role;
+-- ACL: FUNCTION crm_conta_garante(p_user_id uuid)
+REVOKE ALL ON FUNCTION hub.crm_conta_garante(p_user_id uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION hub.crm_conta_garante(p_user_id uuid) TO service_role;
 
 -- ACL: FUNCTION pdp_ve_todos()
 REVOKE ALL ON FUNCTION hub.pdp_ve_todos() FROM PUBLIC;
@@ -194,8 +194,8 @@ REVOKE ALL ON FUNCTION hub.tg_app_saiu_do_time() FROM PUBLIC;
 -- ACL: FUNCTION tg_users_desligamento()
 REVOKE ALL ON FUNCTION hub.tg_users_desligamento() FROM PUBLIC;
 
--- ACL: FUNCTION trg_of_reabre_tira_selo()
-REVOKE ALL ON FUNCTION hub.trg_of_reabre_tira_selo() FROM PUBLIC;
+-- ACL: FUNCTION trg_crm_reabre_tira_selo()
+REVOKE ALL ON FUNCTION hub.trg_crm_reabre_tira_selo() FROM PUBLIC;
 
 -- ACL: FUNCTION whatsapp_do_time()
 REVOKE ALL ON FUNCTION hub.whatsapp_do_time() FROM PUBLIC;
@@ -265,9 +265,9 @@ GRANT SELECT ON TABLE hub.banner_noticias TO hub_agente_leitor;
 GRANT SELECT ON TABLE hub.banner_noticias TO hub_agente_leitor_sem_rh;
 GRANT SELECT ON TABLE hub.banner_noticias TO hub_agente_leitor_vendas;
 
--- ACL: SEQUENCE clientes_codigo_oj_seq
-GRANT ALL ON SEQUENCE hub.clientes_codigo_oj_seq TO authenticated;
-GRANT ALL ON SEQUENCE hub.clientes_codigo_oj_seq TO service_role;
+-- ACL: SEQUENCE clientes_codigo_suc_seq
+GRANT ALL ON SEQUENCE hub.clientes_codigo_suc_seq TO authenticated;
+GRANT ALL ON SEQUENCE hub.clientes_codigo_suc_seq TO service_role;
 
 -- ACL: TABLE colaboradores
 GRANT ALL ON TABLE hub.colaboradores TO authenticated;
@@ -393,7 +393,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA hub GRANT SELECT ON TABLES 
 --
 
 
--- ─── medidor de atividade (tempo de uso de cada tela) — veio do OutSign: toda tela chama, então é da base ───
+-- ─── medidor de atividade (tempo de uso de cada tela) — veio do Contratos: toda tela chama, então é da base ───
 
 -- ACL: FUNCTION os_atividade_dia(p_de date, p_ate date)
 REVOKE ALL ON FUNCTION hub.os_atividade_dia(p_de date, p_ate date) FROM PUBLIC;
@@ -417,7 +417,7 @@ GRANT ALL ON TABLE hub.os_sessao TO authenticated;
 GRANT ALL ON TABLE hub.os_sessao TO service_role;
 
 
--- ─── cargos (vieram do OutPerformance) ───
+-- ─── cargos (vieram do Metas) ───
 
 -- ACL: FUNCTION role_delete(p_id uuid)
 REVOKE ALL ON FUNCTION hub.role_delete(p_id uuid) FROM PUBLIC;
@@ -429,7 +429,7 @@ REVOKE ALL ON FUNCTION hub.roles_gestao() FROM PUBLIC;
 GRANT ALL ON FUNCTION hub.roles_gestao() TO authenticated;
 GRANT ALL ON FUNCTION hub.roles_gestao() TO service_role;
 
--- ─── estado compartilhado do os-core (hub.os_estado) — veio do OutJourney: toda tela usa ───
+-- ─── estado compartilhado do os-core (hub.os_estado) — veio do Sucesso: toda tela usa ───
 
 -- ACL: TABLE os_estado
 GRANT ALL ON TABLE hub.os_estado TO authenticated;

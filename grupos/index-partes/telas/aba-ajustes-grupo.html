@@ -1,0 +1,48 @@
+<!-- ── aba Ajustes do grupo: resumo automático (quem edita), pausar e deixar de acompanhar (quem administra o sistema) ── -->
+<div x-show="aba === 'ajustes' && (podeAdministrar || podeConfigurar)" x-cloak>
+  <div class="card" x-show="podeAdministrar" x-cloak>
+    <h2>Resumo automático</h2>
+    <p class="peq mut">Todo dia, no horário escolhido, a solução faz o resumo de hoje e, se você quiser, envia sozinha ao grupo. Se o grupo não tiver mensagens no dia, nada é feito.</p>
+    <div class="aviso" x-show="!ajustes.agenda_pronta" style="margin-top:10px">A agenda dos resumos automáticos ainda não está pronta. Ela é ligada quando a IA é salva nos Ajustes.</div>
+    <div class="ajuste-b" style="margin-top:12px">
+      <label class="chk"><input type="checkbox" x-model="ag.auto"> Fazer o resumo automático todo dia</label>
+      <label class="rot" style="max-width:240px">Horário (de Brasília)
+        <select x-valor="ag.hora" @change="ag.hora = Number($event.target.value)" :disabled="!ag.auto">
+          <template x-for="h in horasDoDia" :key="h.valor"><option :value="h.valor" x-text="h.rotulo"></option></template>
+        </select></label>
+      <div>
+        <label class="chk"><input type="checkbox" x-model="ag.envia" :disabled="!ag.auto"> Enviar o resumo sozinho ao grupo</label>
+        <p class="dica" x-show="ag.auto && ag.envia">O resumo vai para o grupo sem que ninguém leia antes. Deixe esta opção desligada se você prefere conferir o texto e mandar na mão.</p>
+      </div>
+    </div>
+    <div class="info" x-show="proximoAuto" x-cloak style="margin-top:12px" role="status">
+      <b x-text="proximoAuto && proximoAuto.texto"></b>
+      <p style="margin-top:4px" x-show="proximoAuto && proximoAuto.amanha">O horário de hoje já passou, então o próximo resumo só sai amanhã.</p>
+    </div>
+    <div class="linha entre" style="margin-top:14px">
+      <span class="peq" :class="ag.ok ? 'ok-msg' : 'mut'" x-text="ag.ok || (agMudou ? 'Há alterações que ainda não foram salvas.' : '')"></span>
+      <button type="button" class="btn" :disabled="ag.salvando || !agMudou" @click="salvaAutomatico()">
+        <span class="spin p" x-show="ag.salvando"></span><span>Salvar o resumo automático</span></button>
+    </div>
+    <div class="err" x-show="ag.erro" x-cloak role="alert" style="margin:10px 0 0" x-text="ag.erro"></div>
+  </div>
+
+  <div class="card" x-show="podeConfigurar" x-cloak>
+    <h2>Acompanhamento</h2>
+    <p class="peq mut" x-show="grupo?.ativo">O grupo está sendo acompanhado: as mensagens novas são guardadas e entram nos resumos.</p>
+    <p class="peq mut" x-show="!grupo?.ativo">O grupo está pausado: as mensagens novas não são guardadas. O que já foi guardado continua disponível.</p>
+    <div class="linha" style="margin-top:12px">
+      <button type="button" class="btn leve" :disabled="ag.pausando" @click="alternaPausa()">
+        <span class="spin p" x-show="ag.pausando"></span><span x-text="grupo?.ativo ? 'Pausar o acompanhamento' : 'Retomar o acompanhamento'"></span></button>
+    </div>
+    <div class="err" x-show="ag.erroPausa" x-cloak role="alert" style="margin:10px 0 0" x-text="ag.erroPausa"></div>
+  </div>
+
+  <div class="card zona-perigo" x-show="podeConfigurar" x-cloak>
+    <h2>Deixar de acompanhar</h2>
+    <p class="peq" style="color:var(--ink-2)">A conversa guardada, os resumos, as perguntas, as orientações e os materiais deste grupo serão apagados. O grupo continua existindo no WhatsApp.</p>
+    <div class="linha" style="margin-top:12px">
+      <button type="button" class="btn perigo" @click="pedeRemoverGrupo()">Deixar de acompanhar este grupo</button>
+    </div>
+  </div>
+</div>
