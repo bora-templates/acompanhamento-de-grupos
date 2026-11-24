@@ -2,13 +2,18 @@
    Grupos · 06 os Ajustes: WhatsApp (QR), IA, transcrição de áudio e grupo de exemplo
    ----------------------------------------------------------------------------
    Só quem configura (pode_configurar) abre esta tela. Tudo passa pelo servidor (gr-api):
-     whatsapp_salvar, whatsapp_estado, ajustes_ia, testar_ia, ajustes_transcricao.
+     whatsapp_salvar, whatsapp_estado, ajustes_ia, testar_ia, ia_modelos, ajustes_transcricao.
+   O seletor de modelos da IA: com a IA salva (provedor e chave), a tela pede ao servidor a lista que o
+   provedor tem hoje (ia_modelos), os mais recentes primeiro, e mostra essa lista enquanto o provedor
+   escolhido for o salvo. Sem chave salva, com outro provedor escolhido ou com falha na busca, vale a
+   lista fixa GR_MODELOS. O campo de escrever outro modelo continua nos dois casos.
+   A transcrição tem serviço, modelo de áudio e chave próprios. A tela diz sempre qual chave está em uso:
+   a mesma chave da IA (só quando as duas são da OpenAI) ou uma chave própria do serviço.
    Token e chave:
      . ficam em campo de senha e nunca são preenchidos de volta: depois de salvos, a tela mostra só
        "salvo" e o botão de trocar;
      . saem da memória da tela assim que o servidor confirma a gravação;
-     . trocar o endereço do servidor da uazapi exige o token da instância nova, e trocar o provedor da IA (ou o
-       endereço da API do provedor compatível) exige a chave. A tela abre o campo na hora, não deixa salvar sem ele
+     . trocar o endereço do servidor da uazapi exige o token da instância nova, e trocar o provedor da IA exige a chave. A tela abre o campo na hora, não deixa salvar sem ele
        e põe o cursor nele. Se o servidor responder precisa_token ou precisa_chave, mostra o erro, abre o campo e
        põe o cursor nele do mesmo jeito.
    O QR do WhatsApp é atualizado a cada 20 segundos enquanto a seção WhatsApp está aberta e a
@@ -30,20 +35,35 @@ function grWaInicial() {
   };
 }
 function grIaInicial() {
-  return { provedor: 'openai', modelo: '', escolha: '', url: '', urlSalva: '', chave: '', trocandoChave: false, chaveExigida: false, salvando: false, testando: false, erro: '', ok: '', teste: '' };
+  return {
+    provedor: 'openai', modelo: '', escolha: '', chave: '', trocandoChave: false, chaveExigida: false, salvando: false, testando: false, erro: '', ok: '', teste: '',
+    modelosVivos: [], vivosDe: '', buscandoModelos: false, avisoModelos: '',
+  };
 }
 function grTrInicial() {
-  return { provedor: 'groq', chave: '', trocandoChave: false, usarChaveIa: false, salvando: false, erro: '', ok: '' };
+  return { provedor: 'groq', modelo: '', chave: '', trocandoChave: false, usarChaveIa: false, salvando: false, erro: '', ok: '' };
 }
 let GR_TIMER_QR = null;
 const GR_QR_SEGUNDOS = 20;
-// os modelos que o seletor já traz, por provedor; o primeiro de cada lista é o recomendado e vem escolhido
-// (no Claude e na DeepSeek ele é o mesmo modelo padrão do servidor, em _shared/ia.ts)
+// a lista fixa do seletor, por provedor, para quando a lista do provedor não está à mão; o primeiro de cada
+// lista é o recomendado e vem escolhido (no Claude ele é o mesmo modelo padrão do servidor,
+// em _shared/ia.ts). Nomes conferidos em 24/11/2026 nas páginas de modelos da OpenAI e da Anthropic.
+// A tela oferece só Claude e OpenAI (GR_PROVEDORES_TELA).
+const GR_PROVEDORES_TELA = ['anthropic', 'openai'];
 const GR_MODELOS = {
-  openai: [{ id: 'gpt-5-mini', nome: 'GPT-5 mini (recomendado)' }, { id: 'gpt-5', nome: 'GPT-5' }, { id: 'gpt-4.1-mini', nome: 'GPT-4.1 mini' }],
-  anthropic: [{ id: 'claude-sonnet-5-5', nome: 'Claude Sonnet 5.5 (recomendado)' }, { id: 'claude-haiku-5-5', nome: 'Claude Haiku 5.5' }, { id: 'claude-opus-5-5', nome: 'Claude Opus 5.5' }],
-  deepseek: [{ id: 'deepseek-v4-flash', nome: 'DeepSeek V4 Flash (recomendado)' }],
-  compativel: [],
+  openai: [{ id: 'gpt-6.2-sol', nome: 'GPT-6.2 Sol (recomendado)' }, { id: 'gpt-6-luna', nome: 'GPT-6 Luna' }, { id: 'gpt-6.1-terra', nome: 'GPT-6.1 Terra' }, { id: 'gpt-6.2-astra', nome: 'GPT-6.2 Astra' }],
+  anthropic: [{ id: 'claude-sonnet-5-5', nome: 'Claude Sonnet 5.5 (recomendado)' }, { id: 'claude-haiku-5-5', nome: 'Claude Haiku 5.5' }, { id: 'claude-opus-5-5', nome: 'Claude Opus 5.5' }, { id: 'claude-fable-5-2', nome: 'Claude Fable 5.2' }],
+};
+// os modelos de áudio por serviço (os mesmos que a gr-api aceita, em _shared/transcricao.ts); o primeiro é o
+// recomendado e vem escolhido numa transcrição nova. "padrao" é o que o servidor usa quando o modelo fica vazio.
+const GR_MODELOS_AUDIO = {
+  groq: { padrao: 'whisper-large-v3', lista: [{ id: 'whisper-large-v3-turbo', nome: 'Whisper Large v3 Turbo (recomendado, mais rápido)' }, { id: 'whisper-large-v3', nome: 'Whisper Large v3' }] },
+  openai: { padrao: 'whisper-1', lista: [
+    { id: 'gpt-transcribe', nome: 'GPT Transcribe (recomendado pela OpenAI)' },
+    { id: 'gpt-4o-mini-transcribe', nome: 'GPT-4o mini Transcribe (sai do ar em 26/02/2027)' },
+    { id: 'gpt-4o-transcribe', nome: 'GPT-4o Transcribe (sai do ar em 26/02/2027)' },
+    { id: 'whisper-1', nome: 'Whisper 1 (sai do ar em 26/02/2027)' },
+  ] },
 };
 const GR_OUTRO_MODELO = '__outro';
 function grPrimeiroModelo(provedor) { const l = GR_MODELOS[provedor] || []; return l.length ? l[0].id : ''; }
@@ -58,14 +78,23 @@ function grAjustes() {
       if (!this.podeConfigurar) return;
       if (entrou) this.preencheAjustes();
       if (secao === 'whatsapp') this.iniciaWhatsapp();
+      if (secao === 'ia') this.carregaModelosIa(false);
     },
     // as caixas começam com o que já está salvo (menos token e chave, que a tela nunca recebe)
     preencheAjustes() {
       const a = this.ajustes;
       this.wa = Object.assign(grWaInicial(), { servidor: String(a.whatsapp_servidor || ''), estado: a.whatsapp_estado || 'desligado', numero: a.whatsapp_numero || '' });
-      this.ia = Object.assign(grIaInicial(), { provedor: a.ia_provedor || 'openai', modelo: a.ia_modelo || '', url: String(a.ia_url || ''), urlSalva: String(a.ia_url || '') });
+      // provedor antigo salvo (DeepSeek ou Compatível): a caixa começa no Claude, e salvar pede a chave nova
+      const antigo = !!a.ia_provedor && !GR_PROVEDORES_TELA.includes(a.ia_provedor);
+      this.ia = Object.assign(grIaInicial(), { provedor: antigo ? 'anthropic' : (a.ia_provedor || 'openai'), modelo: antigo ? '' : (a.ia_modelo || '') });
       this.ajustaEscolhaIa();
-      this.tr = Object.assign(grTrInicial(), { provedor: a.transcricao_provedor || 'groq' });
+      const servico = a.transcricao_provedor === 'openai' ? 'openai' : 'groq';
+      this.tr = Object.assign(grTrInicial(), {
+        provedor: servico,
+        // transcrição salva sem modelo: o servidor usa o padrão do serviço, e a caixa mostra esse
+        modelo: String(a.transcricao_modelo || '') || (a.transcricao_configurada ? GR_MODELOS_AUDIO[servico].padrao : GR_MODELOS_AUDIO[servico].lista[0].id),
+        usarChaveIa: !!(a.transcricao_configurada && a.transcricao_chave_da_ia),
+      });
     },
     get secoesAjustes() {
       const a = this.ajustes;
@@ -206,7 +235,47 @@ function grAjustes() {
     },
 
     // ── IA ──
-    get iaModelosSugeridos() { return GR_MODELOS[this.ia.provedor] || []; },
+    // a tela oferece só Claude e OpenAI; uma instalação com DeepSeek ou Compatível salvos continua funcionando,
+    // e a tela avisa que, para mudar alguma coisa, é preciso escolher um dos dois
+    get iaProvedorAntigo() { const p = this.ajustes.ia_provedor; return !!p && !GR_PROVEDORES_TELA.includes(p); },
+    get iaAvisoProvedorAntigo() {
+      if (!this.iaProvedorAntigo) return '';
+      return 'A IA desta instalação usa um provedor que a tela não oferece mais (' + this.nomeProvedor(this.ajustes.ia_provedor) + '). Ela continua funcionando. Para mudar alguma coisa, escolha Claude ou OpenAI e informe a chave.';
+    },
+    // a lista que o provedor mandou vale enquanto o provedor escolhido for o salvo
+    get iaListaAoVivo() {
+      const a = this.ajustes, i = this.ia;
+      return !!(a.ia_configurada && i.provedor === a.ia_provedor && i.modelosVivos.length && i.vivosDe === i.provedor);
+    },
+    get iaModelosSugeridos() {
+      if (!this.iaListaAoVivo) return GR_MODELOS[this.ia.provedor] || [];
+      const recomendado = grPrimeiroModelo(this.ia.provedor);
+      return this.ia.modelosVivos.map((m) => ({ id: m.id, nome: (m.nome || m.id) + (m.id === recomendado ? ' (recomendado)' : '') }));
+    },
+    get iaDicaModelos() {
+      const a = this.ajustes, i = this.ia;
+      if (!a.ia_configurada || i.provedor !== a.ia_provedor) return '';
+      if (i.buscandoModelos) return 'Buscando os modelos do provedor.';
+      if (this.iaListaAoVivo) return 'A lista veio do provedor, com os modelos mais recentes primeiro.';
+      return i.avisoModelos;
+    },
+    // pede ao servidor os modelos do provedor salvo (com a chave do cofre); de novo só quando o provedor salvo mudou
+    async carregaModelosIa(forcar) {
+      const a = this.ajustes, i = this.ia;
+      if (!a.ia_configurada || !GR_PROVEDORES_TELA.includes(a.ia_provedor) || i.buscandoModelos) return;
+      if (!forcar && i.vivosDe === a.ia_provedor && (i.modelosVivos.length || i.avisoModelos)) return;
+      i.buscandoModelos = true;
+      const r = await this.edge({ acao: 'ia_modelos' }, 20000);
+      i.buscandoModelos = false;
+      const lista = r && r.ok === true && Array.isArray(r.modelos)
+        ? r.modelos.filter((m) => m && typeof m.id === 'string' && m.id).map((m) => ({ id: String(m.id), nome: String(m.nome || m.id) }))
+        : [];
+      i.modelosVivos = lista;
+      i.vivosDe = a.ia_provedor;
+      i.avisoModelos = lista.length ? '' : String((r && (r.aviso || r.erro)) || 'A lista de modelos do provedor não veio agora. A tela mostra a lista fixa de modelos.');
+      // o seletor passa a mostrar a lista nova, com o modelo da vez escolhido (fora dela, abre o campo de texto)
+      this.ajustaEscolhaIa();
+    },
     get iaOutroModelo() { return this.ia.escolha === GR_OUTRO_MODELO; },
     // acerta o seletor com o modelo da vez: sem modelo, entra o recomendado; modelo fora da lista abre o campo de texto
     ajustaEscolhaIa() {
@@ -216,69 +285,59 @@ function grAjustes() {
       if (!modelo) { i.modelo = ids[0]; i.escolha = ids[0]; return; }
       i.escolha = ids.includes(modelo) ? modelo : GR_OUTRO_MODELO;
     },
-    trocaProvedorIa() { this.ia.chaveExigida = false; this.ia.modelo = ''; this.ajustaEscolhaIa(); },
+    trocaProvedorIa() {
+      const a = this.ajustes, i = this.ia;
+      i.chaveExigida = false;
+      // de volta ao provedor salvo, volta também o modelo salvo
+      i.modelo = a.ia_configurada && i.provedor === a.ia_provedor ? String(a.ia_modelo || '') : '';
+      this.ajustaEscolhaIa();
+    },
     escolheModeloIa() {
       const i = this.ia;
       if (i.escolha === GR_OUTRO_MODELO) { i.modelo = ''; this.focaCampo('gr-ia-modelo'); return; }
       i.modelo = i.escolha;
     },
-    get iaTemModeloPadrao() { return this.ia.provedor === 'anthropic' || this.ia.provedor === 'deepseek'; },
+    get iaTemModeloPadrao() { return this.ia.provedor === 'anthropic'; },
     get iaMudou() {
       const a = this.ajustes, i = this.ia;
-      return i.provedor !== (a.ia_provedor || '') || String(i.modelo || '').trim() !== (a.ia_modelo || (a.ia_configurada ? grPrimeiroModelo(a.ia_provedor) : '')) || !!String(i.chave || '').trim()
-        || (i.provedor === 'compativel' && grEnderecoChave(i.url) !== grEnderecoChave(i.urlSalva));
+      return i.provedor !== (a.ia_provedor || '') || String(i.modelo || '').trim() !== (a.ia_modelo || (a.ia_configurada ? grPrimeiroModelo(a.ia_provedor) : '')) || !!String(i.chave || '').trim();
     },
     get iaTrocouProvedor() { const a = this.ajustes; return !!(a.ia_configurada && a.ia_provedor && this.ia.provedor !== a.ia_provedor); },
-    // o provedor compatível já estava salvo e o endereço da API digitado é outro: a chave salva não vale nesse endereço
-    get iaTrocouUrl() {
-      const a = this.ajustes, i = this.ia;
-      if (!(a.ia_configurada && a.ia_provedor === 'compativel' && i.provedor === 'compativel')) return false;
-      const digitado = grEnderecoChave(i.url);
-      return !!digitado && digitado !== grEnderecoChave(i.urlSalva);
-    },
-    get iaPedeChave() { return !this.ajustes.ia_configurada || this.ia.trocandoChave || this.ia.chaveExigida || this.iaTrocouProvedor || this.iaTrocouUrl; },
+    get iaPedeChave() { return !this.ajustes.ia_configurada || this.ia.trocandoChave || this.ia.chaveExigida || this.iaTrocouProvedor; },
     get iaMotivoChave() {
       if (this.iaTrocouProvedor) return 'Você trocou o provedor, então a chave anterior não serve mais. Informe a chave do novo provedor.';
-      if (this.iaTrocouUrl) return 'Você mudou o endereço da API, então a chave anterior não serve mais. Informe a chave que vale neste endereço.';
       return '';
     },
     get iaMsgFaltaChave() {
       if (!this.ajustes.ia_configurada || this.ia.chaveExigida) return 'Informe a chave da IA.';
       if (this.iaTrocouProvedor) return 'Você trocou o provedor, então informe também a chave dele.';
-      if (this.iaTrocouUrl) return 'Você mudou o endereço da API, então informe também a chave dele.';
       return 'Cole a chave nova ou use o botão Manter a chave salva.';
     },
     async salvaIa() {
       const i = this.ia;
       if (i.salvando) return;
+      if (!GR_PROVEDORES_TELA.includes(i.provedor)) { i.erro = 'Escolha o provedor da IA: Claude ou OpenAI.'; return; }
       const modelo = String(i.modelo || '').trim(), chave = String(i.chave || '').trim();
-      // Claude e DeepSeek têm modelo padrão no servidor; os outros precisam do nome
+      // o Claude tem modelo padrão no servidor; a OpenAI precisa do nome
       if (!modelo && !this.iaTemModeloPadrao) { i.erro = 'Informe o modelo da IA.'; return; }
       if (/\s/.test(modelo)) { i.erro = 'O nome do modelo não pode ter espaços. Copie o nome exato do site do provedor.'; return; }
       if (/\s/.test(chave)) { i.erro = 'A chave não pode ter espaços nem quebras de linha. Copie a chave de novo.'; return; }
-      let url = '';
-      if (i.provedor === 'compativel') {
-        url = String(i.url || '').trim();
-        if (!/^https:\/\/[^\s]+$/i.test(url)) { i.erro = 'Informe o endereço da API começando com https://.'; this.focaCampo('gr-ia-url'); return; }
-      }
-      // com o campo da chave à vista (IA nova, provedor ou endereço trocado, troca da chave), ele precisa estar preenchido
+      // com o campo da chave à vista (IA nova, provedor trocado, troca da chave), ele precisa estar preenchido
       if (!chave && this.iaPedeChave) { i.erro = this.iaMsgFaltaChave; this.focaCampo('gr-ia-chave'); return; }
       i.erro = ''; i.ok = ''; i.teste = ''; i.salvando = true;
       const corpo = { acao: 'ajustes_ia', provedor: i.provedor, modelo: modelo };   // modelo vazio: o servidor usa o padrão
-      if (url) corpo.url = url;
       if (chave) corpo.chave = chave;
       const r = await this.edge(corpo, 60000);
       i.salvando = false;
       // o servidor pede a chave (a tela achou que não mudou nada): abre o campo e põe o cursor nele
       if (r && r.precisa_chave === true) {
         i.trocandoChave = true; i.chaveExigida = true;
-        i.erro = String(r.erro || 'Para trocar o provedor ou o endereço da API, informe também a chave.');
+        i.erro = String(r.erro || 'Para trocar o provedor, informe também a chave.');
         this.focaCampo('gr-ia-chave');
         return;
       }
       if (!r || r.ok !== true) { i.erro = (r && r.erro) || 'Não foi possível salvar a IA.'; return; }
       i.chave = ''; i.trocandoChave = false; i.chaveExigida = false;
-      if (url) i.urlSalva = url;
       this.juntaAjustes(r.ajustes);
       // a caixa passa a mostrar o modelo que o servidor gravou (com o modelo em branco, é o padrão do provedor);
       // sem isso a tela veria uma mudança não salva e travaria o botão Testar a IA
@@ -286,6 +345,8 @@ function grAjustes() {
       i.ok = 'A IA foi salva. Use o botão Testar a IA para conferir.';
       await this.carregaPainel(true);
       if (!modelo && this.ajustes.ia_modelo && !String(i.modelo || '').trim()) i.modelo = String(this.ajustes.ia_modelo);
+      // com a chave ou o provedor novos, a lista do provedor é buscada de novo
+      if (chave || !this.iaListaAoVivo) this.carregaModelosIa(true);
     },
     async testaIa() {
       const i = this.ia;
@@ -298,24 +359,52 @@ function grAjustes() {
     },
 
     // ── transcrição de áudio ──
+    get trModelos() { return (GR_MODELOS_AUDIO[this.tr.provedor] || GR_MODELOS_AUDIO.groq).lista; },
+    trocaProvedorTr() {
+      const a = this.ajustes, t = this.tr;
+      // de volta ao serviço salvo, volta o modelo salvo; num serviço novo, entra o recomendado
+      t.modelo = a.transcricao_configurada && t.provedor === a.transcricao_provedor
+        ? (String(a.transcricao_modelo || '') || GR_MODELOS_AUDIO[t.provedor].padrao)
+        : GR_MODELOS_AUDIO[t.provedor].lista[0].id;
+      if (!this.trPodeUsarChaveDaIa) t.usarChaveIa = false;
+    },
     get trPodeUsarChaveDaIa() { const a = this.ajustes; return this.tr.provedor === 'openai' && a.ia_provedor === 'openai' && !!a.ia_configurada; },
     get trTrocouProvedor() { const a = this.ajustes; return !!(a.transcricao_configurada && a.transcricao_provedor && this.tr.provedor !== a.transcricao_provedor); },
-    get trPedeChave() { return !this.ajustes.transcricao_configurada || this.tr.trocandoChave || this.trTrocouProvedor; },
+    // o que está salvo hoje: a transcrição usa a mesma chave da IA
+    get trSalvoComChaveDaIa() { const a = this.ajustes; return !!(a.transcricao_configurada && a.transcricao_chave_da_ia && !this.trTrocouProvedor); },
+    // a caixa "Usar a mesma chave da IA" está marcada e vale para este serviço
+    get trUsaChaveDaIa() { return !!(this.tr.usarChaveIa && this.trPodeUsarChaveDaIa); },
+    // desmarcar a caixa quando a chave salva é a da IA pede a chave própria do serviço
+    get trPedeChave() { return !this.ajustes.transcricao_configurada || this.tr.trocandoChave || this.trTrocouProvedor || (this.trSalvoComChaveDaIa && !this.tr.usarChaveIa); },
+    // a frase que diz, sem dúvida, qual chave a transcrição usa (ou vai usar ao salvar)
+    get trChaveEmUso() {
+      if (this.trUsaChaveDaIa) {
+        return this.trSalvoComChaveDaIa
+          ? 'Chave em uso: a mesma chave da IA (OpenAI). Se você trocar a chave da IA, a transcrição passa a usar a nova.'
+          : 'Ao salvar, a transcrição passa a usar a mesma chave da IA (OpenAI).';
+      }
+      if (!this.trPedeChave) return 'Chave em uso: uma chave própria do serviço de transcrição, salva no servidor.';
+      if (this.trSalvoComChaveDaIa) return 'Hoje a transcrição usa a mesma chave da IA. Para usar uma chave própria do serviço, cole a chave abaixo e salve.';
+      return '';
+    },
     async salvaTranscricao() {
       const t = this.tr;
       if (t.salvando) return;
       const chave = String(t.chave || '').trim();
-      const usa = !!(t.usarChaveIa && this.trPodeUsarChaveDaIa);
-      if (!chave && !usa && (!this.ajustes.transcricao_configurada || this.trTrocouProvedor)) {
-        t.erro = this.trTrocouProvedor ? 'Você trocou o serviço, então informe também a chave dele.' : 'Informe a chave do serviço de transcrição.';
+      const usa = this.trUsaChaveDaIa;
+      if (!chave && !usa && this.trPedeChave) {
+        t.erro = this.trTrocouProvedor ? 'Você trocou o serviço, então informe também a chave dele.'
+          : (this.trSalvoComChaveDaIa ? 'Para deixar de usar a chave da IA, cole a chave própria do serviço de transcrição.'
+          : (this.ajustes.transcricao_configurada ? 'Cole a chave nova ou use o botão Manter a chave salva.' : 'Informe a chave do serviço de transcrição.'));
         this.focaCampo('gr-tr-chave');
         return;
       }
       if (/\s/.test(chave)) { t.erro = 'A chave não pode ter espaços nem quebras de linha. Copie a chave de novo.'; return; }
       t.erro = ''; t.ok = ''; t.salvando = true;
-      const corpo = { acao: 'ajustes_transcricao', provedor: t.provedor };
+      const corpo = { acao: 'ajustes_transcricao', provedor: t.provedor, modelo: String(t.modelo || '') };
       if (chave) corpo.chave = chave;
-      if (usa) corpo.usar_chave_da_ia = true;
+      if (usa && !chave) corpo.usar_chave_da_ia = true;
+      else if (this.trSalvoComChaveDaIa) corpo.usar_chave_da_ia = false;
       const r = await this.edge(corpo, 45000);
       t.salvando = false;
       if (r && r.precisa_chave === true) {
@@ -325,9 +414,12 @@ function grAjustes() {
         return;
       }
       if (!r || r.ok !== true) { t.erro = (r && r.erro) || 'Não foi possível salvar a transcrição de áudio.'; return; }
-      t.chave = ''; t.trocandoChave = false; t.usarChaveIa = false;
+      t.chave = ''; t.trocandoChave = false;
       this.juntaAjustes(r.ajustes);
-      t.ok = 'A transcrição de áudio foi salva.';
+      // a caixa fica marcada quando a chave salva é a da IA, e a frase de chave em uso acompanha
+      t.usarChaveIa = !!(this.ajustes.transcricao_chave_da_ia);
+      if (this.ajustes.transcricao_modelo) t.modelo = String(this.ajustes.transcricao_modelo);
+      t.ok = this.ajustes.transcricao_chave_da_ia ? 'A transcrição de áudio foi salva com a mesma chave da IA.' : 'A transcrição de áudio foi salva com a chave própria do serviço.';
       await this.carregaPainel(true);
     },
   };

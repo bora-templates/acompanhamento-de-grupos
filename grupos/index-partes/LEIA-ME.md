@@ -55,10 +55,14 @@ Procure o nome antes de criar.
 
 ## Fluxos que a tela trata
 
-- Trocar o endereço do servidor da uazapi exige o token da instância nova. Trocar o provedor da IA, ou o endereço da API do
-  provedor compatível, exige a chave. A tela abre o campo, não deixa salvar sem ele e põe o cursor nele. Se o servidor
+- Trocar o endereço do servidor da uazapi exige o token da instância nova. Trocar o provedor da IA exige a chave. A tela abre o campo, não deixa salvar sem ele e põe o cursor nele. Se o servidor
   responder `precisa_token` ou `precisa_chave`, a tela mostra o erro, abre o campo e põe o cursor nele.
 - Depois de salvar a IA, a caixa do modelo mostra o que o servidor gravou (`ajustes.ia_modelo`).
+- A IA da tela é só Claude ou OpenAI. Com a IA salva, o seletor de modelos mostra a lista do provedor (`ia_modelos`, os mais
+  recentes primeiro); sem chave, com outro provedor escolhido ou com falha, mostra a lista fixa `GR_MODELOS`. Instalação antiga
+  com DeepSeek ou Compatível salvos continua funcionando, e a aba IA mostra um aviso pedindo para escolher Claude ou OpenAI.
+- A transcrição tem serviço (Groq recomendada, OpenAI paga), modelo de áudio (`GR_MODELOS_AUDIO`) e chave. A frase "Chave em
+  uso" diz se a transcrição usa a mesma chave da IA (`ajustes.transcricao_chave_da_ia`) ou uma chave própria do serviço.
 - Envio ao grupo: `enviar` com `ja_enviado` mostra "Este resumo já foi enviado em" mais a data e o botão Mandar de novo, que pede a
   confirmação e manda `reenviar: true`. A tela espera 75 segundos pela resposta. Com `sem_confirmacao` (ou sem resposta), mostra a
   frase de conferir o grupo e não marca o resumo como enviado.

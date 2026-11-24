@@ -1,9 +1,10 @@
 // ============================================================================
-// transcricao.ts: o áudio do grupo vira texto (Groq ou OpenAI, modelo Whisper, em português)
+// transcricao.ts: o áudio do grupo vira texto (Groq ou OpenAI, em português)
 // ----------------------------------------------------------------------------
 // O mesmo serviço que o sistema já usa para transcrever o áudio do WhatsApp (atendimento,
 // wpp-transcribe): o arquivo vem da uazapi (/message/download) e vai para o Whisper.
-// A chave é a que quem administra salvou no cofre (gr_transcricao_chave).
+// A chave é a que quem administra salvou no cofre (gr_transcricao_chave), e o modelo é o que
+// ficou nos ajustes (transcricao_modelo); sem modelo salvo, vale o padrão do serviço.
 // Sem chave, o áudio fica guardado sem transcrição (sem_servico); erro vira falhou, e a agenda
 // tenta de novo os que falharam há menos de 24 horas, no máximo 3 vezes.
 // A resposta 429 do serviço respeita o retry-after: até 20 segundos, a função espera e tenta de
@@ -21,6 +22,22 @@ const SERVICOS = {
   groq: { url: "https://api.groq.com/openai/v1/audio/transcriptions", modelo: "whisper-large-v3" },
   openai: { url: "https://api.openai.com/v1/audio/transcriptions", modelo: "whisper-1" },
 };
+
+/* Os modelos de áudio que a tela oferece e a gr-api aceita, por serviço, conferidos na
+   documentação de cada um em 24/11/2026: a Groq (console.groq.com/docs/speech-to-text) aceita
+   whisper-large-v3-turbo e whisper-large-v3; a OpenAI (referência de /v1/audio/transcriptions)
+   aceita gpt-transcribe, gpt-4o-mini-transcribe, gpt-4o-transcribe e whisper-1. Os três últimos
+   estão marcados para sair do ar em 26/02/2027, e o gpt-transcribe é o que a OpenAI recomenda. */
+export const MODELOS_TRANSCRICAO: Record<"groq" | "openai", string[]> = {
+  groq: ["whisper-large-v3-turbo", "whisper-large-v3"],
+  openai: ["gpt-transcribe", "gpt-4o-mini-transcribe", "gpt-4o-transcribe", "whisper-1"],
+};
+
+/** O modelo que vai no pedido: o salvo, se o serviço aceita, ou o padrão do serviço. */
+export function modeloDaTranscricao(provedor: "groq" | "openai", salvo: unknown): string {
+  const m = String(salvo ?? "").trim();
+  return MODELOS_TRANSCRICAO[provedor]?.includes(m) ? m : SERVICOS[provedor].modelo;
+}
 
 const extensao = (mime: string) =>
   mime.includes("ogg") || mime.includes("opus") ? "ogg"
@@ -46,16 +63,19 @@ export function esperaPedida(cabecalhos: Headers): number | null {
   return Number.isFinite(ms) ? Math.max(ms, 0) : null;
 }
 
-/** Manda o áudio para o Whisper e devolve o texto. */
+/** Manda o áudio para o serviço de transcrição e devolve o texto. */
 export async function transcrever(cfg: ConfigTranscricao, bytes: Uint8Array, mime: string): Promise<string> {
   const servico = SERVICOS[cfg.provedor];
+  const modelo = modeloDaTranscricao(cfg.provedor, cfg.modelo);
   const tipo = mime || "audio/ogg";
   for (let tentativa = 0; ; tentativa++) {
     const formulario = new FormData();
     formulario.append("file", new Blob([bytes as Uint8Array<ArrayBuffer>], { type: tipo }), "audio." + extensao(tipo));
-    formulario.append("model", servico.modelo);
+    formulario.append("model", modelo);
     formulario.append("language", "pt");
-    formulario.append("response_format", "json");
+    // json é o padrão de todos e o único formato dos gpt-4o-*-transcribe; a resposta traz o texto em "text".
+    // O gpt-transcribe vai sem o campo, como no exemplo da OpenAI, e responde no mesmo formato.
+    if (modelo !== "gpt-transcribe") formulario.append("response_format", "json");
     let r: Awaited<ReturnType<typeof buscar>>;
     try {
       r = await buscar(servico.url, { method: "POST", headers: { Authorization: "Bearer " + cfg.chave }, body: formulario },
@@ -99,7 +119,7 @@ export async function transcreverMensagem(
   } catch (e) {
     const etapa = e instanceof ErroTranscricao ? e.etapa : "gravar";
     const status = e instanceof ErroTranscricao ? e.status : 0;
-    await registrar("transcricao", "Falha ao transcrever um áudio.", { mensagem: msg.id, etapa, status, provedor: cfg.provedor });
+    await registrar("transcricao", "Falha ao transcrever um áudio.", { mensagem: msg.id, etapa, status, provedor: cfg.provedor, modelo: modeloDaTranscricao(cfg.provedor, cfg.modelo) });
     try {
       await rpc("gr_transcricao_gravar", { p_mensagem: msg.id, p_estado: "falhou", p_texto: null });
     } catch (_) { /* o registro já guardou a falha */ }

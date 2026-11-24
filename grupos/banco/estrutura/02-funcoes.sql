@@ -220,7 +220,8 @@ $$;
 
 -- os ajustes no formato que o painel e a gr-api devolvem (nunca o valor de um segredo).
 -- Quem não configura a solução recebe só os campos do contrato, sem o endereço do servidor
--- da uazapi, o endereço da IA e a frase do último erro do WhatsApp. p_completo nulo decide
+-- da uazapi, o endereço da IA, a frase do último erro do WhatsApp e o modelo e a origem da
+-- chave da transcrição. p_completo nulo decide
 -- pela pessoa logada (hub.gr_pode_configurar); a gr-api pede o completo (gr_ajustes_ler).
 drop function if exists hub.gr_ajustes_json();
 create or replace function hub.gr_ajustes_json(p_completo boolean default null)
@@ -247,7 +248,9 @@ as $$
     'whatsapp_erro',           a.whatsapp_erro,
     'whatsapp_servidor',       a.whatsapp_servidor,
     'whatsapp_conferido_em',   a.whatsapp_conferido_em,
-    'ia_url',                  a.ia_url) as completo
+    'ia_url',                  a.ia_url,
+    'transcricao_modelo',      a.transcricao_modelo,
+    'transcricao_chave_da_ia', coalesce(a.transcricao_chave_da_ia, false)) as completo
   from (select 1) u
   left join hub.gr_ajustes a on a.id = 1
   ) x;

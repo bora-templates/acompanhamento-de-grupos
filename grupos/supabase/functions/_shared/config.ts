@@ -10,7 +10,8 @@
 import { rpc } from "./comum.ts";
 import type { ConfigUazapi } from "./uazapi.ts";
 
-export type ConfigTranscricao = { provedor: "groq" | "openai"; chave: string };
+/* modelo vazio: o transcricao.ts usa o padrão do serviço (whisper-large-v3 na Groq, whisper-1 na OpenAI) */
+export type ConfigTranscricao = { provedor: "groq" | "openai"; chave: string; modelo: string };
 
 // deno-lint-ignore no-explicit-any
 export type Ajustes = Record<string, any>;
@@ -31,11 +32,11 @@ export async function configUazapi(aj?: Ajustes): Promise<ConfigUazapi | null> {
   return token ? { servidor, token } : null;
 }
 
-/** O serviço e a chave da transcrição, ou nulo se a transcrição não foi ligada. */
+/** O serviço, a chave e o modelo da transcrição, ou nulo se a transcrição não foi ligada. */
 export async function configTranscricao(aj?: Ajustes): Promise<ConfigTranscricao | null> {
   const a = aj ?? (await lerAjustes());
   const provedor = String(a.transcricao_provedor || "");
   if (provedor !== "groq" && provedor !== "openai") return null;
   const chave = await segredo("gr_transcricao_chave");
-  return chave ? { provedor, chave } : null;
+  return chave ? { provedor, chave, modelo: String(a.transcricao_modelo || "").trim() } : null;
 }

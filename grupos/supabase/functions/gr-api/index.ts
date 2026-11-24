@@ -5,9 +5,11 @@
 // ação, ou { ok: false, erro } com a frase para a tela.
 //
 //   ação                 quem          o que faz
-//   ajustes_ia           admin         provedor, modelo, endereço (compatível) e chave da IA
+//   ajustes_ia           admin         provedor (Claude ou OpenAI), modelo e chave da IA
 //   testar_ia            admin         um pedido curto à IA configurada
-//   ajustes_transcricao  admin         Groq ou OpenAI e a chave (ou a mesma chave da IA OpenAI)
+//   ia_modelos           admin         os modelos do provedor salvo, os mais recentes primeiro (com a chave do
+//                                      cofre; falha vira lista vazia com a frase em aviso)
+//   ajustes_transcricao  admin         Groq ou OpenAI, o modelo de áudio e a chave (ou a mesma chave da IA OpenAI)
 //   whatsapp_salvar      admin         servidor e token da uazapi, cadastro do webhook, estado e QR
 //   whatsapp_estado      admin         o estado da instância (e o QR, quando não está conectada)
 //   whatsapp_grupos      admin         os grupos do número na uazapi
@@ -26,8 +28,8 @@
 // só entra pelo cabeçalho x-gr-agenda, igual à chave gr_chave_agenda do cofre (guardada por um
 // minuto na memória da função). O corpo do pedido passa de 64 KB: recusado antes de ser lido.
 //
-// O token da uazapi e a chave da IA só valem para o endereço em que foram salvos: trocar o
-// servidor pede o token de novo (precisa_token), e trocar o provedor ou o endereço da IA pede a
+// O token da uazapi só vale para o servidor em que foi salvo, e a chave da IA para o provedor: trocar o
+// servidor pede o token de novo (precisa_token), e trocar o provedor da IA pede a
 // chave de novo (precisa_chave). O servidor novo só é gravado depois que a uazapi responde.
 //
 // Toda chamada externa passa pelas travas do _shared/rede.ts (https, endereço público, sem
@@ -43,14 +45,14 @@ import {
 } from "../_shared/comum.ts";
 import { type Ajustes, configTranscricao, configUazapi, lerAjustes, segredo } from "../_shared/config.ts";
 import {
-  configIA, type ConfigIA, conferirEnderecoIA, ErroIA, faltaConfigurar, mesmoEnderecoIA, MODELO_PADRAO, perguntar, PRAZO_IA_MS,
-  PROVEDORES_IA, type RespostaIA,
+  buscarModelos, configIA, type ConfigIA, ErroIA, faltaConfigurar, MODELO_PADRAO, perguntar,
+  PRAZO_IA_MS, PROVEDORES_IA, PROVEDORES_NOVOS, type RespostaIA,
 } from "../_shared/ia.ts";
 import { ErroRede, lerComTeto } from "../_shared/rede.ts";
 import { cortar, textoLimpo } from "../_shared/texto.ts";
 import * as U from "../_shared/uazapi.ts";
 import * as R from "../_shared/resumo.ts";
-import { transcreverPendentes } from "../_shared/transcricao.ts";
+import { MODELOS_TRANSCRICAO, transcreverPendentes } from "../_shared/transcricao.ts";
 
 type Nivel = "nenhum" | "ver" | "editar" | "admin";
 type Quem = { tipo: "pessoa"; id: string; nivel: Nivel } | { tipo: "robo"; id: null; nivel: Nivel };
@@ -62,6 +64,7 @@ type Linha = Record<string, any>;
 const PRECISA: Record<string, "ver" | "administrar" | "configurar"> = {
   ajustes_ia: "configurar",
   testar_ia: "configurar",
+  ia_modelos: "configurar",
   ajustes_transcricao: "configurar",
   whatsapp_salvar: "configurar",
   whatsapp_estado: "configurar",
@@ -79,7 +82,7 @@ const SO_VER = "Seu acesso ao Acompanhamento de Grupos permite só ver. Peça a 
 const SO_ADMIN = "Só quem administra o Acompanhamento de Grupos pode fazer isso. Peça a quem administra o sistema para liberar o acesso de administrador na tela Usuários.";
 const SEM_WHATSAPP = "O WhatsApp ainda não está ligado. Quem administra a solução informa o servidor da uazapi e o token em Ajustes.";
 const PEDE_TOKEN = "Para trocar o servidor, informe também o token da instância.";
-const PEDE_CHAVE = "Para trocar o endereço ou o provedor da IA, informe também a chave.";
+const PEDE_CHAVE = "Para trocar o provedor da IA, informe também a chave.";
 const JA_ENVIADO = "Este resumo já foi enviado.";
 const SEM_CONFIRMACAO = "O WhatsApp não confirmou o envio a tempo. Confira o grupo antes de mandar de novo.";
 const MUITAS_PERGUNTAS = "Você chegou ao limite de perguntas da última hora. Enquanto isso, peça um resumo do período na aba Resumos.";
@@ -175,16 +178,11 @@ async function mensagensDoPeriodo(grupo: string, intervalo: R.Intervalo) {
 // ── IA e transcrição ────────────────────────────────────────────────────────
 async function ajustesIA(c: Corpo, quem: Quem) {
   const provedor = String(c.provedor ?? "").trim().toLowerCase();
-  if (!PROVEDORES_IA.includes(provedor)) throw new ErroClaro("Escolha o provedor da IA: OpenAI, Claude, DeepSeek ou Compatível.", 400);
+  // desde a versão 1.0.3, só Claude e OpenAI; quem já tinha DeepSeek ou Compatível salvo continua funcionando
+  if (!PROVEDORES_NOVOS.includes(provedor)) throw new ErroClaro("Escolha o provedor da IA: Claude ou OpenAI.", 400);
   const modelo = String(c.modelo ?? "").trim() || MODELO_PADRAO[provedor] || "";
   if (!modelo) throw new ErroClaro("Informe o modelo da IA.", 400);
   if (modelo.length > 120 || /\s/.test(modelo)) throw new ErroClaro("O nome do modelo parece errado. Confira o nome exato no site do fornecedor.", 400);
-  let url: string | null = null;
-  if (provedor === "compativel") {
-    const conferido = conferirEnderecoIA(c.url);
-    if (!conferido.ok) throw new ErroClaro(conferido.erro, 400);
-    url = conferido.url;
-  }
   const chave = String(c.chave ?? "").trim();
   if (chave && (chave.length > 500 || /\s/.test(chave))) {
     throw new ErroClaro("A chave da IA parece errada. Copie a chave de novo no site do fornecedor.", 400);
@@ -192,16 +190,20 @@ async function ajustesIA(c: Corpo, quem: Quem) {
   const antes = await lerAjustes();
   if (!chave) {
     if (!(await rpc<boolean>("gr_segredo_existe", { p_nome: "gr_ia_chave" }))) throw new ErroClaro("Informe a chave da IA.", 400);
-    // a chave salva só vale para o provedor e o endereço em que ela foi salva
-    const trocouProvedor = String(antes.ia_provedor || "") !== provedor;
-    const trocouEndereco = provedor === "compativel" && !mesmoEnderecoIA(antes.ia_url, url);
-    if (trocouProvedor || trocouEndereco) throw new ErroClaro(PEDE_CHAVE, 400, { precisa_chave: true });
+    // a chave salva só vale para o provedor em que ela foi salva
+    if (String(antes.ia_provedor || "") !== provedor) throw new ErroClaro(PEDE_CHAVE, 400, { precisa_chave: true });
   } else {
     await rpc("gr_segredo_gravar", { p_nome: "gr_ia_chave", p_valor: chave });
   }
-  await rpc("gr_ajustes_gravar", {
-    p_dados: { ia_provedor: provedor, ia_modelo: modelo, ia_url: url, funcoes_url: URL_PROJETO() || null }, p_user: quem.id,
-  });
+  // deno-lint-ignore no-explicit-any
+  const dados: Record<string, any> = { ia_provedor: provedor, ia_modelo: modelo, ia_url: null, funcoes_url: URL_PROJETO() || null };
+  // a transcrição que usa a mesma chave da IA acompanha a chave nova; se a IA deixa a OpenAI, a cópia
+  // que já está no cofre continua valendo na transcrição, agora como chave própria
+  if (antes.transcricao_chave_da_ia === true) {
+    if (provedor !== "openai") dados.transcricao_chave_da_ia = false;
+    else if (chave) await rpc("gr_segredo_gravar", { p_nome: "gr_transcricao_chave", p_valor: chave });
+  }
+  await rpc("gr_ajustes_gravar", { p_dados: dados, p_user: quem.id });
   await prepararAgenda();
   return { ajustes: ajustesPublicos(await lerAjustes()) };
 }
@@ -216,30 +218,62 @@ async function testarIA() {
   return { resposta: r.texto.slice(0, 300), provedor: cfg.provedor, modelo: r.modelo };
 }
 
+/**
+ * Os modelos que o provedor da IA salvo tem hoje, para o seletor da tela. Usa a chave do cofre,
+ * que não volta na resposta e não entra no registro. Sem IA salva ou com falha na busca, devolve a
+ * lista vazia e a frase em aviso, e a tela fica com a lista fixa.
+ */
+async function iaModelos() {
+  const cfg = await configIA();
+  if (!PROVEDORES_NOVOS.includes(cfg.provedor) || !cfg.chave) {
+    const aviso = PROVEDORES_IA.includes(cfg.provedor) && cfg.chave
+      ? "A lista ao vivo só existe para Claude e OpenAI. A tela mostra a lista fixa de modelos."
+      : "A IA ainda não tem provedor e chave salvos. A tela mostra a lista fixa de modelos.";
+    return { provedor: cfg.provedor || null, modelos: [], aviso };
+  }
+  const r = await buscarModelos(cfg);
+  if (r.erro && !r.modelos.length) await registrar("ia", "A lista de modelos do provedor não veio.", { acao: "ia_modelos", provedor: cfg.provedor, status: r.status });
+  return { provedor: cfg.provedor, modelos: r.modelos, aviso: r.erro };
+}
+
 async function ajustesTranscricao(c: Corpo, quem: Quem) {
   const provedor = String(c.provedor ?? "").trim().toLowerCase();
   if (provedor !== "groq" && provedor !== "openai") throw new ErroClaro("Escolha o serviço de transcrição: Groq ou OpenAI.", 400);
+  // modelo vazio: o padrão do serviço; fora da lista do serviço, recusa
+  const modelo = String(c.modelo ?? "").trim();
+  if (modelo && !MODELOS_TRANSCRICAO[provedor].includes(modelo)) {
+    throw new ErroClaro(`Escolha um modelo de áudio da ${provedor === "groq" ? "Groq" : "OpenAI"}: ${MODELOS_TRANSCRICAO[provedor].join(", ")}.`, 400);
+  }
   const chave = String(c.chave ?? "").trim();
   const antes = await lerAjustes();
+  let daIA = antes.transcricao_chave_da_ia === true;
   if (chave) {
     if (chave.length > 500 || /\s/.test(chave)) throw new ErroClaro("A chave da transcrição parece errada. Copie a chave de novo no site do serviço.", 400);
     await rpc("gr_segredo_gravar", { p_nome: "gr_transcricao_chave", p_valor: chave });
+    daIA = false;
   } else if (c.usar_chave_da_ia === true) {
     if (provedor !== "openai" || antes.ia_provedor !== "openai") {
       throw new ErroClaro("A mesma chave só serve quando a IA e a transcrição usam a OpenAI.", 400);
     }
-    const daIA = await segredo("gr_ia_chave");
-    if (!daIA) throw new ErroClaro("A IA ainda não tem chave salva. Salve a chave da IA primeiro.", 400);
-    await rpc("gr_segredo_gravar", { p_nome: "gr_transcricao_chave", p_valor: daIA });
+    const chaveDaIA = await segredo("gr_ia_chave");
+    if (!chaveDaIA) throw new ErroClaro("A IA ainda não tem chave salva. Salve a chave da IA primeiro.", 400);
+    await rpc("gr_segredo_gravar", { p_nome: "gr_transcricao_chave", p_valor: chaveDaIA });
+    daIA = true;
   } else {
     if (!(await rpc<boolean>("gr_segredo_existe", { p_nome: "gr_transcricao_chave" }))) {
       throw new ErroClaro("Informe a chave do serviço de transcrição.", 400);
     }
     if (antes.transcricao_provedor && antes.transcricao_provedor !== provedor) {
-      throw new ErroClaro("Você trocou o serviço de transcrição. Informe a chave do novo serviço.", 400);
+      throw new ErroClaro("Você trocou o serviço de transcrição. Informe a chave do novo serviço.", 400, { precisa_chave: true });
+    }
+    // quem desmarca "Usar a mesma chave da IA" precisa trazer a chave própria do serviço
+    if (daIA && c.usar_chave_da_ia === false) {
+      throw new ErroClaro("Para deixar de usar a chave da IA, informe a chave própria do serviço de transcrição.", 400, { precisa_chave: true });
     }
   }
-  await rpc("gr_ajustes_gravar", { p_dados: { transcricao_provedor: provedor }, p_user: quem.id });
+  await rpc("gr_ajustes_gravar", {
+    p_dados: { transcricao_provedor: provedor, transcricao_modelo: modelo || null, transcricao_chave_da_ia: daIA }, p_user: quem.id,
+  });
   return { ajustes: ajustesPublicos(await lerAjustes()) };
 }
 
@@ -695,6 +729,7 @@ async function portaDaAgenda(req: Request, acao: string): Promise<Response> {
 const ACOES: Record<string, (c: Corpo, quem: Quem) => Promise<Record<string, unknown>>> = {
   ajustes_ia: ajustesIA,
   testar_ia: () => testarIA(),
+  ia_modelos: () => iaModelos(),
   ajustes_transcricao: ajustesTranscricao,
   whatsapp_salvar: whatsappSalvar,
   whatsapp_estado: whatsappEstado,

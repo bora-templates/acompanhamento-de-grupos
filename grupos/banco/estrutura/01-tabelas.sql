@@ -34,6 +34,13 @@ comment on table hub.gr_ajustes is
   'Acompanhamento de Grupos: a configuração da empresa (uma linha só). Sem token nem chave: eles ficam no Vault (gr_segredo_*). Só a chave de serviço lê e grava.';
 comment on column hub.gr_ajustes.funcoes_url is
   'O SUPABASE_URL que a Edge Function gr-api grava. Ninguém do navegador escreve aqui; a agenda usa quando a instalação não trocou o endereço do projeto.';
+-- as colunas que chegaram depois da primeira versão (banco que já tinha a tabela)
+alter table hub.gr_ajustes add column if not exists transcricao_modelo text;
+alter table hub.gr_ajustes add column if not exists transcricao_chave_da_ia boolean not null default false;
+comment on column hub.gr_ajustes.transcricao_modelo is
+  'O modelo de áudio da transcrição (whisper-large-v3-turbo, gpt-transcribe e vizinhos). Nulo: a gr-api usa o padrão do serviço.';
+comment on column hub.gr_ajustes.transcricao_chave_da_ia is
+  'true quando a chave da transcrição é a mesma da IA (OpenAI nos dois). A gr-api copia a chave da IA para o cofre e repete a cópia quando a chave da IA muda.';
 insert into hub.gr_ajustes (id) values (1) on conflict (id) do nothing;
 
 -- ── gr_grupos: os grupos que a empresa acompanha ─────────────────────────────

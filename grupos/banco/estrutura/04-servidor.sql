@@ -256,6 +256,8 @@ begin
     ia_modelo             = case when d ? 'ia_modelo' then nullif(btrim(coalesce(d ->> 'ia_modelo', '')), '') else a.ia_modelo end,
     ia_url                = case when d ? 'ia_url' then nullif(btrim(coalesce(d ->> 'ia_url', '')), '') else a.ia_url end,
     transcricao_provedor  = case when d ? 'transcricao_provedor' then nullif(d ->> 'transcricao_provedor', '') else a.transcricao_provedor end,
+    transcricao_modelo    = case when d ? 'transcricao_modelo' then nullif(btrim(coalesce(d ->> 'transcricao_modelo', '')), '') else a.transcricao_modelo end,
+    transcricao_chave_da_ia = case when d ? 'transcricao_chave_da_ia' then coalesce((d ->> 'transcricao_chave_da_ia')::boolean, false) else a.transcricao_chave_da_ia end,
     funcoes_url           = case when d ? 'funcoes_url' then nullif(btrim(coalesce(d ->> 'funcoes_url', '')), '') else a.funcoes_url end,
     atualizado_em         = now(),
     atualizado_por        = coalesce(p_user, a.atualizado_por)

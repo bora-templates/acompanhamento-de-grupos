@@ -5,8 +5,9 @@
 // que por sua vez segue a do assistente (assistente/supabase/functions/agente/ia.ts):
 // um pedido só (sistema + usuário), resposta em texto, JSON quando o pedido quer.
 //
-// Os quatro provedores do sistema: anthropic (Claude), deepseek, openai e compativel
-// (qualquer serviço no formato /chat/completions, como OpenRouter, Groq, Mistral e Ollama).
+// A tela oferece dois provedores: anthropic (Claude) e openai. As instalações que salvaram deepseek
+// ou compativel (qualquer serviço no formato /chat/completions) antes da versão 1.0.3 continuam
+// funcionando, mas um salvamento novo só aceita os dois (PROVEDORES_NOVOS).
 //
 // De onde vem a configuração: dos ajustes da solução (gr_ajustes: provedor, modelo,
 // endereço do compatível) e da chave no cofre (gr_ia_chave), que quem administra salva
@@ -38,6 +39,9 @@ const URL_BASE: Record<string, string> = {
   deepseek: "https://api.deepseek.com",
   openai: "https://api.openai.com/v1",
 };
+/* Os provedores que a tela oferece e que um salvamento novo aceita (desde a versão 1.0.3). DeepSeek e
+   Compatível continuam em PROVEDORES_IA para as instalações que já os salvaram seguirem funcionando. */
+export const PROVEDORES_NOVOS = ["anthropic", "openai"];
 export const MODELO_PADRAO: Record<string, string> = {
   anthropic: "claude-sonnet-5-5",
   deepseek: "deepseek-v4-flash",
@@ -182,6 +186,93 @@ export function perguntar(cfg: ConfigIA, sistema: string, usuario: string, opcoe
   return cfg.provedor === "anthropic"
     ? anthropic(cfg, sistema, usuario, opcoes.teto, prazo)
     : compativel(cfg, sistema, usuario, opcoes.teto, opcoes.json === true, prazo);
+}
+
+// ── a lista de modelos do provedor (para o seletor da tela) ─────────────────
+/* A tela de Ajustes mostra os modelos que o provedor salvo tem hoje, os mais recentes primeiro.
+   A busca usa a chave do cofre e só lê a lista: nenhum texto vai para a IA. A chave não volta
+   para a tela e não entra no registro. Falha vira lista vazia com uma frase clara, e a tela fica
+   com a lista fixa dela. */
+export type ModeloDaLista = { id: string; nome: string };
+export const LIMITE_MODELOS = 15;
+export const PRAZO_MODELOS_MS = 10_000;
+
+/* Na OpenAI, a lista traz também os modelos de áudio, imagem, vetores e moderação, que não servem
+   para resumir nem responder: ficam de fora pelo nome. */
+const FORA_DA_CONVERSA = /(embedding|audio|tts|transcribe|realtime|image|moderation|search|dall-e|whisper|davinci|babbage|sora)/i;
+
+/** O endereço da lista de modelos do provedor (só Claude e OpenAI, os dois que a tela oferece). */
+export function enderecoDosModelos(provedor: string): string | null {
+  if (provedor === "anthropic") return "https://api.anthropic.com/v1/models?limit=100";
+  if (provedor === "openai") return "https://api.openai.com/v1/models";
+  return null;
+}
+
+/**
+ * Lê a resposta da lista de modelos ({ data: [...] }) e devolve os modelos de conversa, os mais
+ * recentes primeiro (created na OpenAI, created_at no Claude), sem repetir e
+ * no máximo `limite`. Sem data de criação, vale a ordem em que o provedor mandou.
+ */
+/* Também ficam de fora os que não servem para resumo: voz ao vivo (live), apelido que muda sozinho
+   (chat-latest), os pro (lentos e caros) e as versões com data, que repetem o modelo sem data. */
+const FORA_DO_RESUMO = /(^|-)(live|chat-latest|codex)(-|$)|-pro($|-)|^chat-latest$/i;
+
+export function modelosDaResposta(provedor: string, corpo: unknown, limite = LIMITE_MODELOS): ModeloDaLista[] {
+  // deno-lint-ignore no-explicit-any
+  const c = corpo as any;
+  // deno-lint-ignore no-explicit-any
+  const bruto: any[] = Array.isArray(c?.data) ? c.data : Array.isArray(c) ? c : [];
+  const quando = (m: Record<string, unknown>): number => {
+    if (provedor === "anthropic") {
+      const t = Date.parse(String(m?.created_at ?? ""));
+      return Number.isFinite(t) ? t : 0;
+    }
+    const s = Number(m?.created);
+    return Number.isFinite(s) ? s * 1000 : 0;
+  };
+  const vistos = new Set<string>();
+  const lista = bruto
+    .map((m, ordem) => ({ m, ordem, id: String(m?.id ?? "").trim() }))
+    .filter(({ id }) => id && id.length <= 120 && !/\s/.test(id))
+    .filter(({ id }) => provedor !== "openai" || !FORA_DA_CONVERSA.test(id))
+    .filter(({ id }) => provedor !== "openai" || !FORA_DO_RESUMO.test(id))
+    .filter(({ id }) => !/-\d{4}-\d{2}-\d{2}$|-\d{8}$/.test(id))
+    .filter(({ id }) => (vistos.has(id) ? false : (vistos.add(id), true)))
+    .sort((a, b) => quando(b.m) - quando(a.m) || a.ordem - b.ordem);
+  return lista.slice(0, Math.max(0, limite)).map(({ m, id }) => {
+    const nome = provedor === "anthropic" ? String(m?.display_name ?? "").trim() : "";
+    return { id, nome: nome && nome.length <= 120 ? nome : id };
+  });
+}
+
+/** Busca no provedor salvo a lista de modelos. Nunca lança: falha vira lista vazia com a frase. */
+export async function buscarModelos(cfg: ConfigIA): Promise<{ modelos: ModeloDaLista[]; erro: string | null; status: number }> {
+  const fixa = " A tela mostra a lista fixa de modelos.";
+  const endereco = enderecoDosModelos(cfg.provedor);
+  if (!endereco) return { modelos: [], erro: "A lista ao vivo só existe para Claude e OpenAI." + fixa, status: 0 };
+  if (!cfg.chave) return { modelos: [], erro: "A IA ainda não tem chave salva." + fixa, status: 0 };
+  const headers: Record<string, string> = cfg.provedor === "anthropic"
+    ? { "x-api-key": cfg.chave, "anthropic-version": "2023-06-01" }
+    : { Authorization: `Bearer ${cfg.chave}` };
+  let r: Awaited<ReturnType<typeof buscar>>;
+  try {
+    r = await buscar(endereco, { method: "GET", headers }, { teto: TETO_IA, prazoMs: PRAZO_MODELOS_MS });
+  } catch (e) {
+    const status = e instanceof ErroRede ? e.status : 0;
+    return { modelos: [], erro: "O fornecedor da IA não mandou a lista de modelos agora." + fixa, status };
+  }
+  if (r.status === 401 || r.status === 403) {
+    return { modelos: [], erro: "O fornecedor da IA recusou a chave salva ao listar os modelos." + fixa, status: r.status };
+  }
+  if (!r.ok) return { modelos: [], erro: `O fornecedor da IA não mandou a lista de modelos (código ${r.status}).` + fixa, status: r.status };
+  let corpo: unknown = null;
+  try {
+    corpo = JSON.parse(comoTexto(r.bytes));
+  } catch (_) {
+    corpo = null;
+  }
+  const modelos = modelosDaResposta(cfg.provedor, corpo);
+  return { modelos, erro: modelos.length ? null : "O fornecedor da IA mandou a lista de modelos vazia." + fixa, status: r.status };
 }
 
 // ── Anthropic (Claude), pelo SDK oficial ────────────────────────────────────
