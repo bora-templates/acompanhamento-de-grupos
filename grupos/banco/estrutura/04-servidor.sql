@@ -80,7 +80,7 @@ begin
                                 transcricao, citada_id, momento)
   values (p_grupo,
           nullif(left(p_dados ->> 'whatsapp_id', 200), ''),
-          nullif(left(p_dados ->> 'autor_jid', 200), ''),
+          nullif(left(regexp_replace(p_dados ->> 'autor_jid', ':\d+@', '@'), 200), ''),
           nullif(left(btrim(coalesce(p_dados ->> 'autor_nome', '')), 200), ''),
           coalesce((p_dados -> 'do_time') = to_jsonb(true), false),
           v_tipo,
@@ -134,7 +134,7 @@ begin
     insert into hub.gr_mensagens (grupo_id, whatsapp_id, autor_jid, autor_nome, do_time, tipo, texto, arquivo_nome,
                                   transcricao, citada_id, momento)
     select p_grupo, i.wid,
-           nullif(left(i.e ->> 'autor_jid', 200), ''),
+           nullif(left(regexp_replace(i.e ->> 'autor_jid', ':\d+@', '@'), 200), ''),
            nullif(left(btrim(coalesce(i.e ->> 'autor_nome', '')), 200), ''),
            coalesce((i.e -> 'do_time') = to_jsonb(true), false),
            i.tipo,
@@ -702,6 +702,11 @@ begin
   get diagnostics v = row_count;
   return v;
 end $$;
+
+-- O WhatsApp manda o autor com o aparelho no fim ("123:92@lid"). Instalação que guardou mensagens
+-- antes de a gravação tirar esse trecho tinha a mesma pessoa duas vezes; aqui as mensagens antigas
+-- ficam com o identificador da pessoa. Roda de novo sem efeito.
+update hub.gr_mensagens set autor_jid = regexp_replace(autor_jid, ':\d+@', '@') where autor_jid ~ ':\d+@';
 
 -- ── travas das funções deste arquivo ────────────────────────────────────────
 revoke execute on function

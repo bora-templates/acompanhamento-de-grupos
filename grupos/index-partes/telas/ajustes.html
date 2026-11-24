@@ -101,14 +101,17 @@
           <form class="pilha" novalidate autocomplete="off" @submit.prevent="salvaIa()" @input="ia.erro = ''">
             <div class="grade2">
               <label class="rot">Provedor
-                <select x-model="ia.provedor" @change="ia.chaveExigida = false">
+                <select x-model="ia.provedor" @change="trocaProvedorIa()">
                   <option value="openai">OpenAI</option><option value="anthropic">Claude</option>
                   <option value="deepseek">DeepSeek</option><option value="compativel">Compatível com OpenAI</option>
                 </select></label>
               <label class="rot">Modelo
-                <input type="text" x-model="ia.modelo" list="gr-modelos" placeholder="Escolha uma sugestão ou escreva o modelo" autocomplete="off" spellcheck="false">
-                <datalist id="gr-modelos"><template x-for="m in iaModelosSugeridos" :key="m"><option :value="m"></option></template></datalist>
-                <span class="dica" x-show="iaTemModeloPadrao" style="text-transform:none;letter-spacing:0;font-weight:400">Se você deixar em branco, a solução usa o modelo padrão deste provedor.</span></label>
+                <select x-model="ia.escolha" x-show="iaModelosSugeridos.length" @change="escolheModeloIa()">
+                  <template x-for="m in iaModelosSugeridos" :key="m.id"><option :value="m.id" :selected="m.id === ia.escolha" x-text="m.nome"></option></template>
+                  <option value="__outro" :selected="iaOutroModelo">Outro modelo</option>
+                </select>
+                <input id="gr-ia-modelo" type="text" x-model="ia.modelo" x-show="iaOutroModelo" x-cloak aria-label="Nome do modelo" placeholder="Escreva o nome exato do modelo" autocomplete="off" spellcheck="false" :style="{ marginTop: iaModelosSugeridos.length ? '8px' : '0' }">
+                <span class="dica" x-show="iaOutroModelo" x-cloak style="text-transform:none;letter-spacing:0;font-weight:400" x-text="iaTemModeloPadrao ? 'Copie o nome do modelo do site do provedor. Se você deixar em branco, a solução usa o modelo recomendado.' : 'Copie o nome do modelo do site do provedor, sem espaços.'"></span></label>
             </div>
             <label class="rot" x-show="ia.provedor === 'compativel'" x-cloak>Endereço da API
               <input id="gr-ia-url" type="url" x-model="ia.url" @input="ia.chaveExigida = false" placeholder="https://api.exemplo.com/v1" autocomplete="off" spellcheck="false" inputmode="url"></label>

@@ -38,10 +38,39 @@ test('com a base e os módulos no banco, o plano não reinstala nada', () => {
   const V = Pecas.base(RAIZ).versao;   // a base que está no banco é a desta pasta (se fosse mais velha, o plano a atualizaria)
   const sistemas = { base: V, 'base.essencial': V };
   for (const p of Pecas.pecasDe(MODS, RAIZ)) sistemas['base.' + p] = V;
-  for (const m of MODS) sistemas[m] = '1.0.0';
+  for (const m of MODS) sistemas[m] = Pecas.manifestos(RAIZ)[m].versao;   // cada módulo na versão desta pasta
   const p = Plano.planoDoBanco([], { base: V, sistemas }, RAIZ);
   assert.deepStrictEqual(p.etapas, []);
   assert.ok(p.ligacoes.length > 0, 'as ligações rodam de novo');
+});
+
+test('módulo no banco com versão mais velha que a da pasta: o SQL do módulo roda de novo e anota a versão nova', () => {
+  const V = Pecas.base(RAIZ).versao;
+  const M = Pecas.manifestos(RAIZ);
+  const sistemas = { base: V, 'base.essencial': V };
+  for (const p of Pecas.pecasDe(MODS, RAIZ)) sistemas['base.' + p] = V;
+  for (const m of MODS) sistemas[m] = M[m].versao;
+  const alvo = MODS[0];
+  sistemas[alvo] = '0.0.1';
+  const p = Plano.planoDoBanco([], { base: V, sistemas }, RAIZ);
+  assert.deepStrictEqual(p.recusas, []);
+  assert.deepStrictEqual(p.etapas.map((e) => e.id), [`${alvo}@${M[alvo].versao}`], 'só o módulo mais velho volta ao plano');
+  const e = p.etapas[0];
+  assert.ok(e.pedacos.some((x) => x.arquivo.startsWith(`${alvo}/banco/`)), 'leva o SQL do módulo');
+  // o instalador pula pedaço já anotado pelo id: a atualização precisa de ids próprios da versão
+  for (const x of e.pedacos) assert.ok(x.id.startsWith(`${alvo}@${M[alvo].versao}:`), `${x.id} tem o id da versão`);
+  assert.ok(e.marcas.some((m) => m.includes(`'${alvo}', '${M[alvo].versao}'`)), 'a versão nova é anotada');
+});
+
+test('módulo no banco sem versão anotada ou com a mesma versão não roda de novo', () => {
+  const V = Pecas.base(RAIZ).versao;
+  const M = Pecas.manifestos(RAIZ);
+  const sistemas = { base: V, 'base.essencial': V };
+  for (const p of Pecas.pecasDe(MODS, RAIZ)) sistemas['base.' + p] = V;
+  for (const m of MODS) sistemas[m] = M[m].versao;
+  sistemas[MODS[0]] = null;
+  const p = Plano.planoDoBanco([], { base: V, sistemas }, RAIZ);
+  assert.deepStrictEqual(p.etapas, []);
 });
 
 test('banco com a base mais velha: o plano atualiza a base e só depois instala o módulo novo', () => {

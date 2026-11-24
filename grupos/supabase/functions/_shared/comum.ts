@@ -6,6 +6,7 @@
 // funções do banco, o registro de falhas e o trabalho em segundo plano.
 // ============================================================================
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { semMetadeDeEmoji } from "./texto.ts";
 
 export const env = (n: string) => (Deno.env.get(n) ?? "").trim();
 
@@ -62,7 +63,7 @@ export function banco(): Banco | null {
 export async function rpc<T = any>(nome: string, params: Record<string, unknown> = {}): Promise<T> {
   const db = banco();
   if (!db) throw new ErroClaro("A função está sem a configuração do Supabase (SUPABASE_URL e a chave de serviço).", 500);
-  const { data, error } = await db.rpc(nome, params);
+  const { data, error } = await db.rpc(nome, semMetadeDeEmoji(params) as Record<string, unknown>);
   if (error) throw new ErroBanco(String(error.message || "erro no banco"), String(error.code || ""));
   return data as T;
 }

@@ -74,6 +74,8 @@ const TETO_DOWNLOAD = Math.ceil(TETO_AUDIO * 4 / 3) + MB;
 
 /** "5511999990000@s.whatsapp.net" e "123:45@lid" viram "5511999990000" e "123". */
 export const semSufixo = (v: unknown) => String(v ?? "").split("@")[0].split(":")[0];
+/** "123:92@lid" vira "123@lid": o trecho depois dos dois-pontos é o aparelho, e a pessoa é a mesma. */
+export const semAparelho = (v: unknown) => String(v ?? "").replace(/:\d+(?=@)/, "");
 export const soDigitos = (v: unknown) => String(v ?? "").replace(/\D/g, "");
 
 /** epoch em segundos ou milissegundos → milissegundos (0 quando não dá para ler). */
@@ -185,7 +187,7 @@ export function lerParticipantes(lista: Json): ParticipanteLido[] {
   const saida: ParticipanteLido[] = [];
   for (const p of lista) {
     if (!p || typeof p !== "object") continue;
-    const jid = limpoECortado(String(p.JID ?? p.jid ?? p.id ?? p.LID ?? p.lid ?? "").trim(), 200);
+    const jid = limpoECortado(semAparelho(String(p.JID ?? p.jid ?? p.id ?? p.LID ?? p.lid ?? "").trim()), 200);
     if (!jid) continue;
     const foneBruto = p.PhoneNumber ?? p.phoneNumber ?? p.phone ?? (jid.endsWith("@s.whatsapp.net") ? jid : "");
     const telefone = soDigitos(semSufixo(foneBruto)).slice(0, 30) || null;
@@ -337,7 +339,7 @@ export function lerMensagemUazapi(m: Json, extra: { grupoNome?: string | null } 
       mensagem: {
         whatsapp_id: limpoECortado(id, 200),
         chat_jid: chat,
-        autor_jid: autorJid ? limpoECortado(autorJid, 200) : null,
+        autor_jid: autorJid ? limpoECortado(semAparelho(autorJid), 200) : null,
         autor_nome: autorNome ? limpoECortado(autorNome, 200) : null,
         do_time: deMim,
         tipo,

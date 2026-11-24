@@ -45,3 +45,19 @@ export function cortar(s: string, max: number): string {
 
 /** Limpa e corta de uma vez. */
 export const limpoECortado = (v: unknown, max: number) => cortar(textoLimpo(v), max);
+
+/**
+ * A mesma limpeza em tudo o que vai para o banco: cada texto, em qualquer nível do objeto, fica
+ * sem metade de emoji. É a última rede antes do pedido, porque o banco recusa o pedido inteiro
+ * (PGRST102) quando acha uma metade, e um resumo pronto se perde por causa de um caractere.
+ */
+export function semMetadeDeEmoji(v: unknown): unknown {
+  if (typeof v === "string") return bemFormado(v);
+  if (Array.isArray(v)) return v.map(semMetadeDeEmoji);
+  if (v && typeof v === "object" && Object.getPrototypeOf(v) === Object.prototype) {
+    const saida: Record<string, unknown> = {};
+    for (const [k, x] of Object.entries(v)) saida[k] = semMetadeDeEmoji(x);
+    return saida;
+  }
+  return v;
+}

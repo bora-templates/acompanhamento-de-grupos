@@ -45,6 +45,14 @@ o mapa guarda a versão de cada peça, porque uma peça pode ter chegado num pac
 antigo que outra. Mudança no banco da base depois da 1.0.0 vira um arquivo em
 `base/banco/atualizacoes/` (ver o `LEIA-ME.md` de lá).
 
+Mudança no banco de um **módulo** não precisa de arquivo de atualização: o SQL de cada módulo
+é escrito para rodar de novo sem duplicar nada (`create or replace`, `if not exists` e
+correção de dado com `where` que só pega o que falta corrigir). Suba a `versao` no
+`sistema.json` do módulo junto com a mudança. A instalação pela tela (`/setup`, **Refazer a
+instalação**) e pelo `instalar-pela-api.js` compara essa versão com a do banco e, com a da
+pasta mais nova, roda o `estrutura.sql` do módulo de novo e anota a versão nova. Sem versão
+anotada no banco, ou com a mesma, nada roda. O `instalar-banco.sh` ainda não faz isso.
+
 ## Montar o site
 
 ```bash

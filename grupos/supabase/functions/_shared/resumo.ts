@@ -6,6 +6,7 @@
 // devolve e o texto pronto para o WhatsApp. Tudo aqui é testado pela fábrica
 // (testes/grupos/), então nada daqui importa supabase-js nem o SDK da IA.
 // ============================================================================
+import { cortar } from "./texto.ts";
 
 export const FUSO = "America/Sao_Paulo";
 
@@ -269,7 +270,7 @@ export function listarArquivos(msgs: MensagemDoPeriodo[], maximo = 50): Arquivo[
     .slice(0, maximo)
     .map((m) => ({
       tipo: m.tipo,
-      nome: m.arquivo_nome || (m.texto ? String(m.texto).replace(/\s+/g, " ").trim().slice(0, 80) : null),
+      nome: m.arquivo_nome || (m.texto ? cortar(String(m.texto).replace(/\s+/g, " ").trim(), 80) : null),
       quem: nomeDoAutor(m),
       quando: new Date(m.momento).toISOString(),
     }));
@@ -372,7 +373,7 @@ export const LIMITE_MATERIAIS_CHARS = 6_000;
 
 const umaLinha = (s: unknown, max: number) => {
   const t = String(s ?? "").replace(/\s+/g, " ").trim();
-  return t.length > max ? t.slice(0, max) : t;
+  return cortar(t, max);
 };
 
 /* A marca que o código põe depois do nome de quem é do time. O nome limpo nunca tem
@@ -398,10 +399,26 @@ const semMarca = (s: unknown) => String(s ?? "").normalize("NFKC").replace(/\[\s
 /** O nome de quem escreveu, como a IA vê: limpo, ou o número quando o nome some na limpeza. */
 const nomeParaIA = (m: MensagemDoPeriodo) => nomeLimpo(m.autor_nome) || semSufixo(m.autor_jid) || "Alguém";
 
+/** Quem escreveu no período, pelo identificador sem sufixo: é com ele que o WhatsApp grava a menção. */
+export function nomesPorIdentificador(msgs: MensagemDoPeriodo[]): Map<string, string> {
+  const nomes = new Map<string, string>();
+  for (const m of msgs) {
+    const chave = semSufixo(m.autor_jid), nome = nomeLimpo(m.autor_nome);
+    if (chave && nome) nomes.set(chave, nome);
+  }
+  return nomes;
+}
+
+/** "@123291515777075" vira "@Nome" quando o identificador é de alguém conhecido; o resto fica como veio. */
+export function trocarMencoes(texto: string, nomes?: Map<string, string>): string {
+  if (!nomes || !nomes.size || !texto.includes("@")) return texto;
+  return texto.replace(/(^|[^\p{L}\p{N}@._-])@(\d{6,20})(?!\d)/gu, (tudo, antes, id) => nomes.has(id) ? `${antes}@${nomes.get(id)}` : tudo);
+}
+
 /** "[dd/mm hh:mm] Nome [time]: texto", com o áudio transcrito e a citação indicada. */
-export function linhaDaMensagem(m: MensagemDoPeriodo, chaves: Set<string>): string {
+export function linhaDaMensagem(m: MensagemDoPeriodo, chaves: Set<string>, nomes?: Map<string, string>): string {
   const nome = umaLinha(nomeParaIA(m), 80) + (ehDoTime(m, chaves) ? " " + MARCA_DO_TIME : "");
-  const texto = umaLinha(semMarca(m.texto), 1500);
+  const texto = umaLinha(semMarca(trocarMencoes(String(m.texto ?? ""), nomes)), 1500);
   let corpo: string;
   switch (m.tipo) {
     case "audio":
@@ -419,7 +436,7 @@ export function linhaDaMensagem(m: MensagemDoPeriodo, chaves: Set<string>): stri
     default: corpo = texto;
   }
   const citada = m.citada
-    ? ` (respondendo a ${umaLinha(nomeLimpo(m.citada.autor_nome) || "alguém", 80)}: "${umaLinha(semMarca(m.citada.texto) || "mensagem sem texto", 120)}")`
+    ? ` (respondendo a ${umaLinha(nomeLimpo(m.citada.autor_nome) || "alguém", 80)}: "${umaLinha(semMarca(trocarMencoes(String(m.citada.texto ?? ""), nomes)) || "mensagem sem texto", 120)}")`
     : m.citada_id ? " (respondendo a uma mensagem anterior)" : "";
   return `[${dataHoraBR(m.momento)}] ${nome}:${citada} ${corpo}`.trim();
 }
@@ -430,10 +447,11 @@ export function linhaDaMensagem(m: MensagemDoPeriodo, chaves: Set<string>): stri
  */
 export function mensagensParaIA(msgs: MensagemDoPeriodo[], chaves: Set<string>, limite = LIMITE_MENSAGENS_CHARS) {
   const ordem = [...msgs].sort((a, b) => Date.parse(a.momento) - Date.parse(b.momento) || (a.id ?? 0) - (b.id ?? 0));
+  const nomes = nomesPorIdentificador(ordem);
   const linhas: string[] = [];
   let tamanho = 0;
   for (let i = ordem.length - 1; i >= 0; i--) {
-    const linha = linhaDaMensagem(ordem[i], chaves);
+    const linha = linhaDaMensagem(ordem[i], chaves, nomes);
     if (tamanho + linha.length + 1 > limite) break;
     linhas.push(linha);
     tamanho += linha.length + 1;
@@ -450,7 +468,7 @@ export function materiaisParaIA(trechos: { titulo: string; trecho: string }[], l
     const bloco = `[${umaLinha(t.titulo, 200)}] ${String(t.trecho ?? "").trim()}`;
     if (tamanho + bloco.length > limite) {
       const sobra = limite - tamanho;
-      if (sobra > 80) partes.push(bloco.slice(0, sobra));
+      if (sobra > 80) partes.push(cortar(bloco, sobra));
       break;
     }
     partes.push(bloco);
@@ -566,7 +584,7 @@ export function lerJsonDaIA(texto: string): unknown {
   }
 }
 
-const textoLimpo = (v: unknown, max: number): string => (typeof v === "string" ? v.replace(/\s+/g, " ").trim().slice(0, max) : "");
+const textoLimpo = (v: unknown, max: number): string => (typeof v === "string" ? cortar(v.replace(/\s+/g, " ").trim(), max) : "");
 const chaveLimpa = (v: unknown) => semAcento(String(v ?? "")).toLowerCase().trim().replace(/[\s-]+/g, "_");
 
 /**
@@ -714,7 +732,7 @@ const daIA = (s: unknown) => paraWhatsApp(semLinkNemChave(s));
 /** Encurta sem reticências: termina na última frase inteira que cabe, ou na última palavra. */
 export function encurtar(s: string, max: number): string {
   if (s.length <= max) return s;
-  const corte = s.slice(0, max);
+  const corte = cortar(s, max);
   const fimDeFrase = Math.max(corte.lastIndexOf(". "), corte.lastIndexOf("! "), corte.lastIndexOf("? "));
   if (fimDeFrase > max * 0.5) return corte.slice(0, fimDeFrase + 1);
   const espaco = corte.lastIndexOf(" ");
@@ -813,7 +831,7 @@ export function textoParaWhatsApp(a: {
     if (t.length <= LIMITE_WHATSAPP) return t;
   }
   const aviso = "\nO resumo completo está no Acompanhamento de Grupos.";
-  const t = montar(NIVEIS[NIVEIS.length - 1]).slice(0, LIMITE_WHATSAPP - aviso.length);
+  const t = cortar(montar(NIVEIS[NIVEIS.length - 1]), LIMITE_WHATSAPP - aviso.length);
   const ultimaLinha = t.lastIndexOf("\n");
   return (ultimaLinha > 0 ? t.slice(0, ultimaLinha) : t).trimEnd() + aviso;
 }

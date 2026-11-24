@@ -151,18 +151,33 @@ function planoDoBanco(mods, estado = null, raiz = RAIZ_PADRAO) {
     etapas.push({ id: `base.${p}`, titulo: `Peça da base: ${(B.pecas[p] || {}).nome || p}`, pedacos: ps, marcas: [marca('base.' + p, vPasta)] });
   }
 
-  const novos = pedidos.filter(s => !(s in noBanco));
-  for (const s of novos) {
+  const sqlDoModulo = (s) => {
     if (!fs.existsSync(path.join(raiz, s, 'banco', 'estrutura.sql'))) throw new Error(`${s} não tem banco/estrutura.sql`);
     const ps = [];
     if (s === 'crm') ps.push(...pedacos('crm/banco/crm.sql', raiz));
     ps.push(...pedacos(`${s}/banco/estrutura.sql`, raiz));
-    etapas.push({ id: s, titulo: M[s].nome || s, pedacos: ps, marcas: [marca(s, M[s].versao || null)] });
+    return ps;
+  };
+
+  // módulo que já está no banco com versão mais velha que a desta pasta: o SQL dele roda de novo
+  // (cada parte é escrita para rodar de novo sem duplicar nada) e a versão nova fica anotada.
+  // Sem versão anotada no banco, não dá para saber se é mais velho, e nada roda.
+  // Os ids levam a versão na frente, porque o instalador pula pedaço que já anotou como feito.
+  const atualizados = pedidos.filter(s => s in noBanco && noBanco[s] && M[s].versao && Pecas.compara(M[s].versao, noBanco[s]) > 0);
+  for (const s of atualizados) {
+    const v = M[s].versao;
+    const ps = sqlDoModulo(s).map(p => Object.assign({}, p, { id: `${s}@${v}:${p.id}` }));
+    etapas.push({ id: `${s}@${v}`, titulo: `Atualizar ${M[s].nome || s} de ${noBanco[s]} para ${v}`, pedacos: ps, marcas: [marca(s, v)] });
+  }
+
+  const novos = pedidos.filter(s => !(s in noBanco));
+  for (const s of novos) {
+    etapas.push({ id: s, titulo: M[s].nome || s, pedacos: sqlDoModulo(s), marcas: [marca(s, M[s].versao || null)] });
   }
 
   // no fim, sempre: as ligações de TODOS os que estarão no banco (rodar de novo não duplica)
   const todos = Pecas.ordena(jaModulos.concat(pedidos), raiz, M);
-  return { recusas: [], etapas, ligacoes: ligacoes(['base'].concat(todos), raiz), modulos: todos, novos, pecas };
+  return { recusas: [], etapas, ligacoes: ligacoes(['base'].concat(todos), raiz), modulos: todos, novos, atualizados, pecas };
 }
 
 // ─── as FUNÇÕES do servidor ──────────────────────────────────────────────────

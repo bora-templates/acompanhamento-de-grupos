@@ -30,19 +30,23 @@ function grWaInicial() {
   };
 }
 function grIaInicial() {
-  return { provedor: 'openai', modelo: '', url: '', urlSalva: '', chave: '', trocandoChave: false, chaveExigida: false, salvando: false, testando: false, erro: '', ok: '', teste: '' };
+  return { provedor: 'openai', modelo: '', escolha: '', url: '', urlSalva: '', chave: '', trocandoChave: false, chaveExigida: false, salvando: false, testando: false, erro: '', ok: '', teste: '' };
 }
 function grTrInicial() {
   return { provedor: 'groq', chave: '', trocandoChave: false, usarChaveIa: false, salvando: false, erro: '', ok: '' };
 }
 let GR_TIMER_QR = null;
 const GR_QR_SEGUNDOS = 20;
+// os modelos que o seletor já traz, por provedor; o primeiro de cada lista é o recomendado e vem escolhido
+// (no Claude e na DeepSeek ele é o mesmo modelo padrão do servidor, em _shared/ia.ts)
 const GR_MODELOS = {
-  openai: ['gpt-5-mini', 'gpt-5', 'gpt-4.1-mini'],
-  anthropic: ['claude-sonnet-5-5', 'claude-opus-5-5'],
-  deepseek: ['deepseek-v4-flash'],
+  openai: [{ id: 'gpt-5-mini', nome: 'GPT-5 mini (recomendado)' }, { id: 'gpt-5', nome: 'GPT-5' }, { id: 'gpt-4.1-mini', nome: 'GPT-4.1 mini' }],
+  anthropic: [{ id: 'claude-sonnet-5-5', nome: 'Claude Sonnet 5.5 (recomendado)' }, { id: 'claude-haiku-5-5', nome: 'Claude Haiku 5.5' }, { id: 'claude-opus-5-5', nome: 'Claude Opus 5.5' }],
+  deepseek: [{ id: 'deepseek-v4-flash', nome: 'DeepSeek V4 Flash (recomendado)' }],
   compativel: [],
 };
+const GR_OUTRO_MODELO = '__outro';
+function grPrimeiroModelo(provedor) { const l = GR_MODELOS[provedor] || []; return l.length ? l[0].id : ''; }
 
 function grAjustes() {
   return {
@@ -60,6 +64,7 @@ function grAjustes() {
       const a = this.ajustes;
       this.wa = Object.assign(grWaInicial(), { servidor: String(a.whatsapp_servidor || ''), estado: a.whatsapp_estado || 'desligado', numero: a.whatsapp_numero || '' });
       this.ia = Object.assign(grIaInicial(), { provedor: a.ia_provedor || 'openai', modelo: a.ia_modelo || '', url: String(a.ia_url || ''), urlSalva: String(a.ia_url || '') });
+      this.ajustaEscolhaIa();
       this.tr = Object.assign(grTrInicial(), { provedor: a.transcricao_provedor || 'groq' });
     },
     get secoesAjustes() {
@@ -202,10 +207,25 @@ function grAjustes() {
 
     // ── IA ──
     get iaModelosSugeridos() { return GR_MODELOS[this.ia.provedor] || []; },
+    get iaOutroModelo() { return this.ia.escolha === GR_OUTRO_MODELO; },
+    // acerta o seletor com o modelo da vez: sem modelo, entra o recomendado; modelo fora da lista abre o campo de texto
+    ajustaEscolhaIa() {
+      const i = this.ia, ids = this.iaModelosSugeridos.map((m) => m.id);
+      if (!ids.length) { i.escolha = GR_OUTRO_MODELO; return; }
+      const modelo = String(i.modelo || '').trim();
+      if (!modelo) { i.modelo = ids[0]; i.escolha = ids[0]; return; }
+      i.escolha = ids.includes(modelo) ? modelo : GR_OUTRO_MODELO;
+    },
+    trocaProvedorIa() { this.ia.chaveExigida = false; this.ia.modelo = ''; this.ajustaEscolhaIa(); },
+    escolheModeloIa() {
+      const i = this.ia;
+      if (i.escolha === GR_OUTRO_MODELO) { i.modelo = ''; this.focaCampo('gr-ia-modelo'); return; }
+      i.modelo = i.escolha;
+    },
     get iaTemModeloPadrao() { return this.ia.provedor === 'anthropic' || this.ia.provedor === 'deepseek'; },
     get iaMudou() {
       const a = this.ajustes, i = this.ia;
-      return i.provedor !== (a.ia_provedor || '') || String(i.modelo || '').trim() !== (a.ia_modelo || '') || !!String(i.chave || '').trim()
+      return i.provedor !== (a.ia_provedor || '') || String(i.modelo || '').trim() !== (a.ia_modelo || (a.ia_configurada ? grPrimeiroModelo(a.ia_provedor) : '')) || !!String(i.chave || '').trim()
         || (i.provedor === 'compativel' && grEnderecoChave(i.url) !== grEnderecoChave(i.urlSalva));
     },
     get iaTrocouProvedor() { const a = this.ajustes; return !!(a.ia_configurada && a.ia_provedor && this.ia.provedor !== a.ia_provedor); },

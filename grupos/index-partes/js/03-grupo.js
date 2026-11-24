@@ -175,15 +175,28 @@ function grGrupo() {
     async abreConversa() {
       GR_TENTATIVAS_TRANSC = 0;
       this.assinaConversa(this.rotaId);
-      await Promise.all([this.carregaMensagens(true), this.carregaAutores()]);
+      // os autores vêm antes: é com o nome deles que a menção ("@123...") vira "@Nome" na conversa
+      await this.carregaAutores();
+      await this.carregaMensagens(true);
     },
     termosBusca() {
       return String(this.conv.busca || '').split(/\s+/).map((t) => t.replace(/^[-"]+|"+$/g, '')).filter((t) => t.length >= 2).slice(0, 6);
     },
+    // o WhatsApp grava a menção como "@" e o identificador da pessoa; a tela mostra o nome de quem já escreveu no grupo
+    comMencoes(texto) {
+      const autores = this.conv.autores || [];
+      if (!autores.length || texto.indexOf('@') < 0) return texto;
+      return texto.replace(/(^|[^\p{L}\p{N}@._-])@(\d{6,20})(?!\d)/gu, (tudo, antes, id) => {
+        const a = autores.find((x) => String(x.autor_jid || '').split('@')[0].split(':')[0] === id);
+        const nome = a ? String(a.autor_nome || '').trim() : '';
+        return nome && nome !== a.autor_jid ? antes + '@' + nome : tudo;
+      });
+    },
     normalizaMensagem(m) {
       const o = Object.assign({}, m);
       o.tipo = m.tipo || 'texto';
-      o.texto = m.texto == null ? '' : String(m.texto);
+      o.texto = this.comMencoes(m.texto == null ? '' : String(m.texto));
+      if (o.citada && o.citada.texto) o.citada = Object.assign({}, o.citada, { texto: this.comMencoes(String(o.citada.texto)) });
       o.momentoMs = grMs(m.momento) || 0;
       o.partes = grSegmenta(o.texto, this.termosBusca());
       o.nova = false;
