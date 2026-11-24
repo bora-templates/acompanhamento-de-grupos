@@ -42,8 +42,13 @@ const URL_BASE: Record<string, string> = {
 /* Os provedores que a tela oferece e que um salvamento novo aceita (desde a versão 1.0.3). DeepSeek e
    Compatível continuam em PROVEDORES_IA para as instalações que já os salvaram seguirem funcionando. */
 export const PROVEDORES_NOVOS = ["anthropic", "openai"];
+/* O modelo padrão de cada provedor: é o que o servidor usa quando o campo do modelo fica vazio, e é o
+   recomendado que a tela marca e já deixa escolhido. Na OpenAI, desde a versão 1.0.5, é o GPT-6 Luna
+   (identificador "gpt-6-luna", o mais barato da família 6: US$ 0,10 de entrada e 0,50 de saída por milhão de
+   tokens, conferido em 24/11/2026 em developers.openai.com/api/docs/pricing; escolha do Luis pelo custo). */
 export const MODELO_PADRAO: Record<string, string> = {
   anthropic: "claude-sonnet-5-5",
+  openai: "gpt-6-luna",
   deepseek: "deepseek-v4-flash",
 };
 
@@ -209,9 +214,10 @@ export function enderecoDosModelos(provedor: string): string | null {
 }
 
 /**
- * Lê a resposta da lista de modelos ({ data: [...] }) e devolve os modelos de conversa, os mais
- * recentes primeiro (created na OpenAI, created_at no Claude), sem repetir e
- * no máximo `limite`. Sem data de criação, vale a ordem em que o provedor mandou.
+ * Lê a resposta da lista de modelos ({ data: [...] }) e devolve os modelos de conversa: o recomendado
+ * (MODELO_PADRAO) primeiro, quando o provedor tem, e depois os mais recentes (created na OpenAI,
+ * created_at no Claude), sem repetir e no máximo `limite`. Sem data de criação, vale a ordem em que
+ * o provedor mandou.
  */
 /* Também ficam de fora os que não servem para resumo: voz ao vivo (live), apelido que muda sozinho
    (chat-latest), os pro (lentos e caros) e as versões com data, que repetem o modelo sem data. */
@@ -239,6 +245,11 @@ export function modelosDaResposta(provedor: string, corpo: unknown, limite = LIM
     .filter(({ id }) => !/-\d{4}-\d{2}-\d{2}$|-\d{8}$/.test(id))
     .filter(({ id }) => (vistos.has(id) ? false : (vistos.add(id), true)))
     .sort((a, b) => quando(b.m) - quando(a.m) || a.ordem - b.ordem);
+  // o recomendado (o modelo padrão do provedor) vai na frente, antes do corte, para não sumir da lista
+  // quando o provedor tem muitos modelos mais novos que ele
+  const recomendado = MODELO_PADRAO[provedor];
+  const k = recomendado ? lista.findIndex(({ id }) => id === recomendado) : -1;
+  if (k > 0) lista.unshift(...lista.splice(k, 1));
   return lista.slice(0, Math.max(0, limite)).map(({ m, id }) => {
     const nome = provedor === "anthropic" ? String(m?.display_name ?? "").trim() : "";
     return { id, nome: nome && nome.length <= 120 ? nome : id };

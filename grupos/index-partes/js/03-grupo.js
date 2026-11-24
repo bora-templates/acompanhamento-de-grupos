@@ -10,6 +10,10 @@
    certo, com um destaque discreto, e a assinatura é desfeita ao trocar de aba, de grupo ou sair da tela.
    Mensagem antiga que chega de uma vez (importação dos últimos 7 dias) não entra uma a uma: a tela
    lê a primeira página de novo e mescla.
+   Imagem e vídeo (versão 1.0.5): a conversa pede o arquivo ao servidor (gr-api, ação midia), que busca na
+   uazapi na hora. A imagem carrega sozinha (até 3 pedidos ao mesmo tempo) e o vídeo espera o botão Ver o
+   vídeo. O arquivo fica só na memória da tela enquanto o grupo está aberto (endereço blob:, solto ao trocar
+   de grupo). O grupo de exemplo e o arquivo que falha mostram o rótulo da mensagem, como antes.
    ============================================================================ */
 function grConvInicial() {
   return {
@@ -22,6 +26,28 @@ let GR_CANAL = null, GR_CANAL_TRANSC = null, GR_SEQ_CANAL = 0;   // os canais de
 let GR_GEN_GRUPO = 0, GR_GEN_CONV = 0;
 let GR_TIMER_BUSCA = null, GR_TIMER_CABECA = null, GR_TIMER_TRANSC = null, GR_TENTATIVAS_TRANSC = 0;
 const GR_PAGINA = 50;
+// a fila dos arquivos de imagem e vídeo da conversa (fora do estado reativo)
+const GR_MIDIA_PARALELO = 3, GR_MIDIA_ESPERA_MS = 75000;
+let GR_MIDIA_FILA = [], GR_MIDIA_RODANDO = 0, GR_MIDIA_GEN = 0;
+const GR_MIDIA_URLS = [];
+
+/* O formato pelos primeiros bytes do arquivo, conferido também aqui (o servidor já confere): só imagem e
+   vídeo que o navegador desenha e que não rodam código. Nulo quando não combina com o tipo da mensagem. */
+function grMimeDaMidia(b, tipo) {
+  const ascii = (de, ate) => String.fromCharCode.apply(null, Array.from(b.subarray(de, ate)));
+  let mime = null;
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) mime = 'image/jpeg';
+  else if (b.length >= 8 && b[0] === 0x89 && ascii(1, 4) === 'PNG') mime = 'image/png';
+  else if (b.length >= 6 && (ascii(0, 6) === 'GIF87a' || ascii(0, 6) === 'GIF89a')) mime = 'image/gif';
+  else if (b.length >= 12 && ascii(0, 4) === 'RIFF' && ascii(8, 12) === 'WEBP') mime = 'image/webp';
+  else if (b.length >= 4 && b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) mime = 'video/webm';
+  else if (b.length >= 12 && ascii(4, 8) === 'ftyp') {
+    const marca = ascii(8, 12);
+    mime = /^3g/.test(marca) ? 'video/3gpp' : marca === 'qt  ' ? 'video/quicktime' : /^(heic|heix|hevc|mif1|msf1|avif)/.test(marca) ? null : 'video/mp4';
+  }
+  if (!mime) return null;
+  return (tipo === 'imagem' ? /^image\//.test(mime) : /^video\//.test(mime)) ? mime : null;
+}
 
 // parte um texto em pedaços que a tela desenha com segurança: texto comum, termo achado e link
 function grMarca(trecho, termos) {
@@ -61,6 +87,7 @@ function grGrupo() {
   return {
     grupo: null,
     conv: grConvInicial(),
+    midias: {},                                 // o arquivo de cada imagem e vídeo da conversa, pelo id da mensagem
 
     // ── abrir o grupo ──
     normalizaGrupo(g) {
@@ -73,6 +100,7 @@ function grGrupo() {
     },
     resetaGrupo() {
       this.conv = grConvInicial();
+      this.soltaMidias();
       this.res = grResInicial(); GR_GEN_HORA++; this.porHora = grHoraInicial(); this.pedido = grPedidoInicial(); this.envio = grEnvioInicial(); this.perg = grPergInicial();
       this.ori = grOriInicial(); this.mat = grMatInicial(); this.part = grPartInicial(); this.ag = grAgInicial();
     },
@@ -384,6 +412,56 @@ function grGrupo() {
         outro: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v5M12 16h.01',
       }[tipo] || 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v5M12 16h.01';
     },
+    // ── imagem e vídeo na conversa ──
+    // a mensagem mostra a imagem ou o vídeo (fora do exemplo, com o identificador do WhatsApp e sem falha); senão, o rótulo
+    midiaVisivel(m) {
+      if (!m || (m.tipo !== 'imagem' && m.tipo !== 'video')) return false;
+      if (!this.grupo || this.grupo.exemplo || !m.whatsapp_id) return false;
+      return this.midiaDe(m).estado !== 'falhou';
+    },
+    // nova (a imagem ainda não pediu), parada (o vídeo espera o botão), carregando, pronta ou falhou
+    midiaDe(m) {
+      return this.midias[String(m.id)] || { estado: m.tipo === 'video' ? 'parada' : 'nova', url: '' };
+    },
+    pedeMidia(m) {
+      const k = String(m.id), atual = this.midias[k];
+      if (atual && atual.estado !== 'parada') return;
+      this.midias[k] = { estado: 'carregando', url: '' };
+      GR_MIDIA_FILA.push({ k: k, tipo: m.tipo, gen: GR_MIDIA_GEN });
+      this.rodaFilaMidia();
+    },
+    rodaFilaMidia() {
+      while (GR_MIDIA_RODANDO < GR_MIDIA_PARALELO && GR_MIDIA_FILA.length) {
+        const item = GR_MIDIA_FILA.shift();
+        GR_MIDIA_RODANDO++;
+        this.baixaMidia(item).finally(() => { GR_MIDIA_RODANDO--; this.rodaFilaMidia(); });
+      }
+    },
+    // o servidor devolve o arquivo (application/octet-stream vira Blob) ou o JSON com ok: false (vira o rótulo)
+    async baixaMidia(item) {
+      let url = '';
+      try {
+        const pedido = OS.getClient().functions.invoke('gr-api', { body: { acao: 'midia', mensagem: Number(item.k) } });
+        const tempo = new Promise((resolve) => setTimeout(() => resolve({ data: null, error: 'tempo' }), GR_MIDIA_ESPERA_MS));
+        const { data, error } = await Promise.race([pedido, tempo]);
+        if (!error && typeof Blob !== 'undefined' && data instanceof Blob && data.size) {
+          const mime = grMimeDaMidia(new Uint8Array(await data.slice(0, 16).arrayBuffer()), item.tipo);
+          if (mime) url = URL.createObjectURL(new Blob([data], { type: mime }));
+        }
+      } catch (e) { url = ''; }
+      // o grupo mudou enquanto o arquivo vinha: solta o endereço e não mexe na tela
+      if (item.gen !== GR_MIDIA_GEN) { if (url) URL.revokeObjectURL(url); return; }
+      if (url) GR_MIDIA_URLS.push(url);
+      this.midias[item.k] = url ? { estado: 'pronta', url: url } : { estado: 'falhou', url: '' };
+    },
+    // o navegador não conseguiu desenhar o arquivo: volta o rótulo
+    midiaFalhou(m) { this.midias[String(m.id)] = { estado: 'falhou', url: '' }; },
+    soltaMidias() {
+      GR_MIDIA_GEN++; GR_MIDIA_FILA = [];
+      for (const u of GR_MIDIA_URLS.splice(0)) { try { URL.revokeObjectURL(u); } catch (e) { /* já solto */ } }
+      this.midias = {};
+    },
+
     // o aviso do estado da transcrição de um áudio ('feita' mostra o texto e não precisa de aviso)
     avisoTranscricao(m) {
       return {

@@ -46,12 +46,13 @@ function grTrInicial() {
 let GR_TIMER_QR = null;
 const GR_QR_SEGUNDOS = 20;
 // a lista fixa do seletor, por provedor, para quando a lista do provedor não está à mão; o primeiro de cada
-// lista é o recomendado e vem escolhido (no Claude ele é o mesmo modelo padrão do servidor,
-// em _shared/ia.ts). Nomes conferidos em 24/11/2026 nas páginas de modelos da OpenAI e da Anthropic.
-// A tela oferece só Claude e OpenAI (GR_PROVEDORES_TELA).
+// lista é o recomendado e vem escolhido, e ele é o mesmo modelo padrão do servidor (MODELO_PADRAO, em
+// _shared/ia.ts). Na OpenAI, desde a versão 1.0.5, o recomendado é o GPT-6 Luna (gpt-6-luna), o mais barato. Nomes conferidos em
+// 24/11/2026 nas páginas de modelos da OpenAI e da Anthropic.
+// A tela oferece só Claude e ChatGPT (GR_PROVEDORES_TELA, com os valores anthropic e openai).
 const GR_PROVEDORES_TELA = ['anthropic', 'openai'];
 const GR_MODELOS = {
-  openai: [{ id: 'gpt-6.2-sol', nome: 'GPT-6.2 Sol (recomendado)' }, { id: 'gpt-6-luna', nome: 'GPT-6 Luna' }, { id: 'gpt-6.1-terra', nome: 'GPT-6.1 Terra' }, { id: 'gpt-6.2-astra', nome: 'GPT-6.2 Astra' }],
+  openai: [{ id: 'gpt-6-luna', nome: 'GPT-6 Luna (recomendado, o mais barato)' }, { id: 'gpt-6.1-terra', nome: 'GPT-6.1 Terra' }, { id: 'gpt-6.2-sol', nome: 'GPT-6.2 Sol' }, { id: 'gpt-5.5', nome: 'GPT-5.5' }, { id: 'gpt-6.2-astra', nome: 'GPT-6.2 Astra' }],
   anthropic: [{ id: 'claude-sonnet-5-5', nome: 'Claude Sonnet 5.5 (recomendado)' }, { id: 'claude-haiku-5-5', nome: 'Claude Haiku 5.5' }, { id: 'claude-opus-5-5', nome: 'Claude Opus 5.5' }, { id: 'claude-fable-5-2', nome: 'Claude Fable 5.2' }],
 };
 // os modelos de áudio por serviço (os mesmos que a gr-api aceita, em _shared/transcricao.ts); o primeiro é o
@@ -66,6 +67,11 @@ const GR_MODELOS_AUDIO = {
 };
 const GR_OUTRO_MODELO = '__outro';
 function grPrimeiroModelo(provedor) { const l = GR_MODELOS[provedor] || []; return l.length ? l[0].id : ''; }
+// a lista com o recomendado na frente (quando ele está nela), sem mudar a ordem dos outros
+function grRecomendadoPrimeiro(lista, recomendado) {
+  const k = recomendado ? lista.findIndex((m) => m.id === recomendado) : -1;
+  return k > 0 ? [lista[k]].concat(lista.slice(0, k), lista.slice(k + 1)) : lista.slice();
+}
 
 function grAjustes() {
   return {
@@ -235,12 +241,12 @@ function grAjustes() {
     },
 
     // ── IA ──
-    // a tela oferece só Claude e OpenAI; uma instalação com DeepSeek ou Compatível salvos continua funcionando,
+    // a tela oferece só Claude e ChatGPT (a OpenAI); uma instalação com DeepSeek ou Compatível salvos continua funcionando,
     // e a tela avisa que, para mudar alguma coisa, é preciso escolher um dos dois
     get iaProvedorAntigo() { const p = this.ajustes.ia_provedor; return !!p && !GR_PROVEDORES_TELA.includes(p); },
     get iaAvisoProvedorAntigo() {
       if (!this.iaProvedorAntigo) return '';
-      return 'A IA desta instalação usa um provedor que a tela não oferece mais (' + this.nomeProvedor(this.ajustes.ia_provedor) + '). Ela continua funcionando. Para mudar alguma coisa, escolha Claude ou OpenAI e informe a chave.';
+      return 'A IA desta instalação usa um provedor que a tela não oferece mais (' + this.nomeProvedor(this.ajustes.ia_provedor) + '). Ela continua funcionando. Para mudar alguma coisa, escolha Claude ou ChatGPT e informe a chave.';
     },
     // a lista que o provedor mandou vale enquanto o provedor escolhido for o salvo
     get iaListaAoVivo() {
@@ -249,8 +255,9 @@ function grAjustes() {
     },
     get iaModelosSugeridos() {
       if (!this.iaListaAoVivo) return GR_MODELOS[this.ia.provedor] || [];
-      const recomendado = grPrimeiroModelo(this.ia.provedor);
-      return this.ia.modelosVivos.map((m) => ({ id: m.id, nome: (m.nome || m.id) + (m.id === recomendado ? ' (recomendado)' : '') }));
+      // o recomendado vai na frente quando o provedor tem, para ficar marcado e ser o escolhido de fábrica
+      return grRecomendadoPrimeiro(this.ia.modelosVivos, grPrimeiroModelo(this.ia.provedor))
+        .map((m) => ({ id: m.id, nome: (m.nome || m.id) + (m.id === grPrimeiroModelo(this.ia.provedor) ? ' (recomendado)' : '') }));
     },
     get iaDicaModelos() {
       const a = this.ajustes, i = this.ia;
@@ -297,7 +304,8 @@ function grAjustes() {
       if (i.escolha === GR_OUTRO_MODELO) { i.modelo = ''; this.focaCampo('gr-ia-modelo'); return; }
       i.modelo = i.escolha;
     },
-    get iaTemModeloPadrao() { return this.ia.provedor === 'anthropic'; },
+    // os dois provedores da tela têm modelo padrão no servidor (o recomendado): o campo pode ficar vazio
+    get iaTemModeloPadrao() { return GR_PROVEDORES_TELA.includes(this.ia.provedor); },
     get iaMudou() {
       const a = this.ajustes, i = this.ia;
       return i.provedor !== (a.ia_provedor || '') || String(i.modelo || '').trim() !== (a.ia_modelo || (a.ia_configurada ? grPrimeiroModelo(a.ia_provedor) : '')) || !!String(i.chave || '').trim();
@@ -316,9 +324,9 @@ function grAjustes() {
     async salvaIa() {
       const i = this.ia;
       if (i.salvando) return;
-      if (!GR_PROVEDORES_TELA.includes(i.provedor)) { i.erro = 'Escolha o provedor da IA: Claude ou OpenAI.'; return; }
+      if (!GR_PROVEDORES_TELA.includes(i.provedor)) { i.erro = 'Escolha o provedor da IA: Claude ou ChatGPT.'; return; }
       const modelo = String(i.modelo || '').trim(), chave = String(i.chave || '').trim();
-      // o Claude tem modelo padrão no servidor; a OpenAI precisa do nome
+      // Claude e ChatGPT têm modelo padrão no servidor; um provedor sem padrão precisa do nome
       if (!modelo && !this.iaTemModeloPadrao) { i.erro = 'Informe o modelo da IA.'; return; }
       if (/\s/.test(modelo)) { i.erro = 'O nome do modelo não pode ter espaços. Copie o nome exato do site do provedor.'; return; }
       if (/\s/.test(chave)) { i.erro = 'A chave não pode ter espaços nem quebras de linha. Copie a chave de novo.'; return; }

@@ -15,7 +15,7 @@
     {
       "id": "grupos",
       "nome": "Acompanhamento de Grupos no WhatsApp com IA",
-      "versao": "1.0.4",
+      "versao": "1.0.5",
       "versao_minima_base": "1.1.0",
       "precisa": []
     }

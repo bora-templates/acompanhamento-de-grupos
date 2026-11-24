@@ -16,11 +16,11 @@ funciona, como nas outras telas em partes.
 |---|---|
 | `grupos.html` | a primeira tela: números, Primeiros passos (IA, WhatsApp e grupos), cartões dos grupos |
 | `grupo.html` | o cabeçalho do grupo, as abas e o encaixe do conteúdo de cada aba |
-| `aba-conversa.html` | as mensagens da mais nova para a mais antiga, com busca, filtro por pessoa e tempo real |
+| `aba-conversa.html` | as mensagens da mais nova para a mais antiga, com busca, filtro por pessoa, tempo real e a imagem e o vídeo na própria conversa |
 | `aba-resumos.html` | fazer o resumo, a lista dos anteriores e o resumo aberto (Leitura do dia, Destaques, assuntos resolvidos, sentimento, selos e mensagens por hora) |
 | `aba-perguntar.html` | a pergunta à IA, a resposta e as perguntas anteriores |
 | `aba-materiais.html` | as orientações para a IA (com as oito sugestões prontas) e os materiais de apoio |
-| `aba-participantes.html` | a lista de participantes e o botão de atualizar |
+| `aba-participantes.html` | a lista de participantes, o botão de atualizar e a frase que explica que o nome aparece quando a pessoa escreve no grupo |
 | `aba-ajustes-grupo.html` | resumo automático, pausar e deixar de acompanhar |
 | `ajustes.html` | WhatsApp (com QR), IA, transcrição de áudio e grupo de exemplo |
 | `janelas.html` | Escolher grupos, mandar o resumo para o grupo, novo material e a confirmação |
@@ -31,7 +31,7 @@ funciona, como nas outras telas em partes.
 |---|---|
 | `01-base.js` | login e acesso, rotas (`#grupos`, `#grupo/<id>/<aba>`, `#ajustes/<seção>`), avisos, chamadas ao servidor (`edge`, que marca `sem_resposta` quando a resposta não chegou), ajudantes de data, telefone, nome de quem escreveu e foco em campo |
 | `02-grupos.js` | o painel, os Primeiros passos, a janela Escolher grupos, o grupo de exemplo e a vigia da importação (painel lido de 5 em 5 segundos enquanto algum grupo traz mensagens) |
-| `03-grupo.js` | o grupo aberto, as abas, a conversa, a busca, o tempo real e a mesclagem das mensagens trazidas pela importação |
+| `03-grupo.js` | o grupo aberto, as abas, a conversa, a busca, o tempo real, a mesclagem das mensagens trazidas pela importação e a imagem e o vídeo da conversa (ação `midia`) |
 | `04-resumos.js` | resumos (fazer, abrir, refazer, o gráfico das mensagens por hora, o sentimento e os selos), a janela de envio ao grupo e as perguntas à IA |
 | `05-extras.js` | orientações (com as sugestões prontas), materiais, participantes e os ajustes do grupo |
 | `06-ajustes.js` | os Ajustes: WhatsApp (QR, estado e troca de endereço), IA, transcrição de áudio e grupo de exemplo |
@@ -58,9 +58,11 @@ Procure o nome antes de criar.
 - Trocar o endereço do servidor da uazapi exige o token da instância nova. Trocar o provedor da IA exige a chave. A tela abre o campo, não deixa salvar sem ele e põe o cursor nele. Se o servidor
   responder `precisa_token` ou `precisa_chave`, a tela mostra o erro, abre o campo e põe o cursor nele.
 - Depois de salvar a IA, a caixa do modelo mostra o que o servidor gravou (`ajustes.ia_modelo`).
-- A IA da tela é só Claude ou OpenAI. Com a IA salva, o seletor de modelos mostra a lista do provedor (`ia_modelos`, os mais
+- A IA da tela é só Claude ou ChatGPT (desde a versão 1.0.5 o seletor mostra "ChatGPT" no lugar de "OpenAI", e o valor continua
+  `openai`; a transcrição continua mostrando OpenAI). O recomendado é o primeiro de `GR_MODELOS` (no ChatGPT, o `gpt-6-luna`, o mais barato), vem
+  escolhido de fábrica e fica na frente também da lista que vem do provedor. Com a IA salva, o seletor de modelos mostra a lista do provedor (`ia_modelos`, os mais
   recentes primeiro); sem chave, com outro provedor escolhido ou com falha, mostra a lista fixa `GR_MODELOS`. Instalação antiga
-  com DeepSeek ou Compatível salvos continua funcionando, e a aba IA mostra um aviso pedindo para escolher Claude ou OpenAI.
+  com DeepSeek ou Compatível salvos continua funcionando, e a aba IA mostra um aviso pedindo para escolher Claude ou ChatGPT.
 - A transcrição usa só a OpenAI (a Groq saiu em 24/11), com modelo de áudio (`GR_MODELOS_AUDIO`) e chave. A frase "Chave em
   uso" diz se a transcrição usa a mesma chave da IA (`ajustes.transcricao_chave_da_ia`) ou uma chave própria do serviço.
 - Envio ao grupo: `enviar` com `ja_enviado` mostra "Este resumo já foi enviado em" mais a data e o botão Mandar de novo, que pede a
@@ -72,4 +74,10 @@ Procure o nome antes de criar.
 - Grupo com `importacao_erro`: o cartão ganha um selo, e a Conversa mostra a faixa com o botão Tentar de novo (`reimportar`).
 - `proximo_auto` (do `gr_grupo_salvar`) vira "O próximo resumo automático sai DD/MM às HHh." na aba Ajustes do grupo.
 - Quem não configura não recebe `whatsapp_servidor`, `ia_url` nem `whatsapp_erro`: os Primeiros passos usam uma frase pronta.
+- Imagem e vídeo (versão 1.0.5): a conversa pede o arquivo pelo `functions.invoke` (ação `midia`, campo `mensagem`), sem passar
+  pelo `edge`, porque a resposta que dá certo é o próprio arquivo.
+  A resposta `application/octet-stream` vira Blob, a tela confere os primeiros bytes e mostra num endereço `blob:`, solto ao trocar
+  de grupo. A imagem carrega sozinha (até 3 ao mesmo tempo); o vídeo espera o botão Ver o vídeo. Exemplo e falha mostram o rótulo.
+- Participantes sem nome: a uazapi manda só o número, e o nome vem da primeira mensagem da pessoa. A aba mostra a frase que explica
+  isso enquanto alguém da lista estiver sem nome.
 - Quem escreve sem nome e sem telefone aparece como "Participante". Identificador que não é número (`@lid`) nunca vira telefone.

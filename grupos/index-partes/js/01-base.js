@@ -23,7 +23,8 @@ const GR_FUSO = 'America/Sao_Paulo';
 const GR_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const GR_ABAS = ['conversa', 'resumos', 'perguntar', 'materiais', 'participantes', 'ajustes'];
 const GR_SECOES = ['whatsapp', 'ia', 'transcricao', 'exemplo'];
-const GR_PROVEDORES_IA = { openai: 'OpenAI', anthropic: 'Claude', deepseek: 'DeepSeek', compativel: 'Compatível com OpenAI' };
+// a IA da OpenAI aparece na tela com o nome ChatGPT (desde a versão 1.0.5); a transcrição continua dizendo OpenAI
+const GR_PROVEDORES_IA = { openai: 'ChatGPT', anthropic: 'Claude', deepseek: 'DeepSeek', compativel: 'Compatível com OpenAI' };
 // formatadores criados uma vez, fora do estado do Alpine (criar dentro de laço deixa a tela lenta)
 const GR_F_DATA = new Intl.DateTimeFormat('pt-BR', { timeZone: GR_FUSO, day: '2-digit', month: '2-digit', year: 'numeric' });
 const GR_F_HORA = new Intl.DateTimeFormat('pt-BR', { timeZone: GR_FUSO, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });

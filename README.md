@@ -1,12 +1,12 @@
 # Acompanhamento de Grupos no WhatsApp com IA
 
-Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude ou OpenAI, e a transcrição dos áudios usa a OpenAI.
+Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude ou ChatGPT, e a transcrição dos áudios usa a OpenAI. A conversa mostra as imagens e os vídeos do grupo.
 
 O código é seu: ele fica na sua conta do GitHub, o banco fica no seu Supabase e o site fica na sua Vercel. Você instala, personaliza e muda o que quiser, com a ajuda do Claude.
 
 | Módulo | Versão | O que faz |
 |---|---|---|
-| **Acompanhamento de Grupos no WhatsApp com IA** | 1.0.4 | Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude ou OpenAI, e a transcrição dos áudios usa a OpenAI. |
+| **Acompanhamento de Grupos no WhatsApp com IA** | 1.0.5 | Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude ou ChatGPT, e a transcrição dos áudios usa a OpenAI. A conversa mostra as imagens e os vídeos do grupo. |
 
 Junto vem a **base**, que todo módulo usa (login, pessoas e acessos, a porta de entrada), só com as peças que este módulo usa:
 

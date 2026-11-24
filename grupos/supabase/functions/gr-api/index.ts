@@ -1,11 +1,12 @@
 // ============================================================================
 // Edge Function `gr-api`: o servidor do Acompanhamento de Grupos no WhatsApp com IA
 // ----------------------------------------------------------------------------
-// POST com { acao } e os campos da ação. A resposta é sempre JSON: { ok: true } com os campos da
-// ação, ou { ok: false, erro } com a frase para a tela.
+// POST com { acao } e os campos da ação. A resposta é JSON: { ok: true } com os campos da
+// ação, ou { ok: false, erro } com a frase para a tela. A única exceção é a ação midia, que, quando dá
+// certo, devolve o próprio arquivo da imagem ou do vídeo (application/octet-stream).
 //
 //   ação                 quem          o que faz
-//   ajustes_ia           admin         provedor (Claude ou OpenAI), modelo e chave da IA
+//   ajustes_ia           admin         provedor (Claude ou ChatGPT, os valores anthropic e openai), modelo e chave da IA
 //   testar_ia            admin         um pedido curto à IA configurada
 //   ia_modelos           admin         os modelos do provedor salvo, os mais recentes primeiro (com a chave do
 //                                      cofre; falha vira lista vazia com a frase em aviso)
@@ -20,6 +21,8 @@
 //   resumo               editar        o resumo de um período (IA + números da solução)
 //   enviar               editar        manda o resumo ao grupo pela uazapi (uma vez; reenviar manda de novo)
 //   perguntar            ver           pergunta à IA sobre o grupo (até 30 perguntas por pessoa por hora)
+//   midia                ver           a imagem ou o vídeo de uma mensagem, pedido à uazapi na hora (até 25 MB;
+//                                      nada fica guardado no Supabase, e o grupo de exemplo não tem arquivo)
 //   agendado             a agenda      os resumos automáticos (cabeçalho x-gr-agenda)
 //
 // QUEM PODE: a chave publicável está em todo HTML, então ela não é login. Entra gente do time
@@ -41,7 +44,7 @@
 // ============================================================================
 import { mesmaChave, quemPodeChamar } from "../_shared/acesso.ts";
 import {
-  banco, comLimite, ehUuid, emSegundoPlano, env, erroDoBancoParaTela, ErroClaro, json, registrar, rpc, tipoDoErro,
+  banco, comLimite, cors, ehUuid, emSegundoPlano, env, erroDoBancoParaTela, ErroClaro, json, registrar, rpc, tipoDoErro,
 } from "../_shared/comum.ts";
 import { type Ajustes, configTranscricao, configUazapi, lerAjustes, segredo } from "../_shared/config.ts";
 import {
@@ -75,6 +78,7 @@ const PRECISA: Record<string, "ver" | "administrar" | "configurar"> = {
   resumo: "administrar",
   enviar: "administrar",
   perguntar: "ver",
+  midia: "ver",
 };
 
 const SEM_ACESSO = "Você não tem acesso ao Acompanhamento de Grupos. Peça a quem administra o sistema para liberar o acesso na tela Usuários.";
@@ -179,7 +183,7 @@ async function mensagensDoPeriodo(grupo: string, intervalo: R.Intervalo) {
 async function ajustesIA(c: Corpo, quem: Quem) {
   const provedor = String(c.provedor ?? "").trim().toLowerCase();
   // desde a versão 1.0.3, só Claude e OpenAI; quem já tinha DeepSeek ou Compatível salvo continua funcionando
-  if (!PROVEDORES_NOVOS.includes(provedor)) throw new ErroClaro("Escolha o provedor da IA: Claude ou OpenAI.", 400);
+  if (!PROVEDORES_NOVOS.includes(provedor)) throw new ErroClaro("Escolha o provedor da IA: Claude ou ChatGPT.", 400);
   const modelo = String(c.modelo ?? "").trim() || MODELO_PADRAO[provedor] || "";
   if (!modelo) throw new ErroClaro("Informe o modelo da IA.", 400);
   if (modelo.length > 120 || /\s/.test(modelo)) throw new ErroClaro("O nome do modelo parece errado. Confira o nome exato no site do fornecedor.", 400);
@@ -645,6 +649,37 @@ async function perguntarAoGrupo(c: Corpo, quem: Quem) {
   return { resposta, pergunta_id: id };
 }
 
+// ── a imagem e o vídeo da conversa (versão 1.0.5) ───────────────────────────
+/* A tela pede o arquivo de uma mensagem de imagem ou de vídeo, e a gr-api pede à uazapi na hora
+   (/message/download, o mesmo caminho do áudio). Nada fica guardado: a conversa guarda o arquivo na
+   memória da tela enquanto o grupo está aberto. Só passa imagem e vídeo nos formatos que o navegador
+   desenha, conferidos pelos primeiros bytes do arquivo. Quando falha, a resposta é o JSON de sempre
+   ({ ok: false, erro }), e a tela mostra o rótulo da mensagem. */
+const SEM_MIDIA_NO_EXEMPLO = "O grupo de exemplo tem só o rótulo da imagem e do vídeo, sem o arquivo.";
+async function midia(c: Corpo): Promise<Response> {
+  const id = Number(c.mensagem);
+  if (!Number.isSafeInteger(id) || id <= 0) throw new ErroClaro("Diga qual mensagem tem a imagem ou o vídeo.", 400);
+  const m = await rpc<Linha | null>("gr_midia_da_mensagem", { p_mensagem: id });
+  if (!m) throw new ErroClaro("Esta mensagem não existe mais.");
+  if (m.tipo !== "imagem" && m.tipo !== "video") throw new ErroClaro("Esta mensagem não tem imagem nem vídeo.", 400);
+  if (m.exemplo || !m.whatsapp_id) throw new ErroClaro(SEM_MIDIA_NO_EXEMPLO);
+  const uaz = await exigirUazapi();
+  const r = await U.baixarMidia(uaz, String(m.whatsapp_id), m.tipo);
+  if (!r.ok) throw new ErroClaro(r.erro);
+  return new Response(r.bytes as Uint8Array<ArrayBuffer>, {
+    status: 200,
+    headers: {
+      ...cors,
+      "Content-Type": "application/octet-stream",
+      "X-Gr-Formato": r.mime,
+      "X-Content-Type-Options": "nosniff",
+      "Content-Disposition": "attachment",
+      "Cache-Control": "private, no-store",
+      "Access-Control-Expose-Headers": "X-Gr-Formato",
+    },
+  });
+}
+
 // ── a agenda (pg_cron → pg_net → aqui) ──────────────────────────────────────
 async function rodarAgenda() {
   const placar = { feitos: 0, enviados: 0, pulados: 0, falhas: 0, transcritos: 0 };
@@ -726,7 +761,7 @@ async function portaDaAgenda(req: Request, acao: string): Promise<Response> {
 }
 
 // ── a porta ─────────────────────────────────────────────────────────────────
-const ACOES: Record<string, (c: Corpo, quem: Quem) => Promise<Record<string, unknown>>> = {
+const ACOES: Record<string, (c: Corpo, quem: Quem) => Promise<Record<string, unknown> | Response>> = {
   ajustes_ia: ajustesIA,
   testar_ia: () => testarIA(),
   ia_modelos: () => iaModelos(),
@@ -740,6 +775,7 @@ const ACOES: Record<string, (c: Corpo, quem: Quem) => Promise<Record<string, unk
   resumo,
   enviar,
   perguntar: perguntarAoGrupo,
+  midia,
 };
 
 async function respostaDeErro(e: unknown, acao: string): Promise<Response> {
@@ -787,7 +823,10 @@ Deno.serve(async (req) => {
     if (quem.nivel === "nenhum") return json({ ok: false, erro: SEM_ACESSO }, 403);
     if (precisa === "administrar" && quem.nivel !== "editar" && quem.nivel !== "admin") return json({ ok: false, erro: SO_VER }, 403);
     if (precisa === "configurar" && quem.nivel !== "admin") return json({ ok: false, erro: SO_ADMIN }, 403);
-    return json({ ok: true, ...(await ACOES[acao](corpo, quem)) });
+    const feito = await ACOES[acao](corpo, quem);
+    // a ação midia devolve o próprio arquivo; as outras, os campos do JSON
+    if (feito instanceof Response) return feito;
+    return json({ ok: true, ...feito });
   } catch (e) {
     return await respostaDeErro(e, acao);
   }

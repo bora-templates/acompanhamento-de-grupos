@@ -24,6 +24,8 @@
       <span x-show="podeAdministrar && !grupo?.exemplo">Use o botão Atualizar pela uazapi para buscar a lista.</span>
     </div>
     <div class="vazio" x-show="part.estado === 'pronto' && part.lista.length && !partFiltrados.length">Ninguém combina com essa busca.</div>
+    <!-- a uazapi manda só o número de quem está no grupo; o nome vem da primeira mensagem que a pessoa escreve -->
+    <p class="peq mut" x-show="part.estado === 'pronto' && !grupo?.exemplo && part.lista.some((p) => !p.nome)" x-cloak style="margin-top:12px">O nome de cada pessoa aparece aqui quando ela escreve no grupo. Até lá, a lista mostra só o número dela.</p>
     <div class="pessoas-g" x-show="part.estado === 'pronto' && partFiltrados.length" style="margin-top:12px">
       <template x-for="p in partFiltrados" :key="p.jid">
         <div class="pessoa-c">

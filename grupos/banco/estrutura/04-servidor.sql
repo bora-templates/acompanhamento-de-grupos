@@ -223,6 +223,21 @@ as $$
        limit least(greatest(coalesce(p_limite, 30), 1), 100)) m;
 $$;
 
+-- A imagem ou o vídeo de uma mensagem, para a gr-api pedir o arquivo à uazapi e a conversa mostrar
+-- (versão 1.0.5): o identificador da mensagem no WhatsApp, o tipo e se o grupo é o de exemplo.
+-- Nulo quando a mensagem não existe. Quem confere o acesso de quem pede é a gr-api (nível ver).
+create or replace function hub.gr_midia_da_mensagem(p_mensagem bigint)
+returns jsonb
+language sql stable security definer
+set search_path = hub, public
+as $$
+  select jsonb_build_object('id', m.id, 'grupo_id', m.grupo_id, 'whatsapp_id', m.whatsapp_id, 'tipo', m.tipo,
+                            'exemplo', g.exemplo)
+    from hub.gr_mensagens m
+    join hub.gr_grupos g on g.id = m.grupo_id
+   where m.id = p_mensagem
+$$;
+
 -- ── ajustes ─────────────────────────────────────────────────────────────────
 
 -- os ajustes para a Edge Function: o formato completo mais o endereço das funções. Só a
@@ -714,7 +729,7 @@ update hub.gr_mensagens set autor_jid = regexp_replace(autor_jid, ':\d+@', '@') 
 revoke execute on function
   hub.gr_grupo_jid_ativo(text), hub.gr_mensagem_tipo(text), hub.gr_transcricao_inicial(text, text), hub.gr_momento(text),
   hub.gr_mensagem_gravar(uuid, jsonb), hub.gr_mensagens_gravar_lote(uuid, jsonb), hub.gr_transcricao_gravar(bigint, text, text),
-  hub.gr_audios_pendentes(uuid, int, int, boolean), hub.gr_ajustes_ler(), hub.gr_ajustes_gravar(jsonb, uuid), hub.gr_grupos_jids(),
+  hub.gr_audios_pendentes(uuid, int, int, boolean), hub.gr_midia_da_mensagem(bigint), hub.gr_ajustes_ler(), hub.gr_ajustes_gravar(jsonb, uuid), hub.gr_grupos_jids(),
   hub.gr_grupos_criar(jsonb, uuid), hub.gr_participantes_gravar(uuid, jsonb, text), hub.gr_importacao_comecar(uuid), hub.gr_importacao_concluir(uuid, int, text),
   hub.gr_grupo_dados(uuid), hub.gr_mensagens_periodo(uuid, timestamptz, timestamptz, int),
   hub.gr_materiais_trechos(uuid, text, int), hub.gr_resumo_gravar(uuid, jsonb), hub.gr_resumo_para_envio(uuid),
@@ -726,7 +741,7 @@ from public, anon, authenticated;
 grant execute on function
   hub.gr_grupo_jid_ativo(text), hub.gr_mensagem_tipo(text), hub.gr_transcricao_inicial(text, text), hub.gr_momento(text),
   hub.gr_mensagem_gravar(uuid, jsonb), hub.gr_mensagens_gravar_lote(uuid, jsonb), hub.gr_transcricao_gravar(bigint, text, text),
-  hub.gr_audios_pendentes(uuid, int, int, boolean), hub.gr_ajustes_ler(), hub.gr_ajustes_gravar(jsonb, uuid), hub.gr_grupos_jids(),
+  hub.gr_audios_pendentes(uuid, int, int, boolean), hub.gr_midia_da_mensagem(bigint), hub.gr_ajustes_ler(), hub.gr_ajustes_gravar(jsonb, uuid), hub.gr_grupos_jids(),
   hub.gr_grupos_criar(jsonb, uuid), hub.gr_participantes_gravar(uuid, jsonb, text), hub.gr_importacao_comecar(uuid), hub.gr_importacao_concluir(uuid, int, text),
   hub.gr_grupo_dados(uuid), hub.gr_mensagens_periodo(uuid, timestamptz, timestamptz, int),
   hub.gr_materiais_trechos(uuid, text, int), hub.gr_resumo_gravar(uuid, jsonb), hub.gr_resumo_para_envio(uuid),

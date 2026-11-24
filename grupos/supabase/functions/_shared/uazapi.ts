@@ -13,11 +13,12 @@
 //   GET  /group/list              os grupos do número, com os participantes
 //   POST /group/info              nome e participantes de um grupo
 //   POST /send/text               manda o resumo ao grupo
-//   POST /message/download        baixa o áudio para a transcrição
+//   POST /message/download        baixa o áudio para a transcrição e a imagem e o vídeo que a conversa mostra
 //   POST /message/find            as mensagens recentes que a uazapi guardou (importação)
 //
 // Toda chamada passa pelo rede.ts: só https e endereço público, sem seguir redirecionamento e
-// com a resposta lida até 5 MB (o download do áudio, até 25 MB de áudio). O tempo limite é de
+// com a resposta lida até 5 MB (o download do áudio, da imagem e do vídeo, até 25 MB de arquivo; o JSON do
+// /message/download pode trazer o arquivo inteiro em base64, e 25 MB viram uns 34 MB). O tempo limite é de
 // 60 segundos para /group/list, /message/find, /message/download e /send/text, e de 15
 // segundos para o resto. Falha ou corte na leitura da resposta é erro da chamada (demorou),
 // nunca um sucesso vazio. Resposta com campo faltando não quebra: a leitura procura pelos
@@ -67,8 +68,6 @@ export type EstadoLido = { estado: "conectado" | "aguardando_qr" | "desconectado
 export const PRAZO_UAZAPI_MS = 15_000;
 // /group/list, /message/find, /message/download e /send/text têm 60 segundos
 export const PRAZO_LONGO_MS = 60_000;
-/* O JSON do /message/download pode trazer o áudio inteiro em base64 (25 MB de áudio viram uns 34 MB). */
-const TETO_DOWNLOAD = Math.ceil(TETO_AUDIO * 4 / 3) + MB;
 
 // ── ajudantes puros ─────────────────────────────────────────────────────────
 
@@ -530,11 +529,11 @@ function deBase64(b64: string): Uint8Array {
   return saida;
 }
 
-/** O áudio que veio em base64 na resposta (nulo quando não veio ou não é base64). */
-function audioEmBase64(d: Json): Uint8Array | null {
+/** O arquivo que veio em base64 na resposta (nulo quando não veio, não é base64 ou passa do teto). */
+function arquivoEmBase64(d: Json, teto = TETO_AUDIO): Uint8Array | null {
   if (!ehObjeto(d)) return null;
   const b64 = String(d.base64Data ?? d.base64 ?? d.data ?? d.file ?? "").replace(/^data:[^,]*,/, "").replace(/\s+/g, "");
-  if (!b64 || !/^[A-Za-z0-9+/]+=*$/.test(b64) || b64.length * 3 / 4 > TETO_AUDIO) return null;
+  if (!b64 || !/^[A-Za-z0-9+/]+=*$/.test(b64) || b64.length * 3 / 4 > teto) return null;
   try {
     const bytes = deBase64(b64);
     return bytes.length ? bytes : null;
@@ -554,48 +553,123 @@ async function comNovaTentativa(fazer: () => Promise<RespostaUazapi>): Promise<R
   return await fazer();
 }
 
-const LINK_RUIM = "O link do áudio que a uazapi devolveu não é um endereço https público, então o áudio não foi baixado.";
+/* As frases de cada arquivo que a solução baixa: o áudio (para a transcrição) e a imagem e o vídeo
+   (para a conversa mostrar). */
+type Frases = { falhou: string; vazio: string; grande: string; demorou: string; redirecionou: string; linkRuim: string; semArquivo: string };
+const FRASES_AUDIO: Frases = {
+  falhou: "Não consegui baixar o arquivo do áudio.",
+  vazio: "O arquivo do áudio veio vazio.",
+  grande: "O áudio passou de 25 MB e não foi baixado.",
+  demorou: "O download do áudio demorou demais.",
+  redirecionou: "O link do áudio respondeu com um redirecionamento, e a solução não segue redirecionamentos.",
+  linkRuim: "O link do áudio que a uazapi devolveu não é um endereço https público, então o áudio não foi baixado.",
+  semArquivo: "A uazapi não devolveu o arquivo do áudio.",
+};
+const FRASES_MIDIA: Frases = {
+  falhou: "Não consegui baixar o arquivo da imagem ou do vídeo.",
+  vazio: "O arquivo da imagem ou do vídeo veio vazio.",
+  grande: "A imagem ou o vídeo passou de 25 MB e não foi baixado.",
+  demorou: "O download da imagem ou do vídeo demorou demais.",
+  redirecionou: "O link da imagem ou do vídeo respondeu com um redirecionamento, e a solução não segue redirecionamentos.",
+  linkRuim: "O link da imagem ou do vídeo que a uazapi devolveu não é um endereço https público, então o arquivo não foi baixado.",
+  semArquivo: "A uazapi não devolveu o arquivo da imagem ou do vídeo.",
+};
 
 /**
- * Baixa o arquivo de um áudio, com 60 segundos e uma nova tentativa. Primeiro pede o link
- * (o arquivo vem direto, até 25 MB, e só de endereço https público); sem link aceitável, pede
- * o áudio em base64.
+ * Baixa o arquivo de uma mensagem pela uazapi (POST /message/download), com 60 segundos e uma nova
+ * tentativa. Primeiro pede o link (o arquivo vem direto, até `teto`, e só de endereço https público);
+ * sem link aceitável, pede o arquivo em base64.
  */
-export async function baixarAudio(cfg: ConfigUazapi, id: string): Promise<{ ok: true; bytes: Uint8Array; mime: string } | Falha> {
+async function baixarArquivo(
+  cfg: ConfigUazapi, id: string, frases: Frases, mimePadrao: string, teto: number,
+): Promise<{ ok: true; bytes: Uint8Array; mime: string } | Falha> {
+  const tetoDoJson = Math.ceil(teto * 4 / 3) + MB;
   const pedir = (comBase64: boolean) => comNovaTentativa(() => chamar(cfg, "POST", "/message/download",
-    { id, return_base64: comBase64, return_link: !comBase64 }, { prazoMs: PRAZO_LONGO_MS, teto: TETO_DOWNLOAD }));
+    { id, return_base64: comBase64, return_link: !comBase64 }, { prazoMs: PRAZO_LONGO_MS, teto: tetoDoJson }));
   const r = await pedir(false);
   if (!r.ok) return { ok: false, erro: erroUazapi(r), status: r.status, demorou: r.demorou };
-  const direto = audioEmBase64(r.dados);
-  if (direto) return { ok: true, bytes: direto, mime: mimeDe(r.dados) || "audio/ogg" };
+  const direto = arquivoEmBase64(r.dados, teto);
+  if (direto) return { ok: true, bytes: direto, mime: mimeDe(r.dados) || mimePadrao };
   const link = ehObjeto(r.dados) ? String(r.dados.fileURL ?? r.dados.fileUrl ?? r.dados.url ?? r.dados.link ?? "").trim() : "";
   const conferido = link ? conferirEnderecoPublico(link) : null;
   if (conferido?.ok) {
-    let erro = "Não consegui baixar o arquivo do áudio.";
+    let erro = frases.falhou;
     for (let tentativa = 1; tentativa <= 2; tentativa++) {
       try {
-        const a = await buscar(conferido.url.href, { method: "GET" }, { teto: TETO_AUDIO, prazoMs: PRAZO_LONGO_MS });
-        if (a.ok && a.bytes.length) return { ok: true, bytes: a.bytes, mime: mimeDe(r.dados) || a.headers.get("content-type")?.split(";")[0] || "audio/ogg" };
-        erro = a.ok ? "O arquivo do áudio veio vazio." : "Não consegui baixar o arquivo do áudio.";
+        const a = await buscar(conferido.url.href, { method: "GET" }, { teto, prazoMs: PRAZO_LONGO_MS });
+        if (a.ok && a.bytes.length) return { ok: true, bytes: a.bytes, mime: mimeDe(r.dados) || a.headers.get("content-type")?.split(";")[0] || mimePadrao };
+        erro = a.ok ? frases.vazio : frases.falhou;
         if (a.ok || (a.status < 500 && a.status !== 429)) break;
       } catch (e) {
         const tipo = e instanceof ErroRede ? e.tipo : "conexao";
-        erro = tipo === "tamanho" ? "O áudio passou de 25 MB e não foi baixado."
-          : tipo === "tempo" ? "O download do áudio demorou demais."
-          : tipo === "redirecionamento" ? "O link do áudio respondeu com um redirecionamento, e a solução não segue redirecionamentos."
-          : "Não consegui baixar o arquivo do áudio.";
+        erro = tipo === "tamanho" ? frases.grande
+          : tipo === "tempo" ? frases.demorou
+          : tipo === "redirecionamento" ? frases.redirecionou
+          : frases.falhou;
         if (tipo === "tamanho" || tipo === "redirecionamento") break;
       }
       if (tentativa === 1) await espera(1000);
     }
     return { ok: false, erro, status: 0 };
   }
-  // sem link https público: o áudio em base64
+  // sem link https público: o arquivo em base64
   const r2 = await pedir(true);
   if (!r2.ok) return { ok: false, erro: erroUazapi(r2), status: r2.status, demorou: r2.demorou };
-  const emBase64 = audioEmBase64(r2.dados);
-  if (emBase64) return { ok: true, bytes: emBase64, mime: mimeDe(r2.dados) || "audio/ogg" };
-  return { ok: false, erro: link ? LINK_RUIM : "A uazapi não devolveu o arquivo do áudio.", status: r2.status };
+  const emBase64 = arquivoEmBase64(r2.dados, teto);
+  if (emBase64) return { ok: true, bytes: emBase64, mime: mimeDe(r2.dados) || mimePadrao };
+  return { ok: false, erro: link ? frases.linkRuim : frases.semArquivo, status: r2.status };
+}
+
+/**
+ * Baixa o arquivo de um áudio, com 60 segundos e uma nova tentativa. Primeiro pede o link
+ * (o arquivo vem direto, até 25 MB, e só de endereço https público); sem link aceitável, pede
+ * o áudio em base64.
+ */
+export function baixarAudio(cfg: ConfigUazapi, id: string): Promise<{ ok: true; bytes: Uint8Array; mime: string } | Falha> {
+  return baixarArquivo(cfg, id, FRASES_AUDIO, "audio/ogg", TETO_AUDIO);
+}
+
+/* A imagem e o vídeo que a conversa mostra (versão 1.0.5). Só os formatos que o navegador desenha
+   e que não rodam código: nada de SVG nem de HTML, mesmo que a uazapi diga que é imagem. */
+export const TETO_MIDIA = TETO_AUDIO;
+export const MIMES_DA_MIDIA: Record<"imagem" | "video", string[]> = {
+  imagem: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+  video: ["video/mp4", "video/webm", "video/3gpp", "video/quicktime"],
+};
+
+/** O formato do arquivo pelos primeiros bytes (nulo quando não é um dos formatos da conversa). */
+export function mimePelosBytes(b: Uint8Array): string | null {
+  const ascii = (de: number, ate: number) => String.fromCharCode(...b.subarray(de, ate));
+  if (b.length >= 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
+  if (b.length >= 8 && ascii(1, 4) === "PNG" && b[0] === 0x89) return "image/png";
+  if (b.length >= 6 && (ascii(0, 6) === "GIF87a" || ascii(0, 6) === "GIF89a")) return "image/gif";
+  if (b.length >= 12 && ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
+  if (b.length >= 4 && b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return "video/webm";
+  if (b.length >= 12 && ascii(4, 8) === "ftyp") {
+    const marca = ascii(8, 12);
+    if (/^3g/.test(marca)) return "video/3gpp";
+    if (marca === "qt  ") return "video/quicktime";
+    if (/^(heic|heix|hevc|mif1|msf1|avif)/.test(marca)) return null;
+    return "video/mp4";
+  }
+  return null;
+}
+
+/**
+ * Baixa a imagem ou o vídeo de uma mensagem para a conversa mostrar: o mesmo caminho do áudio
+ * (/message/download, link https público ou base64, até 25 MB). O formato é conferido pelos
+ * primeiros bytes do arquivo, e só passa o que combina com o tipo da mensagem.
+ */
+export async function baixarMidia(
+  cfg: ConfigUazapi, id: string, tipo: "imagem" | "video",
+): Promise<{ ok: true; bytes: Uint8Array; mime: string } | Falha> {
+  const r = await baixarArquivo(cfg, id, FRASES_MIDIA, "", TETO_MIDIA);
+  if (!r.ok) return r;
+  const mime = mimePelosBytes(r.bytes);
+  if (!mime || !MIMES_DA_MIDIA[tipo].includes(mime)) {
+    return { ok: false, erro: tipo === "imagem" ? "O arquivo desta imagem não está num formato que a tela mostra." : "O arquivo deste vídeo não está num formato que a tela mostra.", status: 0 };
+  }
+  return { ok: true, bytes: r.bytes, mime };
 }
 
 /**

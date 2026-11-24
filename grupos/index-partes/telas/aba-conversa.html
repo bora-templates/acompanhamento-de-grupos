@@ -60,7 +60,24 @@
                   <span class="hora" x-text="hora(l.m.momento)" :title="quando(l.m.momento)"></span>
                 </div>
                 <template x-if="l.m.citada"><div class="cita"><b x-text="l.m.citada.autor_nome || 'Mensagem citada'"></b><span x-text="l.m.citada.texto || 'Mensagem sem texto'"></span></div></template>
-                <template x-if="l.m.tipo !== 'texto'"><div class="midia"><svg class="i" viewBox="0 0 24 24"><path :d="icone(l.m.tipo)"/></svg><span x-text="rotuloTipo(l.m.tipo) + (l.m.arquivo_nome ? ': ' + l.m.arquivo_nome : '')"></span></div></template>
+                <!-- imagem e vídeo aparecem na conversa (a imagem carrega sozinha, e o vídeo espera o botão); no exemplo ou quando o arquivo falha, fica o rótulo -->
+                <template x-if="midiaVisivel(l.m)">
+                  <div class="midia-vista" x-init="l.m.tipo === 'imagem' && pedeMidia(l.m)">
+                    <template x-if="l.m.tipo === 'imagem' && midiaDe(l.m).estado === 'pronta'">
+                      <a :href="midiaDe(l.m).url" target="_blank" rel="noopener" title="Abrir a imagem em tamanho real"><img :src="midiaDe(l.m).url" :alt="'Imagem enviada por ' + nomeDoAutor(l.m.autor_nome, l.m.autor_jid)" @error="midiaFalhou(l.m)"></a>
+                    </template>
+                    <template x-if="l.m.tipo === 'video' && midiaDe(l.m).estado === 'pronta'">
+                      <video controls playsinline preload="metadata" :src="midiaDe(l.m).url" :aria-label="'Vídeo enviado por ' + nomeDoAutor(l.m.autor_nome, l.m.autor_jid)" @error="midiaFalhou(l.m)"></video>
+                    </template>
+                    <template x-if="midiaDe(l.m).estado === 'carregando' || midiaDe(l.m).estado === 'nova'">
+                      <div class="midia" role="status"><span class="spin p"></span><span x-text="l.m.tipo === 'video' ? 'Carregando o vídeo' : 'Carregando a imagem'"></span></div>
+                    </template>
+                    <template x-if="midiaDe(l.m).estado === 'parada'">
+                      <button type="button" class="midia midia-play" @click="pedeMidia(l.m)"><svg class="i" viewBox="0 0 24 24"><path :d="icone('video')"/></svg><span x-text="'Ver o vídeo' + (l.m.arquivo_nome ? ': ' + l.m.arquivo_nome : '')"></span></button>
+                    </template>
+                  </div>
+                </template>
+                <template x-if="l.m.tipo !== 'texto' && !midiaVisivel(l.m)"><div class="midia"><svg class="i" viewBox="0 0 24 24"><path :d="icone(l.m.tipo)"/></svg><span x-text="rotuloTipo(l.m.tipo) + (l.m.arquivo_nome ? ': ' + l.m.arquivo_nome : '')"></span></div></template>
                 <div class="corpo" x-show="l.m.tipo !== 'audio' && l.m.texto"><template x-for="(p, k) in l.m.partes" :key="k"><span><template x-if="p.t === 'link'"><a class="lnk" :href="urlSegura(p.v)" target="_blank" rel="noopener noreferrer nofollow" x-text="p.v"></a></template><template x-if="p.t === 'mark'"><mark x-text="p.v"></mark></template><template x-if="p.t === 'txt'"><span x-text="p.v"></span></template></span></template></div>
                 <template x-if="l.m.tipo === 'audio' && l.m.transcricao === 'feita' && l.m.texto"><details class="transc" open><summary>Transcrição do áudio</summary><div class="corpo" style="margin-top:0"><template x-for="(p, k) in l.m.partes" :key="k"><span><template x-if="p.t === 'link'"><a class="lnk" :href="urlSegura(p.v)" target="_blank" rel="noopener noreferrer nofollow" x-text="p.v"></a></template><template x-if="p.t === 'mark'"><mark x-text="p.v"></mark></template><template x-if="p.t === 'txt'"><span x-text="p.v"></span></template></span></template></div></details></template>
                 <div class="peq mut" style="margin-top:3px" x-show="l.m.tipo === 'audio' && l.m.transcricao !== 'feita' && avisoTranscricao(l.m)" x-text="avisoTranscricao(l.m)"></div>
