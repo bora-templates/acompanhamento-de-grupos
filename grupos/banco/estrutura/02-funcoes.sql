@@ -279,7 +279,7 @@ language sql stable security definer
 set search_path = hub, public
 as $$
   select coalesce(jsonb_agg(jsonb_build_object('jid', x.jid, 'nome', x.nome, 'telefone', x.telefone, 'admin', x.admin)
-                            order by x.admin desc, lower(coalesce(x.nome, x.telefone, x.jid))), '[]'::jsonb)
+                            order by x.admin desc, (x.nome is null), lower(coalesce(x.nome, x.telefone, x.jid))), '[]'::jsonb)
     from (
       select p.jid, p.telefone, p.admin,
              coalesce(p.nome, (select m.autor_nome from hub.gr_mensagens m

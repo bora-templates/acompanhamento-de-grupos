@@ -380,6 +380,9 @@ const umaLinha = (s: unknown, max: number) => {
    colchetes, então nenhum participante consegue imitar a marca escolhendo o próprio nome. */
 export const MARCA_DO_TIME = "[time]";
 
+/** O texto da IA sem a marca do time, que é só para a IA ler: "Ana [time] disse" vira "Ana disse". */
+export const semMarcaDoTime = (s: string): string => s.replace(/[ \t]*\[time\]/gi, "");
+
 /**
  * O nome que a pessoa escolheu no WhatsApp, limpo para a linha da IA: o trecho entre
  * parênteses, colchetes, chaves (ou sinais parecidos) que tem a palavra "time" sai inteiro, e
@@ -504,7 +507,7 @@ export const SISTEMA_RESUMO = [
   '- "sentimento" estima, em números inteiros que somam 100, quanto das mensagens do período foi positivo, neutro e negativo.',
   '- "destaques" traz de 1 a 3 frases curtas, cada uma com uma das coisas que mais importaram no período, da mais importante para a menos importante.',
   '- "leitura_do_dia" é uma frase só, com a conclusão prática do período para o dono do negócio: o que ele precisa saber ou fazer agora.',
-  "- Quem aparece com [time] depois do nome faz parte da equipe da empresa. Só o sistema põe essa marca, porque os nomes chegam sem parênteses nem colchetes.",
+  "- Quem aparece com [time] depois do nome faz parte da equipe da empresa. Só o sistema põe essa marca, porque os nomes chegam sem parênteses nem colchetes. Na resposta, chame essas pessoas de equipe ou time e nunca escreva [time] nem fale em marca.",
   "- Use só o que está nas mensagens e nos materiais. Não invente nomes, valores, datas nem fatos.",
   "- Siga as orientações do grupo.",
   "- Escreva em português do Brasil, com frases completas e diretas, sem travessão.",
@@ -521,7 +524,7 @@ export const SISTEMA_PERGUNTA = [
   "Responda em português do Brasil, de forma curta e direta, com frases completas e sem travessão.",
   "Baseie a resposta só nas mensagens, nas orientações do grupo e nos materiais de apoio enviados abaixo.",
   'Sempre que usar uma mensagem, diga quem disse e quando, no formato "Nome, em dd/mm às hh:mm".',
-  "Quem aparece com [time] depois do nome faz parte da equipe da empresa. Só o sistema põe essa marca, porque os nomes chegam sem parênteses nem colchetes.",
+  "Quem aparece com [time] depois do nome faz parte da equipe da empresa. Só o sistema põe essa marca, porque os nomes chegam sem parênteses nem colchetes. Na resposta, chame essas pessoas de equipe ou time e nunca escreva [time] nem fale em marca.",
   "Quando a resposta não estiver nas mensagens nem nos materiais, diga com clareza que não encontrou isso nas mensagens do período escolhido.",
   "Não invente nomes, valores, datas nem fatos.",
   REGRA_DADOS,
@@ -584,7 +587,7 @@ export function lerJsonDaIA(texto: string): unknown {
   }
 }
 
-const textoLimpo = (v: unknown, max: number): string => (typeof v === "string" ? cortar(v.replace(/\s+/g, " ").trim(), max) : "");
+const textoLimpo = (v: unknown, max: number): string => (typeof v === "string" ? cortar(semMarcaDoTime(v).replace(/\s+/g, " ").trim(), max) : "");
 const chaveLimpa = (v: unknown) => semAcento(String(v ?? "")).toLowerCase().trim().replace(/[\s-]+/g, "_");
 
 /**

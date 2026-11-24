@@ -29,7 +29,7 @@
         <div class="pessoa-c">
           <span class="avatar" :style="corAvatar(p.nome)" x-text="iniciais(p.nome || 'Participante')"></span>
           <div style="min-width:0">
-            <b x-text="p.nome || (p.telefone ? 'Sem nome salvo' : 'Participante')"></b>
+            <b x-text="p.nome || (p.telefone ? 'Ainda sem mensagem guardada' : 'Participante')"></b>
             <small x-show="p.telefone" x-text="telefone(p.telefone)"></small>
             <span class="pill acc" x-show="p.admin" style="margin-top:4px">administrador do grupo</span>
           </div>

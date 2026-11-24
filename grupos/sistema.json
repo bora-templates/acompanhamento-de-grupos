@@ -4,7 +4,7 @@
   "nome": "Acompanhamento de Grupos no WhatsApp com IA",
   "rotulo": "Grupos",
   "o_que": "Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude, DeepSeek, OpenAI ou qualquer IA compatível.",
-  "versao": "1.0.1",
+  "versao": "1.0.2",
   "versao_minima_base": "1.1.0",
   "base_pecas": [
     "essencial"

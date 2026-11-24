@@ -47,7 +47,7 @@ import {
   PROVEDORES_IA, type RespostaIA,
 } from "../_shared/ia.ts";
 import { ErroRede, lerComTeto } from "../_shared/rede.ts";
-import { textoLimpo } from "../_shared/texto.ts";
+import { cortar, textoLimpo } from "../_shared/texto.ts";
 import * as U from "../_shared/uazapi.ts";
 import * as R from "../_shared/resumo.ts";
 import { transcreverPendentes } from "../_shared/transcricao.ts";
@@ -601,7 +601,7 @@ async function perguntarAoGrupo(c: Corpo, quem: Quem) {
   if (!id) throw new ErroClaro(MUITAS_PERGUNTAS);
   const r = await perguntarIA(cfg, R.SISTEMA_PERGUNTA, pedido, TETO_PERGUNTA, false, { acao: "perguntar", grupo: dados.id });
   if (r.recusada) throw new ErroClaro("A IA se recusou a responder essa pergunta. Tente escrever de outro jeito.");
-  const resposta = r.texto.trim().slice(0, 8000);
+  const resposta = cortar(R.semMarcaDoTime(r.texto).trim(), 8000);
   if (!resposta) {
     throw new ErroClaro(r.cortada
       ? "A resposta da IA ficou grande demais e veio cortada. Faça uma pergunta mais específica ou escolha um período menor."

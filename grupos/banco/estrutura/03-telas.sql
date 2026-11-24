@@ -114,7 +114,9 @@ begin
            and (p_antes is null
                 or (p_antes_id is null and m0.momento < p_antes)
                 or (p_antes_id is not null and (m0.momento, m0.id) < (p_antes, p_antes_id)))
-           and (v_q is null or m0.busca @@ v_q)
+           and (v_q is null or m0.busca @@ v_q
+                or m0.texto ilike '%' || replace(replace(replace(v_busca, '\', '\\'), '%', '\%'), '_', '\_') || '%'
+                or m0.autor_nome ilike '%' || replace(replace(replace(v_busca, '\', '\\'), '%', '\%'), '_', '\_') || '%')
            and (v_autor is null or coalesce(m0.autor_jid, m0.autor_nome) = v_autor)
          order by m0.momento desc, m0.id desc
          limit v_limite) m), '[]'::jsonb);
