@@ -9,7 +9,7 @@
 //   testar_ia            admin         um pedido curto à IA configurada
 //   ia_modelos           admin         os modelos do provedor salvo, os mais recentes primeiro (com a chave do
 //                                      cofre; falha vira lista vazia com a frase em aviso)
-//   ajustes_transcricao  admin         Groq ou OpenAI, o modelo de áudio e a chave (ou a mesma chave da IA OpenAI)
+//   ajustes_transcricao  admin         OpenAI, o modelo de áudio e a chave (ou a mesma chave da IA OpenAI)
 //   whatsapp_salvar      admin         servidor e token da uazapi, cadastro do webhook, estado e QR
 //   whatsapp_estado      admin         o estado da instância (e o QR, quando não está conectada)
 //   whatsapp_grupos      admin         os grupos do número na uazapi
@@ -238,11 +238,11 @@ async function iaModelos() {
 
 async function ajustesTranscricao(c: Corpo, quem: Quem) {
   const provedor = String(c.provedor ?? "").trim().toLowerCase();
-  if (provedor !== "groq" && provedor !== "openai") throw new ErroClaro("Escolha o serviço de transcrição: Groq ou OpenAI.", 400);
+  if (provedor !== "openai") throw new ErroClaro("A transcrição de áudio usa a OpenAI.", 400);
   // modelo vazio: o padrão do serviço; fora da lista do serviço, recusa
   const modelo = String(c.modelo ?? "").trim();
   if (modelo && !MODELOS_TRANSCRICAO[provedor].includes(modelo)) {
-    throw new ErroClaro(`Escolha um modelo de áudio da ${provedor === "groq" ? "Groq" : "OpenAI"}: ${MODELOS_TRANSCRICAO[provedor].join(", ")}.`, 400);
+    throw new ErroClaro(`Escolha um modelo de áudio da OpenAI: ${MODELOS_TRANSCRICAO[provedor].join(", ")}.`, 400);
   }
   const chave = String(c.chave ?? "").trim();
   const antes = await lerAjustes();

@@ -41,7 +41,7 @@ function grIaInicial() {
   };
 }
 function grTrInicial() {
-  return { provedor: 'groq', modelo: '', chave: '', trocandoChave: false, usarChaveIa: false, salvando: false, erro: '', ok: '' };
+  return { provedor: 'openai', modelo: '', chave: '', trocandoChave: false, usarChaveIa: false, salvando: false, erro: '', ok: '' };
 }
 let GR_TIMER_QR = null;
 const GR_QR_SEGUNDOS = 20;
@@ -57,7 +57,6 @@ const GR_MODELOS = {
 // os modelos de áudio por serviço (os mesmos que a gr-api aceita, em _shared/transcricao.ts); o primeiro é o
 // recomendado e vem escolhido numa transcrição nova. "padrao" é o que o servidor usa quando o modelo fica vazio.
 const GR_MODELOS_AUDIO = {
-  groq: { padrao: 'whisper-large-v3', lista: [{ id: 'whisper-large-v3-turbo', nome: 'Whisper Large v3 Turbo (recomendado, mais rápido)' }, { id: 'whisper-large-v3', nome: 'Whisper Large v3' }] },
   openai: { padrao: 'whisper-1', lista: [
     { id: 'gpt-transcribe', nome: 'GPT Transcribe (recomendado pela OpenAI)' },
     { id: 'gpt-4o-mini-transcribe', nome: 'GPT-4o mini Transcribe (sai do ar em 26/02/2027)' },
@@ -88,7 +87,8 @@ function grAjustes() {
       const antigo = !!a.ia_provedor && !GR_PROVEDORES_TELA.includes(a.ia_provedor);
       this.ia = Object.assign(grIaInicial(), { provedor: antigo ? 'anthropic' : (a.ia_provedor || 'openai'), modelo: antigo ? '' : (a.ia_modelo || '') });
       this.ajustaEscolhaIa();
-      const servico = a.transcricao_provedor === 'openai' ? 'openai' : 'groq';
+      // só OpenAI desde 24/11; um ajuste antigo com Groq aparece como troca de serviço e pede a chave da OpenAI
+      const servico = 'openai';
       this.tr = Object.assign(grTrInicial(), {
         provedor: servico,
         // transcrição salva sem modelo: o servidor usa o padrão do serviço, e a caixa mostra esse
@@ -359,7 +359,7 @@ function grAjustes() {
     },
 
     // ── transcrição de áudio ──
-    get trModelos() { return (GR_MODELOS_AUDIO[this.tr.provedor] || GR_MODELOS_AUDIO.groq).lista; },
+    get trModelos() { return (GR_MODELOS_AUDIO[this.tr.provedor] || GR_MODELOS_AUDIO.openai).lista; },
     trocaProvedorTr() {
       const a = this.ajustes, t = this.tr;
       // de volta ao serviço salvo, volta o modelo salvo; num serviço novo, entra o recomendado

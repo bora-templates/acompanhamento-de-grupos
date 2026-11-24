@@ -1,12 +1,12 @@
 # Acompanhamento de Grupos no WhatsApp com IA
 
-Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude ou OpenAI, e a transcrição dos áudios usa a Groq ou a OpenAI.
+Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude ou OpenAI, e a transcrição dos áudios usa a OpenAI.
 
 O código é seu: ele fica na sua conta do GitHub, o banco fica no seu Supabase e o site fica na sua Vercel. Você instala, personaliza e muda o que quiser, com a ajuda do Claude.
 
 | Módulo | Versão | O que faz |
 |---|---|---|
-| **Acompanhamento de Grupos no WhatsApp com IA** | 1.0.3 | Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude ou OpenAI, e a transcrição dos áudios usa a Groq ou a OpenAI. |
+| **Acompanhamento de Grupos no WhatsApp com IA** | 1.0.4 | Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude ou OpenAI, e a transcrição dos áudios usa a OpenAI. |
 
 Junto vem a **base**, que todo módulo usa (login, pessoas e acessos, a porta de entrada), só com as peças que este módulo usa:
 
@@ -20,7 +20,7 @@ Separe estas coisas antes de começar:
 
 - Uma conta no **GitHub**, uma no **Supabase** e uma na **Vercel**, todas no plano gratuito. No Supabase, crie o projeto na região **South America (São Paulo)**.
 - Uma **instância da uazapi** com o número de WhatsApp que está nos grupos. Você vai informar o endereço do servidor e o token dessa instância.
-- Uma **chave de IA** da OpenAI, da Anthropic (Claude), da DeepSeek ou de um serviço compatível com o formato da OpenAI. Para transcrever áudio, use uma chave da OpenAI ou da Groq.
+- Uma **chave de IA** da OpenAI, da Anthropic (Claude), da DeepSeek ou de um serviço compatível com o formato da OpenAI. Para transcrever áudio, use uma chave da OpenAI.
 
 O passo a passo de cada conta está no guia de instalação que você recebeu junto com a compra. A instância da uazapi e a chave de IA entram no sistema depois da instalação, na tela de ajustes.
 
@@ -40,7 +40,7 @@ Se a instalação parar no meio (internet, tempo esgotado), clique em **Tentar d
 **O Acompanhamento de Grupos no WhatsApp com IA tem mais passos depois de instalar.** Ele só começa a trabalhar quando a IA e o WhatsApp estão ligados. Entre no sistema, abra **Grupos** e clique em **Ajustes**:
 
 1. Ligue a **IA**: escolha o provedor e o modelo, cole a chave e clique em **Salvar** e depois em **Testar a IA**.
-2. Ligue a **Transcrição de áudio**: escolha Groq ou OpenAI e cole a chave (se a IA for a OpenAI, marque **Usar a mesma chave da IA**).
+2. Ligue a **Transcrição de áudio**: ela usa a OpenAI; cole a chave (se a IA for a OpenAI, marque **Usar a mesma chave da IA**).
 3. Ligue o **WhatsApp pela uazapi**: informe o endereço do servidor e o token da instância, clique em **Salvar e conectar** e leia o QR com o celular.
 4. Volte em **Grupos**, clique em **Escolher grupos** e marque os que você quer acompanhar.
 

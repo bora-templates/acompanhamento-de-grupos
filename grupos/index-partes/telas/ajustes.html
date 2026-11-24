@@ -146,13 +146,13 @@
           <form class="pilha" novalidate autocomplete="off" @submit.prevent="salvaTranscricao()" @input="tr.erro = ''">
             <div class="grade2">
               <label class="rot">Serviço
-                <select x-model="tr.provedor" @change="trocaProvedorTr()"><option value="groq">Groq (recomendado)</option><option value="openai">OpenAI (pago)</option></select></label>
+                <input type="text" value="OpenAI" readonly tabindex="-1" aria-readonly="true"></label>
               <label class="rot">Modelo de áudio
                 <select x-model="tr.modelo">
                   <template x-for="m in trModelos" :key="m.id"><option :value="m.id" :selected="m.id === tr.modelo" x-text="m.nome"></option></template>
                 </select></label>
             </div>
-            <p class="dica" x-text="tr.provedor === 'groq' ? 'A Groq tem plano gratuito com limite de uso, e a chave é criada em console.groq.com.' : 'A OpenAI cobra pelo uso, e a chave é criada em platform.openai.com.'"></p>
+            <p class="dica">A OpenAI cobra pelo uso, e a chave é criada em platform.openai.com.</p>
             <div>
               <label class="chk" x-show="trPodeUsarChaveDaIa" x-cloak style="margin-bottom:10px"><input type="checkbox" x-model="tr.usarChaveIa" @change="tr.erro = ''"> Usar a mesma chave da IA</label>
               <div class="salvo" x-show="trChaveEmUso && (trUsaChaveDaIa || !trPedeChave)" x-cloak role="status">

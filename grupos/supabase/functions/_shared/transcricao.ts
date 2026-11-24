@@ -1,5 +1,5 @@
 // ============================================================================
-// transcricao.ts: o áudio do grupo vira texto (Groq ou OpenAI, em português)
+// transcricao.ts: o áudio do grupo vira texto (OpenAI, em português)
 // ----------------------------------------------------------------------------
 // O mesmo serviço que o sistema já usa para transcrever o áudio do WhatsApp (atendimento,
 // wpp-transcribe): o arquivo vem da uazapi (/message/download) e vai para o Whisper.
@@ -19,22 +19,19 @@ import type { ConfigTranscricao } from "./config.ts";
 export const PRAZO_TRANSCRICAO_MS = 60_000;
 const ESPERA_MAXIMA_MS = 20_000;
 const SERVICOS = {
-  groq: { url: "https://api.groq.com/openai/v1/audio/transcriptions", modelo: "whisper-large-v3" },
   openai: { url: "https://api.openai.com/v1/audio/transcriptions", modelo: "whisper-1" },
 };
 
-/* Os modelos de áudio que a tela oferece e a gr-api aceita, por serviço, conferidos na
-   documentação de cada um em 24/11/2026: a Groq (console.groq.com/docs/speech-to-text) aceita
-   whisper-large-v3-turbo e whisper-large-v3; a OpenAI (referência de /v1/audio/transcriptions)
-   aceita gpt-transcribe, gpt-4o-mini-transcribe, gpt-4o-transcribe e whisper-1. Os três últimos
+/* Os modelos de áudio que a tela oferece e a gr-api aceita, conferidos na documentação em
+   24/11/2026. A Groq saiu como opção em 24/11 (decisão do Luis: só OpenAI na transcrição).
+   A OpenAI (referência de /v1/audio/transcriptions) aceita gpt-transcribe, gpt-4o-mini-transcribe, gpt-4o-transcribe e whisper-1. Os três últimos
    estão marcados para sair do ar em 26/02/2027, e o gpt-transcribe é o que a OpenAI recomenda. */
-export const MODELOS_TRANSCRICAO: Record<"groq" | "openai", string[]> = {
-  groq: ["whisper-large-v3-turbo", "whisper-large-v3"],
+export const MODELOS_TRANSCRICAO: Record<"openai", string[]> = {
   openai: ["gpt-transcribe", "gpt-4o-mini-transcribe", "gpt-4o-transcribe", "whisper-1"],
 };
 
 /** O modelo que vai no pedido: o salvo, se o serviço aceita, ou o padrão do serviço. */
-export function modeloDaTranscricao(provedor: "groq" | "openai", salvo: unknown): string {
+export function modeloDaTranscricao(provedor: "openai", salvo: unknown): string {
   const m = String(salvo ?? "").trim();
   return MODELOS_TRANSCRICAO[provedor]?.includes(m) ? m : SERVICOS[provedor].modelo;
 }

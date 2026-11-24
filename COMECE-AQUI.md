@@ -8,7 +8,7 @@ Quem usa este pacote costuma ser dono de negócio, sem experiência com programa
 
 | Módulo | Versão | O que faz |
 |---|---|---|
-| **Acompanhamento de Grupos no WhatsApp com IA** | 1.0.3 | Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude ou OpenAI, e a transcrição dos áudios usa a Groq ou a OpenAI. |
+| **Acompanhamento de Grupos no WhatsApp com IA** | 1.0.4 | Acompanha os grupos de WhatsApp que a empresa escolher: guarda as mensagens, transcreve os áudios e usa a IA para contar o que aconteceu em cada período, apontar o que ficou pendente e responder perguntas sobre cada grupo. O resumo pode ir para o próprio grupo, a pedido ou todo dia num horário escolhido. Funciona com Claude ou OpenAI, e a transcrição dos áudios usa a OpenAI. |
 
 A base (versão **1.1.0**), só com as peças que este módulo usa:
 
@@ -50,11 +50,11 @@ Peça para a pessoa colocar o token e a senha nas variáveis ela mesma (nunca pe
 
 O Acompanhamento de Grupos no WhatsApp com IA só trabalha com a IA e o WhatsApp ligados. A instalação não pede nada disso: a pessoa liga tudo dentro do sistema, em **Grupos › Ajustes**, depois de entrar. Conduza um passo de cada vez e peça que ela mesma cole cada chave e token nos campos da tela. Nunca peça para colar no chat a chave de IA, o token da instância da uazapi nem o endereço que a uazapi chama (ele leva uma chave no final).
 
-O que a pessoa precisa ter à mão: uma instância da uazapi com o número que está nos grupos (endereço do servidor e token da instância) e uma chave de IA (OpenAI, Anthropic, DeepSeek ou compatível; para transcrever áudio, OpenAI ou Groq).
+O que a pessoa precisa ter à mão: uma instância da uazapi com o número que está nos grupos (endereço do servidor e token da instância) e uma chave de IA (OpenAI, Anthropic, DeepSeek ou compatível; para transcrever áudio, OpenAI).
 
 1. **Entrar.** O login abre direto no Grupos, e quem instalou já nasce com o acesso de admin. Se aparecer a tela "Você ainda não tem acesso ao Grupos", clique em **Abrir Usuários**, clique em **Editar** ao lado do nome da pessoa e escolha **Admin do sistema** no Grupos.
 2. **Ajustes › IA.** Escolha o provedor (OpenAI, Claude, DeepSeek ou Compatível com OpenAI), informe o modelo e a chave, clique em **Salvar** e depois em **Testar a IA**. Ao salvar a IA, o sistema também prepara a agenda dos resumos automáticos.
-3. **Ajustes › Transcrição de áudio.** Escolha Groq ou OpenAI e informe a chave. Com a IA da OpenAI, a opção **Usar a mesma chave da IA** dispensa uma chave nova. Sem esse serviço, os áudios ficam guardados sem texto.
+3. **Ajustes › Transcrição de áudio.** A transcrição usa a OpenAI: informe a chave. Com a IA da OpenAI, a opção **Usar a mesma chave da IA** dispensa uma chave nova. Sem esse serviço, os áudios ficam guardados sem texto.
 4. **Ajustes › WhatsApp.** Informe o endereço do servidor da uazapi (começa com https://) e o token da instância, e clique em **Salvar e conectar**. Se a tela mostrar o QR, a pessoa lê com o WhatsApp do celular do número dos grupos (Aparelhos conectados › Conectar um aparelho). Se a instância já mandar as mensagens para outro endereço, a tela avisa e só troca quando a pessoa clica em **Trocar para esta instalação**, porque o sistema que recebia essas mensagens deixa de recebê-las.
 5. **Escolher grupos.** Em Grupos, clique em **Escolher grupos**, marque os que a pessoa quer acompanhar e clique em **Acompanhar**. Só as mensagens dos grupos marcados são guardadas.
 6. **Grupo de exemplo (opcional).** Em Grupos, **Ver com um grupo de exemplo** mostra uma conversa fictícia de clínica de estética para testar o resumo e as perguntas. O botão **Apagar o grupo de exemplo** fica em **Ajustes › Grupo de exemplo**.
